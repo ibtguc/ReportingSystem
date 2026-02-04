@@ -54,3 +54,8 @@ ReportingSystem/db/Backups/*.db
 
 ## Temp files
 ~$*
+
+## Local NuGet package scripts
+download_packages.py
+download_missing.py
+local-packages/
