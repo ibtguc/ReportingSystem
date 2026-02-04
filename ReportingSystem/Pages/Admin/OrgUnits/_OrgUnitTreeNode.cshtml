@@ -1,0 +1,65 @@
+@model ReportingSystem.Models.OrganizationalUnit
+
+@{
+    var levelBadgeClass = Model.Level switch
+    {
+        ReportingSystem.Models.OrgUnitLevel.Root => "bg-dark",
+        ReportingSystem.Models.OrgUnitLevel.Campus => "bg-primary",
+        ReportingSystem.Models.OrgUnitLevel.Faculty => "bg-info",
+        ReportingSystem.Models.OrgUnitLevel.Department => "bg-success",
+        ReportingSystem.Models.OrgUnitLevel.Sector => "bg-warning text-dark",
+        ReportingSystem.Models.OrgUnitLevel.Team => "bg-secondary",
+        _ => "bg-secondary"
+    };
+    var levelIcon = Model.Level switch
+    {
+        ReportingSystem.Models.OrgUnitLevel.Root => "bi-building",
+        ReportingSystem.Models.OrgUnitLevel.Campus => "bi-geo-alt",
+        ReportingSystem.Models.OrgUnitLevel.Faculty => "bi-bank",
+        ReportingSystem.Models.OrgUnitLevel.Department => "bi-diagram-2",
+        ReportingSystem.Models.OrgUnitLevel.Sector => "bi-diagram-3",
+        ReportingSystem.Models.OrgUnitLevel.Team => "bi-people",
+        _ => "bi-folder"
+    };
+    var indent = (int)Model.Level;
+}
+
+<div class="org-unit-node" style="margin-left: @(indent * 24)px;">
+    <div class="d-flex align-items-center py-2 border-bottom @(!Model.IsActive ? "opacity-50" : "")">
+        <div class="flex-grow-1">
+            <i class="bi @levelIcon me-1"></i>
+            <strong>@Model.Name</strong>
+            @if (!string.IsNullOrEmpty(Model.Code))
+            {
+                <small class="text-muted ms-1">(@Model.Code)</small>
+            }
+            <span class="badge @levelBadgeClass ms-2">@Model.Level</span>
+            @if (!Model.IsActive)
+            {
+                <span class="badge bg-secondary ms-1">Inactive</span>
+            }
+            @if (Model.Users.Count > 0)
+            {
+                <span class="badge bg-outline-secondary border ms-1" title="@Model.Users.Count user(s)">
+                    <i class="bi bi-person"></i> @Model.Users.Count
+                </span>
+            }
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+            <a asp-page="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm" title="Edit">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a asp-page="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger btn-sm" title="Delete">
+                <i class="bi bi-trash"></i>
+            </a>
+        </div>
+    </div>
+
+    @if (Model.Children.Any())
+    {
+        @foreach (var child in Model.Children.OrderBy(c => c.SortOrder).ThenBy(c => c.Name))
+        {
+            @await Html.PartialAsync("_OrgUnitTreeNode", child)
+        }
+    }
+</div>

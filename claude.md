@@ -35,10 +35,12 @@ Dev URL: http://localhost:5296 / https://localhost:7155
 ReportingSystem/
 ├── Data/                  # EF Core DbContext, seed data, user seeder
 ├── Filters/               # AutomaticBackupFilter (pre-POST/PUT/DELETE backups)
-├── Models/                # Domain entities (User, MagicLink, Notification, DatabaseBackup)
+├── Models/                # Domain entities (User, MagicLink, OrganizationalUnit, Delegation, Notification, DatabaseBackup)
 ├── Pages/
 │   ├── Admin/             # Requires authentication
 │   │   ├── Backup/        # Database backup management (create/restore/delete/WAL)
+│   │   ├── Delegations/   # Delegation CRUD (Index, Create) with revoke
+│   │   ├── OrgUnits/      # Org unit CRUD (Index, Create, Edit, Delete) with tree view
 │   │   ├── Users/         # User CRUD (Index, Create, Edit, Details, Delete)
 │   │   └── Dashboard.cshtml
 │   ├── Auth/              # Anonymous access (Login, Verify, Logout)
@@ -70,6 +72,8 @@ ReportingSystem/
 - **Dev**: SQLite at `db/reporting.db` (auto-created via `EnsureCreatedAsync`)
 - **Prod**: SQL Server (configure in appsettings.json)
 - **Seeded users**: admin@reporting.com, admin1@reporting.com, admin2@reporting.com (all Administrators)
+- **SQL seed script**: `seed.sql` at project root - seeds full org hierarchy, 60 users, delegations, notifications
+- **Org hierarchy**: GUC > Campuses > Faculties > Departments > Sectors > Teams (6 levels via OrgUnitLevel enum)
 - **Known limitation**: `TimeSpan` properties cannot be used in `ORDER BY` with SQLite provider
 
 ## Key Services
@@ -86,14 +90,14 @@ ReportingSystem/
 ## Domain Implementation Phases (SRS-based)
 
 Phase 1 (complete): Infrastructure - Auth, backup, notifications, admin pages, layout
+Phase 2 (complete): Organization & User Hierarchy - Org units, user roles, delegations, SQL seed script
 
-### Phase 2: Organization & User Hierarchy
-- **OrganizationalUnit** model: self-referential hierarchy (Campus > Department > Sector > Team), unlimited depth
-- Extend **User** model: link to OrganizationalUnit, add role (SystemAdmin, ReportOriginator, ReportReviewer, TeamManager, DepartmentHead, Executive, Auditor)
-- **Role/Permission** system: RBAC with configurable permissions per role
-- **Delegation** model: temporary authority transfer (delegator, delegate, start/end dates, scope)
-- Admin pages: Org unit CRUD, org tree visualization, role/permission management
-- Update layout navigation for role-based menus
+### Key Models (Phase 2)
+- **OrganizationalUnit**: self-referential hierarchy with OrgUnitLevel enum (Root=0 → Team=5), Parent/Children nav props, DeleteBehavior.Restrict
+- **User** (extended): OrganizationalUnitId FK (SetNull on delete), JobTitle, Role using SystemRoles string constants
+- **SystemRoles**: Administrator, ReportOriginator, ReportReviewer, TeamManager, DepartmentHead, Executive, Auditor (string constants with DisplayName helper)
+- **Delegation**: DelegatorId/DelegateId FKs (Restrict), StartDate/EndDate, Scope (Full/ReportingOnly/ApprovalOnly), IsCurrentlyEffective computed property
+- **DelegationScope**: Full, ReportingOnly, ApprovalOnly (string constants with DisplayName helper)
 
 ### Phase 3: Report Templates & Report Entry
 - **ReportTemplate** model: name, description, version, assigned org units/roles, schedule (daily/weekly/monthly/quarterly/annual)

@@ -28,6 +28,7 @@ public class DeleteModel : PageModel
         }
 
         var user = await _context.Users
+            .Include(u => u.OrganizationalUnit)
             .Include(u => u.MagicLinks)
             .FirstOrDefaultAsync(m => m.Id == id);
 

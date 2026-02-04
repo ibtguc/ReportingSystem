@@ -23,7 +23,23 @@
 
                         <dt class="col-sm-3">Role</dt>
                         <dd class="col-sm-9">
-                            <span class="badge bg-primary">@Model.User.Role</span>
+                            <span class="badge bg-primary">@ReportingSystem.Models.SystemRoles.DisplayName(Model.User.Role)</span>
+                        </dd>
+
+                        <dt class="col-sm-3">Job Title</dt>
+                        <dd class="col-sm-9">@(Model.User.JobTitle ?? "<span class=\"text-muted\">Not set</span>")</dd>
+
+                        <dt class="col-sm-3">Org Unit</dt>
+                        <dd class="col-sm-9">
+                            @if (Model.User.OrganizationalUnit != null)
+                            {
+                                <span>@Model.User.OrganizationalUnit.Name</span>
+                                <small class="text-muted">(@Model.User.OrganizationalUnit.Level)</small>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Unassigned</span>
+                            }
                         </dd>
 
                         <dt class="col-sm-3">Status</dt>

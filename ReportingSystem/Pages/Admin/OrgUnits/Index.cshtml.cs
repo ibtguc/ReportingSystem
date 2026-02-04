@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ReportingSystem.Data;
 using ReportingSystem.Models;
 
-namespace ReportingSystem.Pages.Admin.Users;
+namespace ReportingSystem.Pages.Admin.OrgUnits;
 
 public class IndexModel : PageModel
 {
@@ -14,13 +14,17 @@ public class IndexModel : PageModel
         _context = context;
     }
 
-    public List<User> Users { get; set; } = new();
+    public List<OrganizationalUnit> OrgUnits { get; set; } = new();
 
     public async Task OnGetAsync()
     {
-        Users = await _context.Users
-            .Include(u => u.OrganizationalUnit)
-            .OrderBy(u => u.Name)
+        OrgUnits = await _context.OrganizationalUnits
+            .Include(ou => ou.Parent)
+            .Include(ou => ou.Children)
+            .Include(ou => ou.Users)
+            .OrderBy(ou => ou.Level)
+            .ThenBy(ou => ou.SortOrder)
+            .ThenBy(ou => ou.Name)
             .ToListAsync();
     }
 }

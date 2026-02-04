@@ -13,13 +13,19 @@ public static class UserSeeder
             return; // Users already seeded
         }
 
+        // Try to find the root org unit to assign to admin users
+        var rootOrgUnit = await context.OrganizationalUnits
+            .FirstOrDefaultAsync(ou => ou.Level == OrgUnitLevel.Root);
+
         var adminUsers = new List<User>
         {
             new User
             {
                 Email = "admin@reporting.com",
                 Name = "System Administrator",
-                Role = "Administrator",
+                Role = SystemRoles.Administrator,
+                JobTitle = "System Administrator",
+                OrganizationalUnitId = rootOrgUnit?.Id,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             },
@@ -27,7 +33,9 @@ public static class UserSeeder
             {
                 Email = "admin1@reporting.com",
                 Name = "Administrator One",
-                Role = "Administrator",
+                Role = SystemRoles.Administrator,
+                JobTitle = "IT Administrator",
+                OrganizationalUnitId = rootOrgUnit?.Id,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             },
@@ -35,7 +43,9 @@ public static class UserSeeder
             {
                 Email = "admin2@reporting.com",
                 Name = "Administrator Two",
-                Role = "Administrator",
+                Role = SystemRoles.Administrator,
+                JobTitle = "IT Administrator",
+                OrganizationalUnitId = rootOrgUnit?.Id,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             }
