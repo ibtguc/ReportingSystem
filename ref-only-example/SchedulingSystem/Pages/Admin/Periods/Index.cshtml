@@ -1,0 +1,83 @@
+@page
+@model SchedulingSystem.Pages.Admin.Periods.IndexModel
+@{
+    ViewData["Title"] = "Periods";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-clock"></i> Periods</h2>
+            <p class="text-muted">Manage time slots for lessons</p>
+        </div>
+        <div class="col text-end">
+            <a asp-page="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add New Period
+            </a>
+        </div>
+    </div>
+
+    @if (Model.Periods.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No periods found. Click "Add New Period" to create one.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Period Number</th>
+                                <th>Name</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Duration</th>
+                                <th>Type</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var period in Model.Periods)
+                            {
+                                <tr>
+                                    <td><strong>@period.PeriodNumber</strong></td>
+                                    <td>@period.Name</td>
+                                    <td>@period.StartTime.ToString(@"hh\:mm")</td>
+                                    <td>@period.EndTime.ToString(@"hh\:mm")</td>
+                                    <td>@period.DurationMinutes min</td>
+                                    <td>
+                                        @if (period.IsBreak)
+                                        {
+                                            <span class="badge bg-warning text-dark">Break</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info">Lesson</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-page="Edit" asp-route-id="@period.Id" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-page="Details" asp-route-id="@period.Id" class="btn btn-outline-info" title="Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-page="Delete" asp-route-id="@period.Id" class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

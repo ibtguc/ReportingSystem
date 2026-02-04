@@ -1,0 +1,180 @@
+@*
+DISABLED: Lessons are managed through data import
+This page is commented out to prevent manual data entry that could conflict with imported data.
+Use /Admin/Import/Untis to import Lesson data from UNTIS export files.
+*@
+
+@*
+@page
+@model SchedulingSystem.Pages.Admin.Lessons.CreateModel
+@{
+    ViewData["Title"] = "Create Lesson";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4><i class="bi bi-plus-circle"></i> Create New Lesson</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Lesson.SubjectId" class="form-label"></label>
+                            <select asp-for="Lesson.SubjectId" class="form-select" asp-items="Model.SubjectList" required>
+                                <option value="">-- Select Subject --</option>
+                            </select>
+                            <span asp-validation-for="Lesson.SubjectId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Lesson.ClassId" class="form-label"></label>
+                            <select asp-for="Lesson.ClassId" class="form-select" asp-items="Model.ClassList" required>
+                                <option value="">-- Select Class --</option>
+                            </select>
+                            <span asp-validation-for="Lesson.ClassId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Lesson.TeacherId" class="form-label"></label>
+                            <select asp-for="Lesson.TeacherId" class="form-select" asp-items="Model.TeacherList" required>
+                                <option value="">-- Select Teacher --</option>
+                            </select>
+                            <span asp-validation-for="Lesson.TeacherId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Lesson.SecondTeacherId" class="form-label"></label>
+                            <select asp-for="Lesson.SecondTeacherId" class="form-select" asp-items="Model.TeacherList">
+                                <option value="">-- No Second Teacher (Optional) --</option>
+                            </select>
+                            <span asp-validation-for="Lesson.SecondTeacherId" class="text-danger"></span>
+                            <small class="form-text text-muted">Optional: Select a second teacher for team teaching</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Lesson.FrequencyPerWeek" class="form-label"></label>
+                                <input asp-for="Lesson.FrequencyPerWeek" class="form-control" type="number" min="1" max="10" />
+                                <span asp-validation-for="Lesson.FrequencyPerWeek" class="text-danger"></span>
+                                <small class="form-text text-muted">How many times per week</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Lesson.Duration" class="form-label"></label>
+                                <select asp-for="Lesson.Duration" class="form-select">
+                                    <option value="45">45 minutes (1 period)</option>
+                                    <option value="90">90 minutes (2 periods)</option>
+                                    <option value="135">135 minutes (3 periods)</option>
+                                </select>
+                                <span asp-validation-for="Lesson.Duration" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Lesson.RequiredRoomType" class="form-label"></label>
+                            <select asp-for="Lesson.RequiredRoomType" class="form-select">
+                                <option value="">Any Room Type</option>
+                                <option value="Classroom">Classroom</option>
+                                <option value="Laboratory">Laboratory</option>
+                                <option value="Computer Lab">Computer Lab</option>
+                                <option value="Gymnasium">Gymnasium</option>
+                                <option value="Music Room">Music Room</option>
+                                <option value="Art Room">Art Room</option>
+                            </select>
+                            <span asp-validation-for="Lesson.RequiredRoomType" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Lesson.SpecialRequirements" class="form-label"></label>
+                            <textarea asp-for="Lesson.SpecialRequirements" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Lesson.SpecialRequirements" class="text-danger"></span>
+                            <small class="form-text text-muted">Any special requirements for scheduling this lesson</small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="Lesson.IsActive" class="form-check-input" />
+                            <label asp-for="Lesson.IsActive" class="form-check-label"></label>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-page="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to List
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Create Lesson
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $(document).ready(function() {
+            var allTeachers = [];
+
+            // Store all teacher options on page load
+            $('#Lesson_TeacherId option').each(function() {
+                if ($(this).val()) {
+                    allTeachers.push({
+                        value: $(this).val(),
+                        text: $(this).text()
+                    });
+                }
+            });
+
+            // When subject changes, filter both primary and second teacher dropdowns
+            $('#Lesson_SubjectId').change(function() {
+                var subjectId = $(this).val();
+                var teacherDropdown = $('#Lesson_TeacherId');
+                var secondTeacherDropdown = $('#Lesson_SecondTeacherId');
+
+                if (!subjectId) {
+                    // No subject selected, show all teachers
+                    teacherDropdown.empty();
+                    teacherDropdown.append('<option value="">-- Select Teacher --</option>');
+                    secondTeacherDropdown.empty();
+                    secondTeacherDropdown.append('<option value="">-- No Second Teacher (Optional) --</option>');
+                    allTeachers.forEach(function(teacher) {
+                        teacherDropdown.append('<option value="' + teacher.value + '">' + teacher.text + '</option>');
+                        secondTeacherDropdown.append('<option value="' + teacher.value + '">' + teacher.text + '</option>');
+                    });
+                    return;
+                }
+
+                // Fetch qualified teachers for this subject
+                $.get('?handler=QualifiedTeachers&subjectId=' + subjectId, function(data) {
+                    teacherDropdown.empty();
+                    teacherDropdown.append('<option value="">-- Select Qualified Teacher --</option>');
+                    secondTeacherDropdown.empty();
+                    secondTeacherDropdown.append('<option value="">-- No Second Teacher (Optional) --</option>');
+
+                    if (data.length === 0) {
+                        teacherDropdown.append('<option value="" disabled>No qualified teachers found</option>');
+                    } else {
+                        data.forEach(function(teacher) {
+                            var label = teacher.name;
+                            if (teacher.qualification) {
+                                label += ' (' + teacher.qualification + ')';
+                            }
+                            if (teacher.isPreferred) {
+                                label += ' ⭐';
+                            }
+                            teacherDropdown.append('<option value="' + teacher.id + '">' + label + '</option>');
+                            secondTeacherDropdown.append('<option value="' + teacher.id + '">' + label + '</option>');
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}
+*@

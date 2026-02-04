@@ -1,0 +1,437 @@
+@page
+@model SchedulingSystem.Pages.Admin.Timetables.LessonMoveResultModel
+@using Microsoft.AspNetCore.Html
+@{
+    ViewData["Title"] = "Lesson Move Result";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="TimetableId" value="@Model.TimetableId" />
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="bi bi-list-check text-success"></i> Lesson Move Result
+                </h2>
+                <a href="/Admin/Timetables/MoveLessons?id=@Model.TimetableId" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Move Lessons
+                </a>
+            </div>
+
+            <!-- Input Parameters Display -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-input-cursor-text"></i> Input Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong>Timetable:</strong>
+                                <span>@Model.TimetableName</span>
+                                <small class="text-muted">(ID: @Model.TimetableId)</small>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Algorithm:</strong>
+                                <span>@Model.Algorithm</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Max Depth:</strong>
+                                <span>@Model.MaxDepth</span>
+                                <span class="text-muted ms-3"><strong>Max Time:</strong> @Model.MaxTimeMinutes min</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong>Move To Slot:</strong>
+                                @if (!string.IsNullOrEmpty(Model.DestinationDay))
+                                {
+                                    <span class="badge bg-success">@Model.DestinationDay - Period @Model.DestinationPeriodId</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Not specified (will try all slots)</span>
+                                }
+                            </div>
+                            @if (Model.SubstitutionMode)
+                            {
+                                <div class="mb-3">
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-check-circle-fill"></i> Substitution Mode Enabled
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Selected Lessons -->
+                    <div class="mb-3">
+                        <strong>Selected Lessons:</strong>
+                        @if (Model.SelectedLessonsInfo.Any())
+                        {
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Subject</th>
+                                            <th>Class</th>
+                                            <th>Teacher</th>
+                                            <th>Current Slot</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var lesson in Model.SelectedLessonsInfo)
+                                        {
+                                            <tr>
+                                                <td>@lesson.ScheduledLessonId</td>
+                                                <td>@lesson.Subject</td>
+                                                <td>@lesson.Class</td>
+                                                <td>@lesson.Teacher</td>
+                                                <td><code>@lesson.CurrentSlot</code></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">None selected</span>
+                        }
+                    </div>
+
+                    <!-- Ignored Constraints -->
+                    <div class="mb-0">
+                        <strong>Ignored Constraints:</strong>
+                        @if (Model.IgnoredConstraintsInfo.Any())
+                        {
+                            <ul class="mb-0 mt-1">
+                                @foreach (var constraint in Model.IgnoredConstraintsInfo)
+                                {
+                                    <li><strong>@constraint.Code</strong> - @constraint.Name</li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <span class="text-muted">None (all constraints enforced)</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Area -->
+            @if (Model.Result != null)
+            {
+                <div class="card" id="resultsCard">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-tree-fill"></i> Execution Results</h5>
+                </div>
+                <div class="card-body">
+                    <div id="resultsContent">
+                        <!-- Success/Failure Alert -->
+                        <div class="alert @(Model.Result.Success ? "alert-success" : "alert-danger")">
+                            <h5>
+                                @if (Model.Result.Success)
+                                {
+                                    <i class="bi bi-check-circle-fill"></i> <text>Solution Found!</text>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle-fill"></i> <text>No Solution Found</text>
+                                }
+                            </h5>
+                            @if (!string.IsNullOrEmpty(Model.Result.Message))
+                            {
+                                <p>@Model.Result.Message</p>
+                            }
+                        </div>
+
+                        <!-- Statistics -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <strong>Nodes Explored:</strong> @Model.Result.NodesExplored
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Max Depth Reached:</strong> @Model.Result.MaxDepthReached
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Elapsed Time:</strong> @Model.Result.ElapsedMs ms
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Attempts:</strong> @Model.Result.AttemptCount
+                            </div>
+                        </div>
+
+                        <!-- Solution Options -->
+                        @if (Model.Result.Success && Model.Result.Solutions.Any())
+                        {
+                            <h6>Solutions Found: @Model.Result.Solutions.Count</h6>
+
+                            @foreach (var solution in Model.Result.Solutions)
+                            {
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            Option #@solution.OptionNumber
+                                            <small class="text-muted">(Found at @solution.FoundAtMs ms)</small>
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <button class="btn btn-sm btn-outline-info evaluate-constraints-btn"
+                                                    data-solution-index="@solution.OptionNumber"
+                                                    data-option-number="@solution.OptionNumber">
+                                                <i class="bi bi-shield-exclamation"></i> Evaluate Ignored Constraints
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success save-as-draft-btn ms-2"
+                                                    data-solution-index="@solution.OptionNumber"
+                                                    data-option-number="@solution.OptionNumber">
+                                                <i class="bi bi-save"></i> Save As Draft
+                                            </button>
+                                        </div>
+                                        <table class="table table-sm table-bordered solution-table-@solution.OptionNumber">
+                                            <thead>
+                                                <tr>
+                                                    <th>Scheduled Lesson ID</th>
+                                                    <th>Lesson ID</th>
+                                                    <th>Lesson</th>
+                                                    <th>From</th>
+                                                    <th>To</th>
+                                                    <th class="violations-column d-none">Violates Constraints</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var move in solution.Movements)
+                                                {
+                                                    <tr data-scheduled-lesson-id="@move.ScheduledLessonId"
+                                                        data-lesson-id="@move.LessonId"
+                                                        data-from-slot="@move.FromSlot"
+                                                        data-to-slot="@move.ToSlot">
+                                                        <td>@move.ScheduledLessonId</td>
+                                                        <td>@move.LessonId</td>
+                                                        <td>@(move.LessonDescription ?? $"Lesson {move.LessonId}")</td>
+                                                        <td>@move.FromSlot</td>
+                                                        <td>@move.ToSlot</td>
+                                                        <td class="violations-column d-none">
+                                                            <span class="text-muted">Evaluating...</span>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                        <small class="text-muted">Total movements: @solution.Movements.Count</small>
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Save As Draft Modal -->
+<div class="modal fade" id="saveAsDraftModal" tabindex="-1" aria-labelledby="saveAsDraftModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="saveAsDraftModalLabel">
+                    <i class="bi bi-save me-2"></i>Save Solution as Draft Timetable
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="newTimetableName" class="form-label">Timetable Name</label>
+                    <input type="text" class="form-control" id="newTimetableName" placeholder="Enter timetable name">
+                    <div class="form-text">A new draft timetable will be created with the solution applied.</div>
+                </div>
+                <input type="hidden" id="saveSolutionIndex" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmSaveAsDraftBtn">
+                    <i class="bi bi-save me-1"></i>Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle constraint evaluation button clicks
+            document.querySelectorAll('.evaluate-constraints-btn').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const solutionIndex = this.getAttribute('data-solution-index');
+                    const optionNumber = this.getAttribute('data-option-number');
+                    const table = document.querySelector(`.solution-table-${solutionIndex}`);
+
+                    // Disable button and show loading
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Evaluating...';
+
+                    // Show violations column
+                    table.querySelectorAll('.violations-column').forEach(col => {
+                        col.classList.remove('d-none');
+                    });
+
+                    // Collect movements from this solution
+                    const movements = [];
+                    table.querySelectorAll('tbody tr').forEach(row => {
+                        movements.push({
+                            scheduledLessonId: parseInt(row.getAttribute('data-scheduled-lesson-id')),
+                            lessonId: parseInt(row.getAttribute('data-lesson-id')),
+                            fromSlot: row.getAttribute('data-from-slot'),
+                            toSlot: row.getAttribute('data-to-slot')
+                        });
+                    });
+
+                    try {
+                        // Call backend to evaluate constraints
+                        const response = await fetch('/Admin/Timetables/LessonMoveResult?handler=EvaluateConstraints', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                            },
+                            body: JSON.stringify({
+                                timetableId: parseInt(document.querySelector('input[name="TimetableId"]').value),
+                                movements: movements,
+                                ignoredConstraints: Array.from(document.querySelectorAll('input[name="IgnoredConstraints"]:checked')).map(cb => cb.value)
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to evaluate constraints');
+                        }
+
+                        const result = await response.json();
+
+                        // Update each row with violations
+                        table.querySelectorAll('tbody tr').forEach((row, index) => {
+                            const violations = result.violations[index] || [];
+                            const violationCell = row.querySelector('.violations-column');
+
+                            if (violations.length === 0) {
+                                violationCell.innerHTML = '<span class="badge bg-success">None</span>';
+                            } else {
+                                const badges = violations.map(v =>
+                                    `<span class="badge bg-warning text-dark me-1" title="${v.description}">${v.code}</span>`
+                                ).join('');
+                                violationCell.innerHTML = badges;
+                            }
+                        });
+
+                        // Update button
+                        this.innerHTML = '<i class="bi bi-check-circle"></i> Evaluated';
+                        this.classList.remove('btn-outline-info');
+                        this.classList.add('btn-success');
+
+                    } catch (error) {
+                        console.error('Error evaluating constraints:', error);
+                        alert('Failed to evaluate constraints. See console for details.');
+
+                        // Reset button
+                        this.disabled = false;
+                        this.innerHTML = '<i class="bi bi-shield-exclamation"></i> Evaluate Ignored Constraints';
+
+                        // Hide violations column
+                        table.querySelectorAll('.violations-column').forEach(col => {
+                            col.classList.add('d-none');
+                        });
+                    }
+                });
+            });
+
+            // Handle Save As Draft button clicks
+            const saveAsDraftModal = new bootstrap.Modal(document.getElementById('saveAsDraftModal'));
+
+            document.querySelectorAll('.save-as-draft-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const solutionIndex = this.getAttribute('data-solution-index');
+                    document.getElementById('saveSolutionIndex').value = solutionIndex;
+
+                    // Generate default name with timestamp
+                    const now = new Date();
+                    const timestamp = now.toISOString().slice(0, 19).replace(/[-:T]/g, '').replace(/(\d{8})(\d{6})/, '$1_$2');
+                    const defaultName = `Draft_Option${solutionIndex}_${timestamp}`;
+                    document.getElementById('newTimetableName').value = defaultName;
+
+                    saveAsDraftModal.show();
+                });
+            });
+
+            // Handle confirm save
+            document.getElementById('confirmSaveAsDraftBtn').addEventListener('click', async function() {
+                const solutionIndex = document.getElementById('saveSolutionIndex').value;
+                const timetableName = document.getElementById('newTimetableName').value.trim();
+
+                if (!timetableName) {
+                    alert('Please enter a timetable name.');
+                    return;
+                }
+
+                const table = document.querySelector(`.solution-table-${solutionIndex}`);
+
+                // Collect movements from this solution
+                const movements = [];
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    movements.push({
+                        scheduledLessonId: parseInt(row.getAttribute('data-scheduled-lesson-id')),
+                        lessonId: parseInt(row.getAttribute('data-lesson-id')),
+                        fromSlot: row.getAttribute('data-from-slot'),
+                        toSlot: row.getAttribute('data-to-slot')
+                    });
+                });
+
+                // Disable button and show loading
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+
+                try {
+                    const response = await fetch('/Admin/Timetables/LessonMoveResult?handler=SaveAsDraft', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        },
+                        body: JSON.stringify({
+                            timetableId: parseInt(document.querySelector('input[name="TimetableId"]')?.value || '0'),
+                            name: timetableName,
+                            movements: movements
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to save timetable');
+                    }
+
+                    const result = await response.json();
+
+                    saveAsDraftModal.hide();
+
+                    // Show success message
+                    alert(`Timetable "${timetableName}" saved successfully!`);
+
+                } catch (error) {
+                    console.error('Error saving timetable:', error);
+                    alert('Failed to save timetable. See console for details.');
+                } finally {
+                    // Reset button
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-save me-1"></i>Save';
+                }
+            });
+        });
+    </script>
+}

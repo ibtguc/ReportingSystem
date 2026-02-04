@@ -1,0 +1,605 @@
+@page
+@model SchedulingSystem.Pages.Admin.Substitutions.ReportsModel
+@using SchedulingSystem.Models
+@{
+    ViewData["Title"] = "Substitution Reports";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-bar-chart-fill"></i> Substitution Reports & Analytics</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/Admin/Dashboard">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="/Admin/Substitutions/Daily">Substitutions</a></li>
+                            <li class="breadcrumb-item active">Reports</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <form method="post" asp-page-handler="ExportCsv" style="display: inline;">
+                        <input type="hidden" asp-for="Filter.FromDate" />
+                        <input type="hidden" asp-for="Filter.ToDate" />
+                        <input type="hidden" asp-for="Filter.TeacherId" />
+                        <input type="hidden" asp-for="Filter.SubjectId" />
+                        <input type="hidden" asp-for="Filter.DepartmentId" />
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-download"></i> Export CSV
+                        </button>
+                    </form>
+                    <button class="btn btn-outline-primary btn-lg" onclick="window.print();">
+                        <i class="bi bi-printer"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Panel -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Report Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">From Date</label>
+                    <input type="date" asp-for="Filter.FromDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To Date</label>
+                    <input type="date" asp-for="Filter.ToDate" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Teacher (Optional)</label>
+                    <select asp-for="Filter.TeacherId" class="form-select">
+                        <option value="">All Teachers</option>
+                        @* Will be populated dynamically *@
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-primary">
+                <div class="card-body text-center">
+                    <h3 class="text-primary mb-0">@Model.Summary.TotalAbsences</h3>
+                    <p class="text-muted mb-0 small">Total Absences</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-info">
+                <div class="card-body text-center">
+                    <h3 class="text-info mb-0">@Model.Summary.TotalSubstitutions</h3>
+                    <p class="text-muted mb-0 small">Total Substitutions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-success">
+                <div class="card-body text-center">
+                    <h3 class="text-success mb-0">@Model.Summary.CoverageRate.ToString("F1")%</h3>
+                    <p class="text-muted mb-0 small">Coverage Rate</p>
+                    <small class="text-muted">(@Model.Summary.CoveredLessons covered / @Model.Summary.TotalSubstitutions total)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-warning">
+                <div class="card-body text-center">
+                    <h3 class="text-warning mb-0">$@Model.Summary.TotalPayrollCost.ToString("N2")</h3>
+                    <p class="text-muted mb-0 small">Total Payroll Cost</p>
+                    <small class="text-muted">@Model.Summary.TotalHoursSubstituted.ToString("F1") hours</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h4 class="mb-0">@Model.Summary.UniqueSubstitutes</h4>
+                    <p class="text-muted mb-0 small">Unique Substitutes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h4 class="mb-0">@Model.Summary.UniqueAbsentTeachers</h4>
+                    <p class="text-muted mb-0 small">Absent Teachers</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h4 class="mb-0">@Model.Summary.AverageSubstitutionsPerDay.ToString("F1")</h4>
+                    <p class="text-muted mb-0 small">Avg Subs/Day</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h4 class="mb-0">@Model.Summary.UncoveredLessons</h4>
+                    <p class="text-muted mb-0 small">Uncovered Lessons</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Break Supervision Statistics -->
+    @if (Model.SupervisionSummary.TotalAffectedDuties > 0)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <h5 class="text-muted mb-3"><i class="bi bi-shield-exclamation"></i> Break Supervision Impact</h5>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-warning">
+                    <div class="card-body text-center">
+                        <h3 class="text-warning mb-0">@Model.SupervisionSummary.TotalAffectedDuties</h3>
+                        <p class="text-muted mb-0 small">Supervision Duties Affected</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-info">
+                    <div class="card-body text-center">
+                        <h3 class="text-info mb-0">@Model.SupervisionSummary.TotalLocations</h3>
+                        <p class="text-muted mb-0 small">Locations Affected</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-secondary">
+                    <div class="card-body text-center">
+                        <h3 class="mb-0">@Model.SupervisionSummary.TotalAffectedTeachers</h3>
+                        <p class="text-muted mb-0 small">Teachers with Supervision Duties</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Absence Type Breakdown -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Absence Types</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.AbsenceTypes.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                        <th>Visual</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var absType in Model.AbsenceTypes)
+                                    {
+                                        var barColor = absType.Type switch
+                                        {
+                                            AbsenceType.Sick => "bg-danger",
+                                            AbsenceType.Personal => "bg-info",
+                                            AbsenceType.Professional => "bg-success",
+                                            AbsenceType.Meeting => "bg-warning",
+                                            AbsenceType.Emergency => "bg-danger",
+                                            AbsenceType.Vacation => "bg-primary",
+                                            AbsenceType.AdministrativeDuty => "bg-dark",
+                                            _ => "bg-secondary"
+                                        };
+                                        <tr>
+                                            <td><strong>@absType.Type</strong></td>
+                                            <td>@absType.Count</td>
+                                            <td>@absType.Percentage.ToString("F1")%</td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar @barColor" role="progressbar"
+                                                         style="width: @absType.Percentage%"
+                                                         aria-valuenow="@absType.Percentage" aria-valuemin="0" aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center my-3">No absence data available for selected period.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Absences by Day of Week</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.AbsencesByDayOfWeek.Any())
+                    {
+                        var maxAbsences = Model.AbsencesByDayOfWeek.Values.Max();
+                        var daysOfWeek = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Day</th>
+                                        <th>Count</th>
+                                        <th>Visual</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var day in daysOfWeek)
+                                    {
+                                        var count = Model.AbsencesByDayOfWeek.ContainsKey(day) ? Model.AbsencesByDayOfWeek[day] : 0;
+                                        var percentage = maxAbsences > 0 ? (decimal)count / maxAbsences * 100 : 0;
+                                        <tr>
+                                            <td><strong>@day</strong></td>
+                                            <td>@count</td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-primary" role="progressbar"
+                                                         style="width: @percentage%"
+                                                         aria-valuenow="@percentage" aria-valuemin="0" aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center my-3">No data available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher Workload Report -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people-fill"></i> Teacher Workload Distribution
+                        <span class="badge bg-light text-dark ms-2">@Model.TeacherWorkloads.Count teachers</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.TeacherWorkloads.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Teacher</th>
+                                        <th>Department</th>
+                                        <th>Substitutions</th>
+                                        <th>Hours</th>
+                                        <th>Total Pay</th>
+                                        <th>Avg Pay/Hour</th>
+                                        <th>Coverage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        var rank = 1;
+                                        var maxSubs = Model.TeacherWorkloads.Max(t => t.SubstitutionCount);
+                                    }
+                                    @foreach (var teacher in Model.TeacherWorkloads)
+                                    {
+                                        var percentage = maxSubs > 0 ? (decimal)teacher.SubstitutionCount / maxSubs * 100 : 0;
+                                        var avgPayPerHour = teacher.TotalHours > 0 ? teacher.TotalPay / teacher.TotalHours : 0;
+                                        <tr>
+                                            <td>
+                                                @if (rank <= 3)
+                                                {
+                                                    <span class="badge bg-warning text-dark">@rank</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@rank</span>
+                                                }
+                                            </td>
+                                            <td><strong>@teacher.TeacherName</strong></td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(teacher.DepartmentName))
+                                                {
+                                                    <span class="badge bg-info">@teacher.DepartmentName</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <strong>@teacher.SubstitutionCount</strong>
+                                                <div class="progress mt-1" style="height: 5px;">
+                                                    <div class="progress-bar bg-success" role="progressbar"
+                                                         style="width: @percentage%"></div>
+                                                </div>
+                                            </td>
+                                            <td>@teacher.TotalHours.ToString("F1")</td>
+                                            <td class="text-success">$@teacher.TotalPay.ToString("N2")</td>
+                                            <td>$@avgPayPerHour.ToString("F2")</td>
+                                            <td class="small">
+                                                @teacher.UniqueAbsentTeachers teacher(s),
+                                                @teacher.UniqueSubjects subject(s)
+                                            </td>
+                                        </tr>
+                                        rank++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                            <p class="text-muted mt-3">No substitution data available for selected period.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject Coverage Report -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-book"></i> Subject Coverage Analysis
+                        <span class="badge bg-dark ms-2">@Model.SubjectCoverages.Count subjects</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.SubjectCoverages.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Total Absences</th>
+                                        <th>Covered</th>
+                                        <th>Uncovered</th>
+                                        <th>Coverage Rate</th>
+                                        <th>Visual</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var subject in Model.SubjectCoverages)
+                                    {
+                                        var statusColor = subject.CoverageRate >= 90 ? "bg-success" :
+                                                         subject.CoverageRate >= 70 ? "bg-warning" : "bg-danger";
+                                        <tr>
+                                            <td><strong>@subject.SubjectName</strong></td>
+                                            <td>@subject.TotalAbsences</td>
+                                            <td class="text-success">@subject.CoveredCount</td>
+                                            <td class="text-danger">@subject.UncoveredCount</td>
+                                            <td>
+                                                <span class="badge @statusColor">@subject.CoverageRate.ToString("F1")%</span>
+                                            </td>
+                                            <td style="width: 30%;">
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar @statusColor" role="progressbar"
+                                                         style="width: @subject.CoverageRate%">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <p class="text-muted">No subject coverage data available.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Break Supervision Location Analysis -->
+    @if (Model.BreakSupervisionStats.Any())
+    {
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-shield-fill-exclamation"></i> Break Supervision Impact by Location
+                            <span class="badge bg-dark ms-2">@Model.BreakSupervisionStats.Count locations</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Location</th>
+                                        <th>Total Duties</th>
+                                        <th>Affected by Absence</th>
+                                        <th>Affected Teachers</th>
+                                        <th>Periods</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var location in Model.BreakSupervisionStats)
+                                    {
+                                        var impactPercentage = location.TotalDuties > 0
+                                            ? (decimal)location.AffectedByAbsence / location.TotalDuties * 100 : 0;
+                                        var statusColor = impactPercentage >= 50 ? "bg-danger" :
+                                                         impactPercentage >= 25 ? "bg-warning" : "bg-info";
+                                        <tr>
+                                            <td><strong><i class="bi bi-geo-alt"></i> @location.Location</strong></td>
+                                            <td>@location.TotalDuties</td>
+                                            <td>
+                                                <span class="badge @statusColor">@location.AffectedByAbsence</span>
+                                                <span class="text-muted small">(@impactPercentage.ToString("F0")%)</span>
+                                            </td>
+                                            <td>
+                                                @foreach (var teacher in location.AffectedTeachers.Take(3))
+                                                {
+                                                    <span class="badge bg-secondary me-1">@teacher</span>
+                                                }
+                                                @if (location.AffectedTeachers.Count > 3)
+                                                {
+                                                    <span class="text-muted small">+@(location.AffectedTeachers.Count - 3) more</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @foreach (var period in location.DutiesByPeriod.OrderBy(p => p.Key))
+                                                {
+                                                    <span class="badge bg-outline-secondary border me-1">P@period.Key</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i>
+                            This shows supervision duties that were affected by teacher absences during the selected period.
+                            <a href="/Admin/BreakSupervision" class="ms-2">Manage Break Supervision →</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Daily Trends Chart -->
+    @if (Model.DailyTrends.Any())
+    {
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Daily Trends</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Day</th>
+                                        <th>Absences</th>
+                                        <th>Substitutions</th>
+                                        <th>Supervision</th>
+                                        <th>Visual</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        var maxDaily = Model.DailyTrends.Max(d => Math.Max(d.AbsenceCount, d.SubstitutionCount));
+                                        var maxSupervision = Model.DailyTrends.Any() ? Model.DailyTrends.Max(d => d.SupervisionDutiesAffected) : 0;
+                                    }
+                                    @foreach (var day in Model.DailyTrends.OrderByDescending(d => d.Date).Take(30))
+                                    {
+                                        var absPercentage = maxDaily > 0 ? (decimal)day.AbsenceCount / maxDaily * 100 : 0;
+                                        var subPercentage = maxDaily > 0 ? (decimal)day.SubstitutionCount / maxDaily * 100 : 0;
+                                        var supPercentage = maxSupervision > 0 ? (decimal)day.SupervisionDutiesAffected / maxSupervision * 100 : 0;
+                                        <tr>
+                                            <td>@day.Date.ToString("MMM dd, yyyy")</td>
+                                            <td><span class="badge bg-secondary">@day.Date.DayOfWeek</span></td>
+                                            <td><strong>@day.AbsenceCount</strong></td>
+                                            <td><strong>@day.SubstitutionCount</strong></td>
+                                            <td>
+                                                @if (day.SupervisionDutiesAffected > 0)
+                                                {
+                                                    <span class="badge bg-warning text-dark">@day.SupervisionDutiesAffected</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-2 align-items-center">
+                                                    <small class="text-muted" style="width: 60px;">Absences:</small>
+                                                    <div class="progress flex-grow-1" style="height: 10px;">
+                                                        <div class="progress-bar bg-danger" style="width: @absPercentage%"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex gap-2 align-items-center mt-1">
+                                                    <small class="text-muted" style="width: 60px;">Subs:</small>
+                                                    <div class="progress flex-grow-1" style="height: 10px;">
+                                                        <div class="progress-bar bg-success" style="width: @subPercentage%"></div>
+                                                    </div>
+                                                </div>
+                                                @if (day.SupervisionDutiesAffected > 0)
+                                                {
+                                                    <div class="d-flex gap-2 align-items-center mt-1">
+                                                        <small class="text-muted" style="width: 60px;">Superv:</small>
+                                                        <div class="progress flex-grow-1" style="height: 10px;">
+                                                            <div class="progress-bar bg-warning" style="width: @supPercentage%"></div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    @@media print {
+        .btn, .breadcrumb, form { display: none !important; }
+        .card { break-inside: avoid; }
+    }
+</style>

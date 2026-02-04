@@ -1,0 +1,125 @@
+@page
+@model SchedulingSystem.Pages.Admin.Classes.IndexModel
+@{
+    ViewData["Title"] = "Classes";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-people"></i> Classes</h2>
+            <p class="text-muted">Manage classes in the system</p>
+        </div>
+        <div class="col text-end">
+            <a asp-page="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add New Class
+            </a>
+        </div>
+    </div>
+
+    @if (Model.Classes.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No classes found. Click "Add New Class" to create one.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Year Level</th>
+                                <th>Students</th>
+                                <th>Dates</th>
+                                <th>Statistics</th>
+                                <th>Lessons</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var cls in Model.Classes)
+                            {
+                                <tr>
+                                    <td><strong>@cls.Name</strong></td>
+                                    <td>Year @cls.YearLevel</td>
+                                    <td>
+                                        @cls.StudentCount
+                                        @if (cls.MaleStudents.HasValue || cls.FemaleStudents.HasValue)
+                                        {
+                                            <small class="text-muted"><br/>M: @(cls.MaleStudents ?? 0) / F: @(cls.FemaleStudents ?? 0)</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (cls.LessonStartDate.HasValue || cls.LessonEndDate.HasValue)
+                                        {
+                                            <small>
+                                                @if (cls.LessonStartDate.HasValue)
+                                                {
+                                                    @cls.LessonStartDate.Value.ToString("yyyy-MM-dd")
+                                                }
+                                                @if (cls.LessonStartDate.HasValue && cls.LessonEndDate.HasValue)
+                                                {
+                                                    <text> to </text>
+                                                }
+                                                @if (cls.LessonEndDate.HasValue)
+                                                {
+                                                    @cls.LessonEndDate.Value.ToString("yyyy-MM-dd")
+                                                }
+                                            </small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(cls.Statistic1) || !string.IsNullOrEmpty(cls.Statistic2))
+                                        {
+                                            <small>@cls.Statistic1 @cls.Statistic2</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>@cls.LessonClasses.Count</td>
+                                    <td>
+                                        @if (cls.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-page="ManageAvailability" asp-route-id="@cls.Id" class="btn btn-outline-secondary" title="Manage Availability">
+                                                <i class="bi bi-calendar-week"></i>
+                                            </a>
+                                            <a asp-page="Details" asp-route-id="@cls.Id" class="btn btn-outline-info" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-page="Edit" asp-route-id="@cls.Id" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-page="Delete" asp-route-id="@cls.Id" class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

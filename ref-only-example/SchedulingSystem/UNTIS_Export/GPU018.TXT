@@ -1,0 +1,4 @@
+"Ferien1";"Herbstferien";20251024;20251101;
+"Ferien2";"Winterferien";20251223;20260110;
+"Ferien3";"Osterferien";20260403;20260413;
+"Ferien4";"EID-Ferien";20260522;20260530;

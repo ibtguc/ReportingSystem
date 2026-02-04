@@ -1,0 +1,3292 @@
+@page
+@using SchedulingSystem.Models
+@model SchedulingSystem.Pages.Admin.Timetables.EditModel
+@{
+    ViewData["Title"] = Model.Timetable != null ? $"Edit Timetable - {Model.Timetable.Name}" : "Edit Timetable";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="container-fluid py-4" data-timetable-id="@(Model.Timetable?.Id ?? 0)">
+    <!-- Header with Timetable Selector -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="mb-3">
+                <i class="bi bi-pencil-square"></i> Edit Timetable
+            </h2>
+
+            <form method="post" id="timetableSelectionForm">
+                <div class="row align-items-end">
+                    <div class="col-md-8">
+                        <label for="SelectedTimetableId" class="form-label">
+                            <strong>Select Timetable:</strong>
+                        </label>
+                        <select asp-for="SelectedTimetableId"
+                                asp-items="Model.TimetableList"
+                                class="form-select"
+                                onchange="document.getElementById('timetableSelectionForm').submit()">
+                            <option value="">-- Select a Timetable --</option>
+                        </select>
+                    </div>
+                    @if (Model.Timetable != null)
+                    {
+                        <div class="col-md-4">
+                            <span class="badge bg-@(Model.Timetable.Status == TimetableStatus.Published ? "success" : Model.Timetable.Status == TimetableStatus.Draft ? "warning" : "secondary") fs-6">
+                                @Model.Timetable.Status
+                            </span>
+                            <a href="/Admin/Timetables/Validate?id=@Model.Timetable.Id" class="btn btn-outline-warning ms-2">
+                                <i class="bi bi-shield-check"></i> Validate
+                            </a>
+                            <div class="btn-group ms-2">
+                                <a href="/Admin/Timetables/Print?id=@Model.Timetable.Id" target="_blank" class="btn btn-outline-primary">
+                                    <i class="bi bi-printer"></i> Print
+                                </a>
+                                <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="/Admin/Timetables/Print?id=@Model.Timetable.Id" target="_blank"><i class="bi bi-printer"></i> Print (with filters)</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/Admin/Timetables/Print?id=@Model.Timetable.Id&mode=all-teachers" target="_blank"><i class="bi bi-people"></i> Print All Teachers</a></li>
+                                    <li><a class="dropdown-item" href="/Admin/Timetables/Print?id=@Model.Timetable.Id&mode=all-subjects" target="_blank"><i class="bi bi-book"></i> Print All Subjects</a></li>
+                                    <li><a class="dropdown-item" href="/Admin/Timetables/Print?id=@Model.Timetable.Id&mode=all-classes" target="_blank"><i class="bi bi-mortarboard"></i> Print All Classes</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.Timetable == null)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Please select a timetable to view and edit.
+        </div>
+        return;
+    }
+
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-end mb-3">
+        <button type="button" id="addLessonBtn" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addLessonModal">
+            <i class="bi bi-plus-circle"></i> Schedule Lesson
+        </button>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Advanced Highlighting Filter -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-primary text-white">
+            <i class="bi bi-funnel"></i> <strong>Highlight Lessons</strong>
+            <small class="ms-2">Select criteria to highlight matching lessons in the timetable</small>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="filterTeacher" class="form-label">Teacher</label>
+                    <select id="filterTeacher" class="form-select form-select-sm">
+                        <option value="">-- All Teachers --</option>
+                        @foreach (var teacher in Model.ScheduledLessons.SelectMany(sl => sl.Lesson.LessonTeachers.Select(lt => lt.Teacher)).Distinct().OrderBy(t => t.FullName))
+                        {
+                            <option value="@teacher.FullName">@teacher.FullName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filterSubject" class="form-label">Subject</label>
+                    <select id="filterSubject" class="form-select form-select-sm">
+                        <option value="">-- All Subjects --</option>
+                        @foreach (var subject in Model.ScheduledLessons.SelectMany(sl => sl.Lesson.LessonSubjects.Select(ls => ls.Subject)).Distinct().OrderBy(s => s.Name))
+                        {
+                            <option value="@subject.Name">@subject.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filterClass" class="form-label">Class</label>
+                    <select id="filterClass" class="form-select form-select-sm">
+                        <option value="">-- All Classes --</option>
+                        @foreach (var cls in Model.ScheduledLessons.SelectMany(sl => sl.Lesson.LessonClasses.Select(lc => lc.Class)).Distinct().OrderBy(c => c.Name))
+                        {
+                            <option value="@cls.Name">@cls.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filterRoom" class="form-label">Room</label>
+                    <select id="filterRoom" class="form-select form-select-sm">
+                        <option value="">-- All Rooms --</option>
+                        @foreach (var room in Model.ScheduledLessons.Where(sl => sl.Room != null).Select(sl => sl.Room).Distinct().OrderBy(r => r.RoomNumber))
+                        {
+                            <option value="@room.RoomNumber">@room.RoomNumber</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12 d-flex align-items-center">
+                    <button id="clearFilters" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Clear All Filters
+                    </button>
+                    <div class="form-check ms-4">
+                        <input class="form-check-input" type="checkbox" id="hideNonMatching" value="" checked>
+                        <label class="form-check-label" for="hideNonMatching">
+                            Hide non-matching lessons (instead of dimming)
+                        </label>
+                    </div>
+                    <span id="matchCount" class="ms-3 text-muted"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend for Visual Indicators -->
+    <div class="alert alert-info mb-3">
+        <strong><i class="bi bi-info-circle"></i> Legend:</strong>
+        <span class="badge badge-assignments ms-2"><i class="bi bi-diagram-3"></i> Assignments</span>
+        <span class="badge badge-coteaching ms-2"><i class="bi bi-people-fill"></i> Co-Teaching</span>
+        <span class="badge badge-multisubject ms-2"><i class="bi bi-book-half"></i> Multiple Subjects</span>
+        <span class="badge badge-multiroom ms-2"><i class="bi bi-door-open-fill"></i> Multiple Rooms</span>
+        <span class="badge badge-multiclass ms-2"><i class="bi bi-people"></i> Combined Classes</span>
+        @if (Model.BreakSupervisionDuties.Any())
+        {
+            <span class="badge bg-warning text-dark ms-2"><i class="bi bi-eye"></i> Break Supervision</span>
+        }
+        <small class="ms-3 text-muted">
+            • Lead teacher shown in <strong>bold</strong>
+            • Co-teaching lessons have thicker left border
+            • <i class="bi bi-sliders"></i> Edit lesson definition (Teachers/Subjects/Classes)
+        </small>
+    </div>
+
+    <!-- Timetable Grid -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span><strong>Timetable Grid</strong></span>
+            <div class="d-flex gap-4 align-items-center">
+                <!-- Display Mode Toggle -->
+                <div class="btn-group btn-group-sm" role="group" aria-label="Display mode">
+                    <input type="radio" class="btn-check" name="displayMode" id="displayModeDetailed" value="detailed" checked autocomplete="off">
+                    <label class="btn btn-outline-primary" for="displayModeDetailed">
+                        <i class="bi bi-card-text"></i> Detailed
+                    </label>
+
+                    <input type="radio" class="btn-check" name="displayMode" id="displayModeCompact" value="compact" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="displayModeCompact">
+                        <i class="bi bi-dash-square"></i> Compact
+                    </label>
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div>
+                    <label class="me-2">Sort lessons by:</label>
+                    <select id="sortLessons" class="form-select form-select-sm d-inline-block w-auto">
+                        <option value="none">Default</option>
+                        <option value="subject">Subject</option>
+                        <option value="class">Class</option>
+                        <option value="teacher">Teacher</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 150px;">Time / Day</th>
+                            @foreach (var day in new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday })
+                            {
+                                <th class="text-center">@day.ToString()</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var period in Model.Periods)
+                        {
+                            <tr>
+                                <td class="fw-bold bg-light">
+                                    <div>@period.Name</div>
+                                    <small class="text-muted">
+                                        @period.StartTime.ToString(@"hh\:mm") - @period.EndTime.ToString(@"hh\:mm")
+                                    </small>
+                                </td>
+                                @foreach (var day in new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday })
+                                {
+                                    var lessons = Model.GetLessonsForSlot(day, period.Id);
+
+                                    <td style="min-height: 100px; vertical-align: top; padding: 8px;">
+                                        @if (lessons.Any())
+                                        {
+                                            @foreach (var lesson in lessons)
+                                            {
+                                                // Get co-teaching data
+                                                var subjects = lesson.Lesson.LessonSubjects.OrderByDescending(ls => ls.IsPrimary).ThenBy(ls => ls.Order).ToList();
+                                                var teachers = lesson.Lesson.LessonTeachers.OrderByDescending(lt => lt.IsLead).ThenBy(lt => lt.Order).ToList();
+                                                var classes = lesson.Lesson.LessonClasses.OrderByDescending(lc => lc.IsPrimary).ThenBy(lc => lc.Order).ToList();
+
+                                                var primarySubject = subjects.FirstOrDefault()?.Subject;
+                                                var primaryTeacher = teachers.FirstOrDefault()?.Teacher;
+                                                var primaryClass = classes.FirstOrDefault()?.Class;
+
+                                                var bgColor = primarySubject?.BackgroundColor ?? lesson.Lesson.BackgroundColor ?? "#e9ecef";
+                                                var fgColor = primarySubject?.ForegroundColor ?? lesson.Lesson.ForegroundColor ?? "#000";
+
+                                                // Get all rooms (legacy + multi-room) for filtering and display
+                                                var allRoomNumbers = (lesson.Room != null ? new[] { lesson.Room.RoomNumber } : Array.Empty<string>())
+                                                    .Concat(lesson.ScheduledLessonRooms.Select(slr => slr.Room?.RoomNumber ?? ""))
+                                                    .Where(r => !string.IsNullOrEmpty(r))
+                                                    .ToList();
+                                                var roomsDisplay = allRoomNumbers.Any() ? string.Join(", ", allRoomNumbers) : "";
+                                                var roomsForFilter = string.Join("|", allRoomNumbers); // Pipe-separated for JS filtering
+
+                                                // Check for special lesson types
+                                                var isCoTeaching = teachers.Count > 1;
+                                                var isMultiSubject = subjects.Count > 1;
+                                                var isMultiRoom = allRoomNumbers.Distinct().Count() > 1;
+                                                var isMultiClass = classes.Count > 1;
+
+                                                // Check for LessonAssignments
+                                                var lessonAssignments = lesson.Lesson.LessonAssignments?.OrderBy(la => la.Order).ToList() ?? new List<LessonAssignment>();
+                                                var hasAssignments = lessonAssignments.Any();
+                                                var scheduledRooms = lesson.ScheduledLessonRooms.ToList();
+
+                                                var cardClasses = "lesson-card mb-2 position-relative";
+                                                if (lesson.IsLocked) cardClasses += " locked-lesson";
+                                                if (isCoTeaching) cardClasses += " co-teaching-lesson";
+                                                if (isMultiSubject) cardClasses += " multi-subject-lesson";
+
+                                                var borderWidth = isCoTeaching ? "6px" : "4px";
+
+                                                // Build teacher names for filter (all teachers)
+                                                var teacherNames = string.Join("|", teachers.Select(lt => lt.Teacher?.FullName ?? ""));
+                                                // Build class names for filter (all classes)
+                                                var classNames = string.Join("|", classes.Select(lc => lc.Class?.Name ?? ""));
+                                                // Build subject names for filter (all subjects)
+                                                var subjectNames = string.Join("|", subjects.Select(ls => ls.Subject?.Name ?? ""));
+
+                                                // Clean ID lists for availability checking (comma-separated numeric IDs)
+                                                var teacherIdList = string.Join(",", teachers.Select(lt => lt.TeacherId));
+                                                var classIdList = string.Join(",", classes.Select(lc => lc.ClassId));
+                                                var subjectIdList = string.Join(",", subjects.Select(ls => ls.SubjectId));
+                                                var roomIdList = string.Join(",",
+                                                    (lesson.Room != null ? new[] { lesson.Room.Id } : Array.Empty<int>())
+                                                    .Concat(lesson.ScheduledLessonRooms.Select(slr => slr.RoomId)));
+                                                var dayNum = (int)day;
+
+                                                var tooltipText = $"<strong>{string.Join(" / ", subjects.Select(ls => ls.Subject?.Name))}</strong><br>{string.Join(" + ", classes.Select(lc => lc.Class?.Name))}<br>{string.Join(" + ", teachers.Select(lt => lt.Teacher?.FullName))}{(allRoomNumbers.Any() ? $"<br>Room: {roomsDisplay}" : "")}";
+
+                                                <div class="@cardClasses"
+                                                     data-subject="@subjectNames"
+                                                     data-class="@classNames"
+                                                     data-teacher="@teacherNames"
+                                                     data-room="@roomsDisplay"
+                                                     data-rooms="@roomsForFilter"
+                                                     data-subject-full="@subjectNames"
+                                                     data-teacher-full="@teacherNames"
+                                                     data-teacher-ids="@teacherIdList"
+                                                     data-class-ids="@classIdList"
+                                                     data-subject-ids="@subjectIdList"
+                                                     data-room-ids="@roomIdList"
+                                                     data-day-num="@dayNum"
+                                                     data-period-id="@period.Id"
+                                                     data-bs-toggle="tooltip"
+                                                     data-bs-placement="top"
+                                                     data-bs-html="true"
+                                                     data-bs-title="@tooltipText"
+                                                     style="background-color: @bgColor; color: @fgColor; border-left: @borderWidth solid @fgColor; border-radius: 4px; padding: 8px;">
+                                                    @if (lesson.IsLocked)
+                                                    {
+                                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
+                                                              style="font-size: 0.6rem; padding: 2px 4px;"
+                                                              title="This lesson is locked and won't be moved during regeneration">
+                                                            <i class="bi bi-lock-fill"></i>
+                                                        </span>
+                                                    }
+
+                                                    <!-- Detailed View (default) -->
+                                                    <div class="lesson-detailed-view">
+                                                        <!-- Visual indicator badges -->
+                                                        @if (isCoTeaching || isMultiSubject || isMultiRoom || isMultiClass || hasAssignments)
+                                                        {
+                                                            <div class="mb-1">
+                                                                @if (hasAssignments) { <span class="badge badge-assignments" title="Has Teacher-Subject-Class Assignments"><i class="bi bi-diagram-3"></i></span> }
+                                                                @if (isCoTeaching) { <span class="badge badge-coteaching" title="Co-Teaching"><i class="bi bi-people-fill"></i></span> }
+                                                                @if (isMultiSubject) { <span class="badge badge-multisubject" title="Multiple Subjects"><i class="bi bi-book-half"></i></span> }
+                                                                @if (isMultiRoom) { <span class="badge badge-multiroom" title="Multiple Rooms"><i class="bi bi-door-open-fill"></i></span> }
+                                                                @if (isMultiClass) { <span class="badge badge-multiclass" title="Combined Classes"><i class="bi bi-people"></i></span> }
+                                                            </div>
+                                                        }
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div class="flex-grow-1">
+                                                                @if (hasAssignments)
+                                                                {
+                                                                    <!-- LessonAssignment-based display -->
+                                                                    @foreach (var assignment in lessonAssignments)
+                                                                    {
+                                                                        // Find which room(s) this assignment is in via ScheduledLessonRoomAssignment
+                                                                        var assignedRooms = scheduledRooms
+                                                                            .Where(slr => slr.RoomAssignments?.Any(ra => ra.LessonAssignmentId == assignment.Id) == true)
+                                                                            .Select(slr => slr.Room?.RoomNumber ?? "?")
+                                                                            .ToList();
+
+                                                                        // If no specific room assignment, show all rooms
+                                                                        if (!assignedRooms.Any() && allRoomNumbers.Any())
+                                                                        {
+                                                                            assignedRooms = allRoomNumbers;
+                                                                        }
+
+                                                                        var assignmentRoom = string.Join(", ", assignedRooms.Where(r => !string.IsNullOrEmpty(r)));
+
+                                                                        <div class="assignment-row mb-1 p-1 rounded" style="background-color: rgba(0,0,0,0.05);">
+                                                                            <div class="fw-bold" style="font-size: 0.85rem;">@(assignment.Subject?.Code ?? assignment.Subject?.Name ?? "N/A")</div>
+                                                                            <small class="d-block">
+                                                                                @(assignment.Class?.Name ?? "")
+                                                                                @if (assignment.Teacher != null)
+                                                                                {
+                                                                                    <text> - </text>@assignment.Teacher.ShortName
+                                                                                }
+                                                                                @if (!string.IsNullOrEmpty(assignmentRoom))
+                                                                                {
+                                                                                    <text> </text><i class="bi bi-door-closed"></i><text> </text>@assignmentRoom
+                                                                                }
+                                                                            </small>
+                                                                        </div>
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    <!-- Standard display (no LessonAssignments) -->
+                                                                    <!-- Show subject(s) -->
+                                                                    @if (subjects.Count > 1)
+                                                                    {
+                                                                        <div class="fw-bold">@string.Join(" / ", subjects.Select(ls => ls.Subject?.Code ?? ""))</div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <div class="fw-bold">@(primarySubject?.Code ?? "N/A")</div>
+                                                                    }
+                                                                    <!-- Show class(es) -->
+                                                                    @if (classes.Count > 1)
+                                                                    {
+                                                                        <small class="d-block">@string.Join(" + ", classes.Select(lc => lc.Class?.Name ?? ""))</small>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <small class="d-block">@(primaryClass?.Name ?? "N/A")</small>
+                                                                    }
+                                                                    <!-- Show teacher(s) - bold for lead teacher -->
+                                                                    @if (teachers.Count > 1)
+                                                                    {
+                                                                        <small class="d-block">
+                                                                            @foreach (var teacherLink in teachers)
+                                                                            {
+                                                                                if (teacherLink.IsLead)
+                                                                                {
+                                                                                    <strong>@(teacherLink.Teacher?.ShortName ?? "")</strong>
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    @(teacherLink.Teacher?.ShortName ?? "")
+                                                                                }
+                                                                                if (teacherLink != teachers.Last())
+                                                                                {
+                                                                                    <text> + </text>
+                                                                                }
+                                                                            }
+                                                                        </small>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <small class="d-block">@(primaryTeacher?.ShortName ?? "N/A")</small>
+                                                                    }
+                                                                    <!-- Show room(s) -->
+                                                                    @if (allRoomNumbers.Any())
+                                                                    {
+                                                                        <small class="d-block">
+                                                                            <i class="bi bi-door-closed"></i> @roomsDisplay
+                                                                        </small>
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        <div class="d-flex flex-column gap-1">
+                                                            <button type="button" class="btn btn-sm btn-link p-0 text-info info-lesson-btn"
+                                                                    title="View full lesson details"
+                                                                    data-scheduled-id="@lesson.Id"
+                                                                    data-lesson-id="@lesson.LessonId"
+                                                                    data-period-id="@lesson.PeriodId"
+                                                                    data-room-id="@(lesson.RoomId?.ToString() ?? "")"
+                                                                    data-subjects="@string.Join(" / ", subjects.Select(ls => ls.Subject?.Name ?? "N/A"))"
+                                                                    data-subject-ids="@string.Join(", ", subjects.Select(ls => $"{ls.Subject?.Name ?? "N/A"} (ID: {ls.SubjectId})"))"
+                                                                    data-teachers="@string.Join(" + ", teachers.Select(lt => (lt.IsLead ? "★ " : "") + (lt.Teacher?.FullName ?? "N/A")))"
+                                                                    data-teacher-ids="@string.Join(", ", teachers.Select(lt => $"{(lt.IsLead ? "★ " : "")}{lt.Teacher?.FullName ?? "N/A"} (ID: {lt.TeacherId})"))"
+                                                                    data-classes="@string.Join(" + ", classes.Select(lc => lc.Class?.Name ?? "N/A"))"
+                                                                    data-class-ids="@string.Join(", ", classes.Select(lc => $"{lc.Class?.Name ?? "N/A"} (ID: {lc.ClassId})"))"
+                                                                    data-rooms="@(allRoomNumbers.Any() ? string.Join(", ", allRoomNumbers) : "No room assigned")"
+                                                                    data-room-ids="@string.Join(", ", lesson.ScheduledLessonRooms.Select(slr => $"{slr.Room?.RoomNumber ?? "N/A"} (ID: {slr.RoomId})"))"
+                                                                    data-day="@lesson.DayOfWeek"
+                                                                    data-period="@lesson.Period?.PeriodNumber"
+                                                                    data-is-coteaching="@isCoTeaching"
+                                                                    data-is-multisubject="@isMultiSubject"
+                                                                    data-is-multiroom="@isMultiRoom"
+                                                                    data-is-multiclass="@isMultiClass"
+                                                                    data-is-locked="@lesson.IsLocked">
+                                                                <i class="bi bi-info-circle"></i>
+                                                            </button>
+                                                            <a href="/Admin/Lessons/Edit?id=@lesson.LessonId&returnUrl=@Uri.EscapeDataString($"/Admin/Timetables/Edit?SelectedTimetableId={Model.Timetable.Id}")"
+                                                               class="btn btn-sm btn-link p-0 text-secondary"
+                                                               title="Edit lesson definition (Teachers, Subjects, Classes)">
+                                                                <i class="bi bi-sliders"></i>
+                                                            </a>
+                                                            <form method="post" asp-page-handler="ToggleLock" class="d-inline">
+                                                                <input type="hidden" name="lessonId" value="@lesson.Id" />
+                                                                <input type="hidden" name="timetableId" value="@Model.Timetable.Id" />
+                                                                <button type="submit"
+                                                                        class="btn btn-sm btn-link p-0 @(lesson.IsLocked ? "text-warning" : "text-muted")"
+                                                                        title="@(lesson.IsLocked ? "Unlock lesson (allow regeneration to move it)" : "Lock lesson (prevent regeneration from moving it)")">
+                                                                    <i class="bi bi-@(lesson.IsLocked ? "lock-fill" : "unlock")"></i>
+                                                                </button>
+                                                            </form>
+                                                            <button type="button" class="btn btn-sm btn-link p-0 text-primary find-slots-btn"
+                                                                    title="Find available slots for this lesson"
+                                                                    data-scheduled-id="@lesson.Id"
+                                                                    onclick="window.lessonMovementManager?.showAvailableSlotsDialog(@lesson.Id)">
+                                                                <i class="bi bi-search"></i>
+                                                            </button>
+                                                            @{
+                                                                // Collect all room IDs (legacy + multi-room)
+                                                                var editRoomIds = new List<int>();
+                                                                if (lesson.RoomId.HasValue) editRoomIds.Add(lesson.RoomId.Value);
+                                                                editRoomIds.AddRange(lesson.ScheduledLessonRooms.Select(slr => slr.RoomId));
+                                                                var editRoomIdsStr = string.Join(",", editRoomIds.Distinct());
+                                                            }
+                                                            <button type="button" class="btn btn-sm btn-link p-0 edit-lesson-btn"
+                                                                    title="Change time slot"
+                                                                    data-scheduled-id="@lesson.Id"
+                                                                    data-lesson-id="@lesson.LessonId"
+                                                                    data-day="@lesson.DayOfWeek"
+                                                                    data-period-id="@lesson.PeriodId"
+                                                                    data-room-ids="@editRoomIdsStr">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                            <form method="post" asp-page-handler="DeleteLesson" class="d-inline"
+                                                                  onsubmit="return confirm('Delete this lesson from the timetable?');">
+                                                                <input type="hidden" name="lessonId" value="@lesson.Id" />
+                                                                <input type="hidden" name="timetableId" value="@Model.Timetable.Id" />
+                                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0"
+                                                                        title="Delete lesson">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                    </div>
+
+                                                    <!-- Compact View (hidden by default) -->
+                                                    <div class="lesson-compact-view" style="display: none;">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <span class="fw-bold" style="font-size: 0.85rem;">
+                                                                @if (subjects.Count > 1)
+                                                                {
+                                                                    @string.Join("/", subjects.Select(ls => ls.Subject?.Code ?? ""))
+                                                                }
+                                                                else
+                                                                {
+                                                                    @(primarySubject?.Code ?? "N/A")
+                                                                }
+                                                                ·
+                                                                @if (classes.Count > 1)
+                                                                {
+                                                                    @string.Join("+", classes.Select(lc => lc.Class?.Name ?? ""))
+                                                                }
+                                                                else
+                                                                {
+                                                                    @(primaryClass?.Name ?? "N/A")
+                                                                }
+                                                                @if (allRoomNumbers.Any())
+                                                                {
+                                                                    <span>· @roomsDisplay</span>
+                                                                }
+                                                            </span>
+                                                            <i class="bi bi-arrows-angle-expand text-muted" style="font-size: 0.7rem;" title="Click to expand"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="text-muted text-center py-3">
+                                                <small>Empty</small>
+                                            </div>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+
+                            @* Check if supervision row should be displayed before the next period *@
+                            var nextPeriodNumber = period.PeriodNumber + 1;
+                            var supervisionPeriod = Model.GetSupervisionPeriodBefore(nextPeriodNumber);
+                            if (supervisionPeriod.HasValue && Model.BreakSupervisionDuties.Any())
+                            {
+                                <tr class="break-supervision-row" style="background-color: #fff;">
+                                    <td class="fw-bold text-center" style="background-color: #f8f9fa; color: #000; border: 1px solid #dee2e6;">
+                                        <div><i class="bi bi-cup-hot"></i> @Model.GetBreakLabel(supervisionPeriod.Value)</div>
+                                        <small class="text-muted">Supervision</small>
+                                    </td>
+                                    @foreach (var day in new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday })
+                                    {
+                                        var supervisions = Model.GetSupervisionForSlot(day, supervisionPeriod.Value);
+                                        <td style="vertical-align: top; padding: 4px; background-color: #fff; border: 1px solid #dee2e6;">
+                                            @if (supervisions.Any())
+                                            {
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    @foreach (var duty in supervisions)
+                                                    {
+                                                        <div class="badge supervision-badge @(duty.TeacherId.HasValue ? "bg-light text-dark border" : "bg-secondary")"
+                                                             style="font-size: 0.7rem; padding: 4px 6px;"
+                                                             title="@(duty.Room?.RoomNumber): @(duty.Teacher?.FullName ?? "Unassigned")"
+                                                             data-teacher="@(duty.Teacher?.FullName ?? "")"
+                                                             data-room="@(duty.Room?.RoomNumber ?? "")">
+                                                            <i class="bi bi-geo-alt"></i>
+                                                            @duty.Room?.RoomNumber:
+                                                            @(duty.Teacher?.FirstName ?? "-")
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="text-muted text-center">
+                                                    <small>-</small>
+                                                </div>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>Summary</h5>
+            <p class="mb-0">
+                <strong>Total Scheduled Lessons:</strong> @Model.ScheduledLessons.Count
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Add Lesson Modal -->
+<div class="modal fade" id="addLessonModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="AddLesson">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-plus-circle"></i> Schedule Lesson to Timetable
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="timetableId" value="@Model.Timetable.Id" />
+
+                    <div class="mb-3">
+                        <label for="lessonId" class="form-label">Lesson <span class="text-danger">*</span></label>
+                        <select name="lessonId" id="lessonId" class="form-select" required>
+                            <option value="">-- Select Lesson --</option>
+                            @foreach (var lesson in Model.AvailableLessons)
+                            {
+                                var scheduledCount = Model.ScheduledLessons.Count(sl => sl.LessonId == lesson.Id);
+                                var remaining = lesson.FrequencyPerWeek - scheduledCount;
+                                var className = lesson.LessonClasses.FirstOrDefault()?.Class?.Name ?? "N/A";
+                                var subjectName = lesson.LessonSubjects.FirstOrDefault()?.Subject?.Name ?? "N/A";
+                                var teacherNames = lesson.LessonTeachers.Any()
+                                    ? string.Join(", ", lesson.LessonTeachers.OrderBy(lt => lt.Order).Select(lt => lt.Teacher?.ShortName).Where(n => n != null))
+                                    : "N/A";
+                                var lessonTimetables = Model.LessonTimetables.GetValueOrDefault(lesson.Id, new List<EditModel.LessonTimetableInfo>());
+                                var timetableText = lessonTimetables.Any()
+                                    ? " | In: " + string.Join(", ", lessonTimetables.Select(t => t.Name))
+                                    : "";
+                                <option value="@lesson.Id">
+                                    @className - @subjectName (@teacherNames) [@scheduledCount/@lesson.FrequencyPerWeek scheduled, @remaining remaining]@timetableText
+                                </option>
+                            }
+                        </select>
+                        <small class="text-muted">Showing only lessons that need more scheduling. Timetables shown after "|" indicate where this lesson is already scheduled.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="dayOfWeek" class="form-label">Day <span class="text-danger">*</span></label>
+                        <select name="dayOfWeek" id="dayOfWeek" class="form-select" required>
+                            <option value="">-- Select Day --</option>
+                            <option value="Sunday">Sunday</option>
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="periodId" class="form-label">Period <span class="text-danger">*</span></label>
+                        <select name="periodId" id="periodId" class="form-select" required>
+                            <option value="">-- Select Period --</option>
+                            @foreach (var period in Model.Periods)
+                            {
+                                <option value="@period.Id">
+                                    @period.Name (@period.StartTime.ToString(@"hh\:mm") - @period.EndTime.ToString(@"hh\:mm"))
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Rooms (Optional)</label>
+                        <div id="addRoomSelection" class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                            @foreach (var room in Model.AvailableRooms)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input add-room-checkbox" type="checkbox"
+                                           name="roomIds" value="@room.Id" id="addRoom_@room.Id">
+                                    <label class="form-check-label" for="addRoom_@room.Id">
+                                        @room.RoomNumber @(!string.IsNullOrEmpty(room.Name) ? $" - {room.Name}" : "")
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                        <small class="text-muted">Select one or more rooms for this lesson</small>
+                    </div>
+
+                    <!-- Room Assignments Section (for multi-room lessons with assignments) -->
+                    <div id="addRoomAssignmentsSection" class="mb-3" style="display: none;">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white py-2">
+                                <i class="bi bi-diagram-3"></i> <strong>Room Assignments</strong>
+                                <small class="d-block">Assign teacher-subject-class combinations to specific rooms</small>
+                            </div>
+                            <div class="card-body py-2" id="addRoomAssignmentsContent">
+                                <p class="text-muted small">Select a lesson with assignments and multiple rooms to configure.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden field for room assignments JSON -->
+                    <input type="hidden" name="roomAssignmentsJson" id="addRoomAssignmentsJson" />
+
+                    <!-- Conflict Warnings Display -->
+                    <div id="conflictWarnings"></div>
+                </div>
+                <div class="modal-footer">
+                    <div class="alert alert-info mb-0 me-auto d-flex align-items-center" role="alert" style="font-size: 0.875rem; padding: 0.5rem 0.75rem;">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <small><strong>Constraint checks are advisory.</strong> You can save even with violations detected above.</small>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="addLessonSubmitBtn">
+                        <i class="bi bi-plus-circle"></i> Schedule Lesson
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Time Slot Modal -->
+<div class="modal fade" id="editLessonModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="EditLesson">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-calendar-event"></i> Change Time Slot
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="timetableId" value="@Model.Timetable.Id" />
+                    <input type="hidden" name="scheduledLessonId" id="editScheduledLessonId" />
+                    <input type="hidden" name="roomAssignmentsJson" id="editRoomAssignmentsJson" />
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Lesson</strong></label>
+                        <div id="editLessonInfo" class="form-control-plaintext"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editDayOfWeek" class="form-label">Day <span class="text-danger">*</span></label>
+                        <select name="dayOfWeek" id="editDayOfWeek" class="form-select" required>
+                            <option value="">-- Select Day --</option>
+                            <option value="Sunday">Sunday</option>
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editPeriodId" class="form-label">Period <span class="text-danger">*</span></label>
+                        <select name="periodId" id="editPeriodId" class="form-select" required>
+                            <option value="">-- Select Period --</option>
+                            @foreach (var period in Model.Periods)
+                            {
+                                <option value="@period.Id">
+                                    @period.Name (@period.StartTime.ToString(@"hh\:mm") - @period.EndTime.ToString(@"hh\:mm"))
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Rooms (Optional)</label>
+                        <div id="editRoomSelection" class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                            @foreach (var room in Model.AvailableRooms)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input edit-room-checkbox" type="checkbox"
+                                           name="roomIds" value="@room.Id" id="editRoom_@room.Id">
+                                    <label class="form-check-label" for="editRoom_@room.Id">
+                                        @room.RoomNumber @(!string.IsNullOrEmpty(room.Name) ? $" - {room.Name}" : "")
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                        <small class="text-muted">Select one or more rooms for this lesson</small>
+                    </div>
+
+                    <!-- Room Assignments Section (for multi-room lessons with assignments) -->
+                    <div id="roomAssignmentsSection" class="mb-3" style="display: none;">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white py-2">
+                                <i class="bi bi-diagram-3"></i> <strong>Room Assignments</strong>
+                                <small class="d-block">Assign teacher-subject-class combinations to specific rooms</small>
+                            </div>
+                            <div class="card-body py-2" id="roomAssignmentsContent">
+                                <p class="text-muted small">Loading assignments...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conflict Warnings Display -->
+                    <div id="editConflictWarnings"></div>
+
+                    <!-- Hard Constraints to Ignore -->
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#editIgnoreConstraints">
+                            <i class="bi bi-exclamation-triangle"></i> Ignore Hard Constraints (Advanced)
+                        </button>
+                        <div class="collapse mt-2" id="editIgnoreConstraints">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-shield-exclamation"></i> Warning: Use with Caution
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small text-danger mb-2">Check constraints to ignore during validation. This may create invalid timetables!</p>
+                                    <div class="row g-2 small">
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-1" id="edit-ignore-HC-1">
+                                                <label class="form-check-label" for="edit-ignore-HC-1">HC-1: Teacher Double-Booking</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-2" id="edit-ignore-HC-2">
+                                                <label class="form-check-label" for="edit-ignore-HC-2">HC-2: Class Double-Booking</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-3" id="edit-ignore-HC-3" checked>
+                                                <label class="form-check-label" for="edit-ignore-HC-3">HC-3: Room Double-Booking</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-4" id="edit-ignore-HC-4" checked>
+                                                <label class="form-check-label" for="edit-ignore-HC-4">HC-4: Teacher Unavailability</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-5" id="edit-ignore-HC-5" checked>
+                                                <label class="form-check-label" for="edit-ignore-HC-5">HC-5: Class Unavailability</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-6" id="edit-ignore-HC-6" checked>
+                                                <label class="form-check-label" for="edit-ignore-HC-6">HC-6: Room Unavailability</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-7" id="edit-ignore-HC-7" checked>
+                                                <label class="form-check-label" for="edit-ignore-HC-7">HC-7: Subject Unavailability</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-8" id="edit-ignore-HC-8" checked>
+                                                <label class="form-check-label" for="edit-ignore-HC-8">HC-8: Max Consecutive Periods</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-9" id="edit-ignore-HC-9" checked>
+                                                <label class="form-check-label" for="edit-ignore-HC-9">HC-9: Max Consecutive Subject</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-10" id="edit-ignore-HC-10" checked>
+                                                <label class="form-check-label" for="edit-ignore-HC-10">HC-10: Locked Lesson</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-11" id="edit-ignore-HC-11" checked>
+                                                <label class="form-check-label" for="edit-ignore-HC-11">HC-11: Teacher Max/Day</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input edit-constraint-ignore" type="checkbox" value="HC-12" id="edit-ignore-HC-12" checked>
+                                                <label class="form-check-label" for="edit-ignore-HC-12">HC-12: Class Max/Day</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="alert alert-info mb-0 me-auto d-flex align-items-center" role="alert" style="font-size: 0.875rem; padding: 0.5rem 0.75rem;">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <small><strong>Constraint checks are advisory.</strong> You can save even with violations detected above.</small>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="editLessonSubmitBtn">
+                        <i class="bi bi-check-circle"></i> Update Lesson
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lesson Info Modal -->
+<div class="modal fade" id="lessonInfoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle-fill"></i> Lesson Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <strong><i class="bi bi-calendar-event"></i> Schedule Information</strong>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tr>
+                                        <td class="text-muted" style="width: 50%;">Scheduled Lesson ID:</td>
+                                        <td><code id="info-scheduled-id"></code></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Lesson ID:</td>
+                                        <td><code id="info-lesson-id"></code></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Day:</td>
+                                        <td><strong id="info-day"></strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Period:</td>
+                                        <td><strong id="info-period"></strong> <small class="text-muted">(ID: <code id="info-period-id"></code>)</small></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Lesson Number:</td>
+                                        <td><strong id="info-lesson-number"></strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Status:</td>
+                                        <td id="info-locked"></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <strong><i class="bi bi-tags"></i> Lesson Type</strong>
+                            </div>
+                            <div class="card-body">
+                                <div id="info-badges"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <strong><i class="bi bi-book-half"></i> Subject(s)</strong>
+                    </div>
+                    <div class="card-body">
+                        <div id="info-subjects" class="fs-5 mb-2"></div>
+                        <div class="text-muted small">
+                            <strong>Database IDs:</strong>
+                            <div id="info-subject-ids" class="mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <strong><i class="bi bi-people-fill"></i> Teacher(s)</strong>
+                    </div>
+                    <div class="card-body">
+                        <div id="info-teachers" class="fs-5 mb-2"></div>
+                        <small class="text-muted d-block mb-2">★ = Lead Teacher</small>
+                        <div class="text-muted small">
+                            <strong>Database IDs:</strong>
+                            <div id="info-teacher-ids" class="mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <strong><i class="bi bi-people"></i> Class(es)</strong>
+                    </div>
+                    <div class="card-body">
+                        <div id="info-classes" class="fs-5 mb-2"></div>
+                        <div class="text-muted small">
+                            <strong>Database IDs:</strong>
+                            <div id="info-class-ids" class="mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <strong><i class="bi bi-door-closed"></i> Room(s)</strong>
+                    </div>
+                    <div class="card-body">
+                        <div id="info-rooms" class="fs-5 mb-2"></div>
+                        <div class="text-muted small" id="info-room-ids-container">
+                            <strong>Database IDs:</strong>
+                            <div id="info-room-ids" class="mt-1"></div>
+                        </div>
+                        <div id="info-primary-room-id" class="text-muted small mt-2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Lesson Definition Modal -->
+<div class="modal fade" id="editLessonDefinitionModal" tabindex="-1" aria-labelledby="editLessonDefinitionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="editLessonDefinitionModalLabel">
+                    <i class="bi bi-sliders"></i> Edit Lesson Definition
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editDefLessonId">
+
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs mb-3" id="editDefTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="def-teachers-tab" data-bs-toggle="tab" data-bs-target="#def-teachers-pane"
+                                type="button" role="tab" aria-controls="def-teachers-pane" aria-selected="true">
+                            <i class="bi bi-person-badge"></i> Teachers
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="def-subjects-tab" data-bs-toggle="tab" data-bs-target="#def-subjects-pane"
+                                type="button" role="tab" aria-controls="def-subjects-pane" aria-selected="false">
+                            <i class="bi bi-book"></i> Subjects
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="def-classes-tab" data-bs-toggle="tab" data-bs-target="#def-classes-pane"
+                                type="button" role="tab" aria-controls="def-classes-pane" aria-selected="false">
+                            <i class="bi bi-people"></i> Classes
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="def-properties-tab" data-bs-toggle="tab" data-bs-target="#def-properties-pane"
+                                type="button" role="tab" aria-controls="def-properties-pane" aria-selected="false">
+                            <i class="bi bi-gear"></i> Properties
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab content -->
+                <div class="tab-content" id="editDefTabsContent">
+                    <!-- Teachers Tab -->
+                    <div class="tab-pane fade show active" id="def-teachers-pane" role="tabpanel" aria-labelledby="def-teachers-tab">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Current Teachers</label>
+                            <div id="defCurrentTeachersList" class="mb-2">
+                                <!-- Dynamic list of current teachers -->
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <select id="defTeacherSelect" class="form-select">
+                                    <option value="">-- Select a teacher to add --</option>
+                                    @foreach (var teacher in Model.AllTeachers)
+                                    {
+                                        <option value="@teacher.Id">@teacher.FullName</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-outline-primary w-100" onclick="defAddTeacher()">
+                                    <i class="bi bi-plus-circle"></i> Add Teacher
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            <button type="button" class="btn btn-primary" onclick="defSaveTeachers()">
+                                <i class="bi bi-save"></i> Save Teachers
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Subjects Tab -->
+                    <div class="tab-pane fade" id="def-subjects-pane" role="tabpanel" aria-labelledby="def-subjects-tab">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Current Subjects</label>
+                            <div id="defCurrentSubjectsList" class="mb-2">
+                                <!-- Dynamic list of current subjects -->
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <select id="defSubjectSelect" class="form-select">
+                                    <option value="">-- Select a subject to add --</option>
+                                    @foreach (var subject in Model.AllSubjects)
+                                    {
+                                        <option value="@subject.Id">@subject.Code - @subject.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-outline-primary w-100" onclick="defAddSubject()">
+                                    <i class="bi bi-plus-circle"></i> Add Subject
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            <button type="button" class="btn btn-primary" onclick="defSaveSubjects()">
+                                <i class="bi bi-save"></i> Save Subjects
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Classes Tab -->
+                    <div class="tab-pane fade" id="def-classes-pane" role="tabpanel" aria-labelledby="def-classes-tab">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Current Classes</label>
+                            <div id="defCurrentClassesList" class="mb-2">
+                                <!-- Dynamic list of current classes -->
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <select id="defClassSelect" class="form-select">
+                                    <option value="">-- Select a class to add --</option>
+                                    @foreach (var cls in Model.AllClasses)
+                                    {
+                                        <option value="@cls.Id">@cls.Name (Grade @cls.YearLevel)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-outline-primary w-100" onclick="defAddClass()">
+                                    <i class="bi bi-plus-circle"></i> Add Class
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            <button type="button" class="btn btn-primary" onclick="defSaveClasses()">
+                                <i class="bi bi-save"></i> Save Classes
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Properties Tab -->
+                    <div class="tab-pane fade" id="def-properties-pane" role="tabpanel" aria-labelledby="def-properties-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="defEditDuration" class="form-label">Duration (Periods)</label>
+                                    <input type="number" class="form-control" id="defEditDuration" min="1" max="10">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="defEditFrequency" class="form-label">Frequency Per Week</label>
+                                    <input type="number" class="form-control" id="defEditFrequency" min="1" max="20">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="defEditDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="defEditDescription" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="defEditSpecialRequirements" class="form-label">Special Requirements</label>
+                            <textarea class="form-control" id="defEditSpecialRequirements" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="defEditIsActive">
+                                <label class="form-check-label" for="defEditIsActive">
+                                    Is Active
+                                </label>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-primary" onclick="defSaveProperties()">
+                                <i class="bi bi-save"></i> Save Properties
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .lesson-card {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .lesson-card:hover {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+            transform: translateY(-1px);
+        }
+
+        .lesson-card.locked-lesson {
+            box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3), 0 1px 3px rgba(0,0,0,0.12);
+        }
+
+        .lesson-card.locked-lesson:hover {
+            box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.5), 0 2px 6px rgba(0,0,0,0.18);
+        }
+
+        /* Sticky table header */
+        .table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #f8f9fa !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .table td {
+            min-width: 150px;
+        }
+
+        /* Remove row hover effect */
+        .table tbody tr:hover {
+            background-color: transparent !important;
+        }
+
+        /* Highlighting styles */
+        .lesson-card.highlighted {
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.5), 0 2px 8px rgba(0,0,0,0.2) !important;
+            transform: scale(1.02);
+            z-index: 5;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .lesson-card.dimmed {
+            opacity: 0.3;
+            filter: grayscale(0.5);
+        }
+
+        @@keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.5), 0 2px 8px rgba(0,0,0,0.2);
+            }
+            50% {
+                box-shadow: 0 0 0 5px rgba(13, 110, 253, 0.7), 0 4px 12px rgba(0,0,0,0.3);
+            }
+        }
+
+        /* Locked + highlighted */
+        .lesson-card.locked-lesson.highlighted {
+            box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.5), 0 0 0 5px rgba(13, 110, 253, 0.7) !important;
+        }
+
+        /* Compact view styles */
+        .lesson-card.compact-mode {
+            padding: 4px 8px !important;
+            cursor: pointer;
+        }
+
+        .lesson-card.compact-mode .lesson-compact-view {
+            display: block !important;
+        }
+
+        .lesson-card.compact-mode .lesson-detailed-view {
+            display: none !important;
+        }
+
+        /* Individual expanded state (when clicked in compact mode) */
+        .lesson-card.compact-mode.expanded {
+            padding: 8px !important;
+        }
+
+        .lesson-card.compact-mode.expanded .lesson-compact-view {
+            display: none !important;
+        }
+
+        .lesson-card.compact-mode.expanded .lesson-detailed-view {
+            display: block !important;
+        }
+
+        /* Hover effect for compact lessons */
+        .lesson-card.compact-mode:hover {
+            transform: scale(1.05);
+        }
+
+        /* Compact view text styling */
+        .lesson-compact-view {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+}
+
+<!-- Available Slots Modal -->
+<div class="modal fade" id="availableSlotsModal" tabindex="-1" aria-labelledby="availableSlotsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="availableSlotsModalLabel">
+                    <i class="bi bi-search"></i> Available Slots
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="availableSlotsContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Swap Chain Modal -->
+<div class="modal fade" id="swapChainModal" tabindex="-1" aria-labelledby="swapChainModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="swapChainModalLabel">
+                    <i class="bi bi-shuffle"></i> Swap Sequence Suggestions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="swapChainContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Filter State Management -->
+    <script src="~/js/filter-state.js"></script>
+    <!-- Lesson Movement JavaScript -->
+    <script src="~/js/lesson-movement.js"></script>
+    <style>
+        /* Co-teaching and special lesson visual indicators */
+        .co-teaching-lesson {
+            position: relative;
+        }
+
+        .multi-subject-lesson {
+            background-image: linear-gradient(45deg, transparent 48%, rgba(255, 193, 7, 0.2) 48%, rgba(255, 193, 7, 0.2) 52%, transparent 52%) !important;
+            background-size: 10px 10px !important;
+        }
+
+        /* Badge styles for indicators */
+        .badge-coteaching {
+            background-color: #28a745;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 2px;
+        }
+
+        .badge-multisubject {
+            background-color: #ffc107;
+            color: #333;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 2px;
+        }
+
+        .badge-multiroom {
+            background-color: #17a2b8;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 2px;
+        }
+
+        .badge-multiclass {
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 2px;
+        }
+
+        .badge-assignments {
+            background-color: #6f42c1;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 2px;
+        }
+
+        /* Assignment row styling */
+        .assignment-row {
+            border-left: 3px solid rgba(111, 66, 193, 0.5);
+        }
+
+        /* Conflict highlighting styles */
+        .lesson-card.has-conflict {
+            background-color: #dc3545 !important;
+            color: white !important;
+            border-left-color: #a02834 !important;
+        }
+
+        .lesson-card.has-conflict:hover {
+            opacity: 1 !important;
+            box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+        }
+
+        .lesson-card.conflict-related {
+            opacity: 0.95;
+            box-shadow: 0 0 8px rgba(220, 53, 69, 0.3);
+            outline: 2px solid #dc3545;
+        }
+
+        .lesson-card.conflict-dimmed {
+            opacity: 0.3;
+        }
+
+        /* Icons in conflict cards need white background for visibility */
+        .lesson-card.has-conflict .badge i,
+        .lesson-card.has-conflict .bi {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #dc3545 !important;
+            border-radius: 50%;
+            padding: 2px;
+        }
+
+        .lesson-card.has-conflict .badge {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            color: #dc3545 !important;
+        }
+
+        /* Availability conflict highlighting (entity scheduled during unavailable time) */
+        .lesson-card.has-availability-conflict {
+            border: 4px solid #00ff00 !important;
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+        }
+
+        .availability-conflict-indicator {
+            margin-top: 6px;
+            padding: 3px 6px;
+            background-color: #00ff00;
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: bold;
+            border-radius: 3px;
+            text-align: center;
+        }
+
+        .availability-conflict-indicator i {
+            margin-right: 4px;
+        }
+
+        /* Drag and Drop Styles */
+        .lesson-card[draggable="true"] {
+            cursor: grab;
+            user-select: none;
+        }
+
+        .lesson-card[draggable="true"]:active {
+            cursor: grabbing;
+        }
+
+        .drop-zone-hover {
+            background-color: #e3f2fd !important;
+            border: 2px dashed #2196F3 !important;
+        }
+
+        .drop-zone-valid {
+            background-color: #e8f5e9 !important;
+            border: 2px dashed #4CAF50 !important;
+        }
+
+        .drop-zone-invalid {
+            background-color: #ffebee !important;
+            border: 2px dashed #f44336 !important;
+        }
+
+        .excluded-slot {
+            background-color: #ffeaa7 !important;
+            opacity: 0.6;
+            position: relative;
+        }
+
+        .excluded-slot::after {
+            content: "✕";
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            color: #d63031;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        /* Context Menu */
+        .lesson-context-menu {
+            min-width: 200px;
+        }
+
+        .context-menu-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Move button in lesson card */
+        .btn-move-lesson {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+        }
+    </style>
+    <script>
+        const timetableId = @Model.Timetable.Id;
+
+        // Unavailability data for conflict detection (Importance = -3 means absolute unavailability)
+        // Key format: "EntityId:DayNum:PeriodId" -> true
+        const teacherUnavailability = @Html.Raw(Json.Serialize(Model.TeacherUnavailability));
+        const classUnavailability = @Html.Raw(Json.Serialize(Model.ClassUnavailability));
+        const subjectUnavailability = @Html.Raw(Json.Serialize(Model.SubjectUnavailability));
+        const roomUnavailability = @Html.Raw(Json.Serialize(Model.RoomUnavailability));
+
+        // Lesson sorting functionality
+        document.getElementById('sortLessons').addEventListener('change', function() {
+            const sortBy = this.value;
+
+            // Get all table cells that contain lessons
+            const cells = document.querySelectorAll('.table td');
+
+            cells.forEach(cell => {
+                const lessons = Array.from(cell.querySelectorAll('.lesson-card'));
+
+                if (lessons.length <= 1) return; // No need to sort if 0 or 1 lesson
+
+                // Sort lessons based on selected criteria
+                lessons.sort((a, b) => {
+                    let valueA, valueB;
+
+                    switch(sortBy) {
+                        case 'subject':
+                            valueA = a.dataset.subject || '';
+                            valueB = b.dataset.subject || '';
+                            break;
+                        case 'class':
+                            valueA = a.dataset.class || '';
+                            valueB = b.dataset.class || '';
+                            break;
+                        case 'teacher':
+                            valueA = a.dataset.teacher || '';
+                            valueB = b.dataset.teacher || '';
+                            break;
+                        default:
+                            return 0; // Don't sort for 'none'
+                    }
+
+                    return valueA.localeCompare(valueB);
+                });
+
+                // Re-append in sorted order
+                lessons.forEach(lesson => {
+                    cell.appendChild(lesson);
+                });
+            });
+        });
+
+        // Conflict checking for Add Lesson modal
+        async function checkConflicts() {
+            const lessonId = document.getElementById('lessonId').value;
+            const dayOfWeek = document.getElementById('dayOfWeek').value;
+            const periodId = document.getElementById('periodId').value;
+            // Get selected room IDs from checkboxes
+            const selectedRoomIds = Array.from(document.querySelectorAll('.add-room-checkbox:checked')).map(cb => cb.value);
+            const conflictWarnings = document.getElementById('conflictWarnings');
+            const submitBtn = document.getElementById('addLessonSubmitBtn');
+
+            // Clear previous warnings
+            conflictWarnings.innerHTML = '';
+
+            // Only check if all required fields are filled
+            if (!lessonId || !dayOfWeek || !periodId) {
+                submitBtn.disabled = false;
+                return;
+            }
+
+            try {
+                const params = new URLSearchParams({
+                    timetableId: timetableId,
+                    lessonId: lessonId,
+                    dayOfWeek: dayOfWeek,
+                    periodId: periodId
+                });
+
+                // Add all selected room IDs to params
+                selectedRoomIds.forEach(roomId => {
+                    params.append('roomIds', roomId);
+                });
+
+                const response = await fetch(`/Admin/Timetables/Edit?handler=CheckConflicts&${params}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    // Display errors (hard constraints) - show warning but allow saving
+                    if (result.hasErrors) {
+                        const errorHtml = `
+                            <div class="alert alert-danger">
+                                <strong><i class="bi bi-exclamation-triangle-fill"></i> Hard Constraint Violations Detected:</strong>
+                                <ul class="mb-0 mt-2">
+                                    ${result.errors.map(e => `<li>${e}</li>`).join('')}
+                                </ul>
+                                <p class="mb-0 mt-2"><small><strong>Warning:</strong> You can still save, but this may cause scheduling conflicts.</small></p>
+                            </div>
+                        `;
+                        conflictWarnings.innerHTML += errorHtml;
+                        // Don't disable the button - allow user to save anyway
+                        submitBtn.disabled = false;
+                    } else {
+                        submitBtn.disabled = false;
+                    }
+
+                    // Display warnings (soft constraints)
+                    if (result.hasWarnings) {
+                        const warningHtml = `
+                            <div class="alert alert-warning">
+                                <strong><i class="bi bi-exclamation-circle-fill"></i> Warnings (Preferences Violated):</strong>
+                                <ul class="mb-0 mt-2">
+                                    ${result.warnings.map(w => `<li>${w}</li>`).join('')}
+                                </ul>
+                                <p class="mb-0 mt-2"><small>You can still add the lesson, but it violates preferences.</small></p>
+                            </div>
+                        `;
+                        conflictWarnings.innerHTML += warningHtml;
+                    }
+
+                    // Show success if no issues
+                    if (!result.hasErrors && !result.hasWarnings) {
+                        conflictWarnings.innerHTML = `
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle-fill"></i> No conflicts or warnings detected!
+                            </div>
+                        `;
+                    }
+                } else {
+                    conflictWarnings.innerHTML = `
+                        <div class="alert alert-danger">
+                            <strong>Error:</strong> ${result.error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error checking conflicts:', error);
+                conflictWarnings.innerHTML = `
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> Could not check for conflicts. ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Add event listeners to form fields
+        document.getElementById('lessonId').addEventListener('change', function() {
+            checkConflicts();
+            loadAddLessonAssignments(this.value);
+        });
+        document.getElementById('dayOfWeek').addEventListener('change', checkConflicts);
+        document.getElementById('periodId').addEventListener('change', checkConflicts);
+
+        // Add event listeners to room checkboxes
+        document.querySelectorAll('.add-room-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                checkConflicts();
+                updateAddRoomAssignmentsUI();
+            });
+        });
+
+        // Clear warnings when modal is closed
+        document.getElementById('addLessonModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('conflictWarnings').innerHTML = '';
+            document.getElementById('addLessonSubmitBtn').disabled = false;
+            // Clear room checkboxes
+            document.querySelectorAll('.add-room-checkbox').forEach(cb => cb.checked = false);
+            // Clear room assignments section
+            document.getElementById('addRoomAssignmentsSection').style.display = 'none';
+            document.getElementById('addRoomAssignmentsContent').innerHTML = '<p class="text-muted small">Select a lesson with assignments and multiple rooms to configure.</p>';
+            document.getElementById('addRoomAssignmentsJson').value = '';
+            currentAddLessonAssignmentsData = null;
+        });
+
+        // ============================================
+        // Add Lesson Modal - Room Assignments Functionality
+        // ============================================
+        let currentAddLessonAssignmentsData = null;
+
+        // Load lesson assignments when a lesson is selected
+        async function loadAddLessonAssignments(lessonId) {
+            if (!lessonId) {
+                currentAddLessonAssignmentsData = null;
+                updateAddRoomAssignmentsUI();
+                return;
+            }
+
+            try {
+                const response = await fetch(`/Admin/Timetables/Edit?handler=LessonAssignments&lessonId=${lessonId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    currentAddLessonAssignmentsData = data;
+                    updateAddRoomAssignmentsUI();
+                }
+            } catch (error) {
+                console.error('Error loading lesson assignments:', error);
+            }
+        }
+
+        // Update room assignments UI for Add Lesson modal
+        function updateAddRoomAssignmentsUI() {
+            const section = document.getElementById('addRoomAssignmentsSection');
+            const content = document.getElementById('addRoomAssignmentsContent');
+
+            // Get currently selected rooms
+            const selectedRooms = Array.from(document.querySelectorAll('.add-room-checkbox:checked')).map(cb => ({
+                id: parseInt(cb.value),
+                label: cb.nextElementSibling.textContent.trim()
+            }));
+
+            // Only show if multiple rooms selected and lesson has assignments
+            if (selectedRooms.length < 2 || !currentAddLessonAssignmentsData?.hasLessonAssignments || !currentAddLessonAssignmentsData?.lessonAssignments?.length) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+
+            // Build assignment UI
+            let html = '<p class="small text-muted mb-2"><i class="bi bi-info-circle"></i> Assign teacher-subject-class combinations to rooms. If left empty, all will show in each room.</p>';
+            html += '<div id="addRoomAssignmentValidation"></div>';
+            html += '<div class="table-responsive"><table class="table table-sm table-bordered mb-0">';
+            html += '<thead class="table-light"><tr><th>Room</th><th>Assigned Combinations</th></tr></thead><tbody>';
+
+            selectedRooms.forEach(room => {
+                html += `<tr><td class="fw-bold">${room.label}</td><td>`;
+
+                // Create checkbox list for lesson assignments
+                currentAddLessonAssignmentsData.lessonAssignments.forEach(la => {
+                    html += `
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input add-room-assignment-checkbox" type="checkbox"
+                                   data-room-id="${room.id}" data-lesson-assignment-id="${la.id}"
+                                   onchange="validateAddRoomAssignmentsCoverage()"
+                                   id="addra_${room.id}_${la.id}">
+                            <label class="form-check-label small" for="addra_${room.id}_${la.id}">${la.displayText}</label>
+                        </div>
+                    `;
+                });
+
+                html += '</td></tr>';
+            });
+
+            html += '</tbody></table></div>';
+            content.innerHTML = html;
+        }
+
+        // Validate coverage for Add Lesson modal
+        function validateAddRoomAssignmentsCoverage() {
+            const validationDiv = document.getElementById('addRoomAssignmentValidation');
+            if (!validationDiv || !currentAddLessonAssignmentsData?.lessonAssignments) return;
+
+            const allLessonAssignmentIds = currentAddLessonAssignmentsData.lessonAssignments.map(la => la.id);
+            const assignedIds = new Set();
+
+            document.querySelectorAll('.add-room-assignment-checkbox:checked').forEach(cb => {
+                assignedIds.add(parseInt(cb.dataset.lessonAssignmentId));
+            });
+
+            // Check if any assignments are checked at all
+            if (assignedIds.size === 0) {
+                validationDiv.innerHTML = '';
+                return;
+            }
+
+            const uncoveredIds = allLessonAssignmentIds.filter(id => !assignedIds.has(id));
+            if (uncoveredIds.length > 0) {
+                const uncoveredNames = currentAddLessonAssignmentsData.lessonAssignments
+                    .filter(la => uncoveredIds.includes(la.id))
+                    .map(la => la.displayText);
+                validationDiv.innerHTML = `
+                    <div class="alert alert-warning py-1 mb-2 small">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Warning:</strong> Not assigned to any room: ${uncoveredNames.join(', ')}
+                    </div>
+                `;
+            } else {
+                validationDiv.innerHTML = `
+                    <div class="alert alert-success py-1 mb-2 small">
+                        <i class="bi bi-check-circle"></i> All combinations are assigned to rooms.
+                    </div>
+                `;
+            }
+        }
+
+        // Populate room assignments JSON before form submit for Add Lesson
+        document.querySelector('#addLessonModal form').addEventListener('submit', function(e) {
+            const assignmentCheckboxes = document.querySelectorAll('.add-room-assignment-checkbox');
+
+            if (assignmentCheckboxes.length > 0) {
+                const roomAssignments = {};
+                assignmentCheckboxes.forEach(cb => {
+                    const roomId = cb.dataset.roomId;
+                    const lessonAssignmentId = parseInt(cb.dataset.lessonAssignmentId);
+
+                    if (cb.checked) {
+                        if (!roomAssignments[roomId]) {
+                            roomAssignments[roomId] = [];
+                        }
+                        roomAssignments[roomId].push(lessonAssignmentId);
+                    }
+                });
+
+                document.getElementById('addRoomAssignmentsJson').value = JSON.stringify(roomAssignments);
+            } else {
+                document.getElementById('addRoomAssignmentsJson').value = '';
+            }
+        });
+
+        // Edit Lesson Modal Functionality
+        let currentEditLessonId = null;
+
+        // Handle edit button clicks
+        document.querySelectorAll('.edit-lesson-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const scheduledId = this.dataset.scheduledId;
+                const lessonId = this.dataset.lessonId;
+                const day = this.dataset.day;
+                const periodId = this.dataset.periodId;
+                const roomIds = this.dataset.roomIds || '';
+
+                // Store the lesson ID for conflict checking
+                currentEditLessonId = lessonId;
+
+                // Populate modal fields
+                document.getElementById('editScheduledLessonId').value = scheduledId;
+                document.getElementById('editDayOfWeek').value = day;
+                document.getElementById('editPeriodId').value = periodId;
+
+                // Clear all room checkboxes first
+                document.querySelectorAll('.edit-room-checkbox').forEach(cb => cb.checked = false);
+
+                // Check the appropriate room checkboxes
+                if (roomIds) {
+                    const roomIdArray = roomIds.split(',').map(id => id.trim());
+                    roomIdArray.forEach(roomId => {
+                        const checkbox = document.getElementById('editRoom_' + roomId);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+
+                // Get lesson info from the card
+                const lessonCard = this.closest('.lesson-card');
+                const subject = lessonCard.querySelector('.fw-bold').textContent;
+                const className = lessonCard.dataset.class;
+                const teacher = lessonCard.dataset.teacher;
+                document.getElementById('editLessonInfo').innerHTML = `<strong>${subject}</strong> - ${className} (${teacher})`;
+
+                // Clear previous warnings
+                document.getElementById('editConflictWarnings').innerHTML = '';
+
+                // Show modal
+                new bootstrap.Modal(document.getElementById('editLessonModal')).show();
+
+                // Check conflicts with current values
+                checkEditConflicts();
+            });
+        });
+
+        // Handle info button clicks
+        document.querySelectorAll('.info-lesson-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Get data from button attributes - Display values
+                const subjects = this.dataset.subjects;
+                const teachers = this.dataset.teachers;
+                const classes = this.dataset.classes;
+                const rooms = this.dataset.rooms;
+                const day = this.dataset.day;
+                const period = this.dataset.period;
+                const lessonNumber = this.dataset.lessonNumber;
+                const isCoTeaching = this.dataset.isCoteaching === 'True';
+                const isMultiSubject = this.dataset.isMultisubject === 'True';
+                const isMultiRoom = this.dataset.isMultiroom === 'True';
+                const isMultiClass = this.dataset.isMulticlass === 'True';
+                const isLocked = this.dataset.isLocked === 'True';
+
+                // Get IDs
+                const scheduledId = this.dataset.scheduledId;
+                const lessonId = this.dataset.lessonId;
+                const periodId = this.dataset.periodId;
+                const roomId = this.dataset.roomId;
+                const subjectIds = this.dataset.subjectIds;
+                const teacherIds = this.dataset.teacherIds;
+                const classIds = this.dataset.classIds;
+                const roomIds = this.dataset.roomIds;
+
+                // Populate IDs in schedule information
+                document.getElementById('info-scheduled-id').textContent = scheduledId;
+                document.getElementById('info-lesson-id').textContent = lessonId;
+                document.getElementById('info-period-id').textContent = periodId;
+
+                // Populate schedule information
+                document.getElementById('info-day').textContent = day;
+                document.getElementById('info-period').textContent = `Period ${period}`;
+                document.getElementById('info-lesson-number').textContent = lessonNumber;
+                document.getElementById('info-locked').innerHTML = isLocked
+                    ? '<span class="badge bg-warning text-dark"><i class="bi bi-lock-fill"></i> Locked</span>'
+                    : '<span class="badge bg-success"><i class="bi bi-unlock"></i> Unlocked</span>';
+
+                // Populate badges
+                let badgesHtml = '';
+                if (isCoTeaching) {
+                    badgesHtml += '<span class="badge badge-coteaching me-2 mb-2"><i class="bi bi-people-fill"></i> Co-Teaching</span>';
+                }
+                if (isMultiSubject) {
+                    badgesHtml += '<span class="badge badge-multisubject me-2 mb-2"><i class="bi bi-book-half"></i> Multi-Subject</span>';
+                }
+                if (isMultiRoom) {
+                    badgesHtml += '<span class="badge badge-multiroom me-2 mb-2"><i class="bi bi-door-open-fill"></i> Multi-Room</span>';
+                }
+                if (isMultiClass) {
+                    badgesHtml += '<span class="badge badge-multiclass me-2 mb-2"><i class="bi bi-people"></i> Combined Classes</span>';
+                }
+                if (!badgesHtml) {
+                    badgesHtml = '<span class="text-muted">Regular Lesson</span>';
+                }
+                document.getElementById('info-badges').innerHTML = badgesHtml;
+
+                // Populate subjects and IDs
+                document.getElementById('info-subjects').innerHTML = `<strong>${subjects}</strong>`;
+                document.getElementById('info-subject-ids').innerHTML = subjectIds ? `<code>${subjectIds}</code>` : '<em>No subjects</em>';
+
+                // Populate teachers and IDs
+                document.getElementById('info-teachers').innerHTML = `<strong>${teachers}</strong>`;
+                document.getElementById('info-teacher-ids').innerHTML = teacherIds ? `<code>${teacherIds}</code>` : '<em>No teachers</em>';
+
+                // Populate classes and IDs
+                document.getElementById('info-classes').innerHTML = `<strong>${classes}</strong>`;
+                document.getElementById('info-class-ids').innerHTML = classIds ? `<code>${classIds}</code>` : '<em>No classes</em>';
+
+                // Populate rooms and IDs
+                document.getElementById('info-rooms').innerHTML = `<strong>${rooms}</strong>`;
+                if (roomIds && roomIds.trim()) {
+                    document.getElementById('info-room-ids-container').style.display = 'block';
+                    document.getElementById('info-room-ids').innerHTML = `<code>${roomIds}</code>`;
+                } else {
+                    document.getElementById('info-room-ids-container').style.display = 'none';
+                }
+                // Show primary room ID from legacy field if exists
+                if (roomId && roomId.trim()) {
+                    document.getElementById('info-primary-room-id').innerHTML = `<strong>Primary Room ID (legacy):</strong> <code>${roomId}</code>`;
+                } else {
+                    document.getElementById('info-primary-room-id').innerHTML = '';
+                }
+
+                // Show modal
+                new bootstrap.Modal(document.getElementById('lessonInfoModal')).show();
+            });
+        });
+
+        // Conflict checking for Edit Lesson modal
+        async function checkEditConflicts() {
+            const scheduledLessonId = document.getElementById('editScheduledLessonId').value;
+            const dayOfWeek = document.getElementById('editDayOfWeek').value;
+            const periodId = document.getElementById('editPeriodId').value;
+
+            // Get selected room IDs from checkboxes
+            const selectedRoomIds = Array.from(document.querySelectorAll('.edit-room-checkbox:checked'))
+                .map(cb => cb.value);
+
+            const conflictWarnings = document.getElementById('editConflictWarnings');
+            const submitBtn = document.getElementById('editLessonSubmitBtn');
+
+            // Clear previous warnings
+            conflictWarnings.innerHTML = '';
+
+            // Only check if all required fields are filled
+            if (!currentEditLessonId || !dayOfWeek || !periodId) {
+                submitBtn.disabled = false;
+                return;
+            }
+
+            try {
+                // Collect ignored constraints
+                const ignoredConstraints = Array.from(document.querySelectorAll('.edit-constraint-ignore:checked'))
+                    .map(checkbox => checkbox.value);
+
+                const params = new URLSearchParams({
+                    timetableId: timetableId,
+                    lessonId: currentEditLessonId,
+                    dayOfWeek: dayOfWeek,
+                    periodId: periodId,
+                    scheduledLessonId: scheduledLessonId  // Exclude current lesson from conflict check
+                });
+
+                // Add all selected room IDs
+                selectedRoomIds.forEach(roomId => {
+                    params.append('roomId', roomId);
+                });
+
+                // Add ignored constraints to params
+                ignoredConstraints.forEach(code => {
+                    params.append('ignoredConstraints', code);
+                });
+
+                const response = await fetch(`/Admin/Timetables/Edit?handler=CheckConflicts&${params}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    // Display errors (hard constraints) - show warning but allow saving
+                    if (result.hasErrors) {
+                        const errorHtml = `
+                            <div class="alert alert-danger">
+                                <strong><i class="bi bi-exclamation-triangle-fill"></i> Hard Constraint Violations Detected:</strong>
+                                <ul class="mb-0 mt-2">
+                                    ${result.errors.map(e => `<li>${e}</li>`).join('')}
+                                </ul>
+                                <p class="mb-0 mt-2"><small><strong>Warning:</strong> You can still save, but this may cause scheduling conflicts.</small></p>
+                            </div>
+                        `;
+                        conflictWarnings.innerHTML += errorHtml;
+                        // Don't disable the button - allow user to save anyway
+                        submitBtn.disabled = false;
+                    } else {
+                        submitBtn.disabled = false;
+                    }
+
+                    // Display warnings (soft constraints)
+                    if (result.hasWarnings) {
+                        const warningHtml = `
+                            <div class="alert alert-warning">
+                                <strong><i class="bi bi-exclamation-circle-fill"></i> Warnings (Preferences Violated):</strong>
+                                <ul class="mb-0 mt-2">
+                                    ${result.warnings.map(w => `<li>${w}</li>`).join('')}
+                                </ul>
+                                <p class="mb-0 mt-2"><small>You can still update the lesson, but it violates preferences.</small></p>
+                            </div>
+                        `;
+                        conflictWarnings.innerHTML += warningHtml;
+                    }
+
+                    // Show success if no issues
+                    if (!result.hasErrors && !result.hasWarnings) {
+                        conflictWarnings.innerHTML = `
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle-fill"></i> No conflicts or warnings detected!
+                            </div>
+                        `;
+                    }
+                } else {
+                    conflictWarnings.innerHTML = `
+                        <div class="alert alert-danger">
+                            <strong>Error:</strong> ${result.error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error checking conflicts:', error);
+                conflictWarnings.innerHTML = `
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> Could not check for conflicts. ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Add event listeners to edit form fields
+        document.getElementById('editDayOfWeek').addEventListener('change', checkEditConflicts);
+        document.getElementById('editPeriodId').addEventListener('change', checkEditConflicts);
+
+        // Add event listeners to room checkboxes
+        document.querySelectorAll('.edit-room-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', checkEditConflicts);
+        });
+
+        // Add event listeners to constraint ignore checkboxes to recheck when changed
+        document.querySelectorAll('.edit-constraint-ignore').forEach(checkbox => {
+            checkbox.addEventListener('change', checkEditConflicts);
+        });
+
+        // Clear warnings and checkboxes when edit modal is closed
+        document.getElementById('editLessonModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('editConflictWarnings').innerHTML = '';
+            document.getElementById('editLessonSubmitBtn').disabled = false;
+            currentEditLessonId = null;
+            // Clear room checkboxes
+            document.querySelectorAll('.edit-room-checkbox').forEach(cb => cb.checked = false);
+            // Clear room assignments section
+            document.getElementById('roomAssignmentsSection').style.display = 'none';
+            document.getElementById('roomAssignmentsContent').innerHTML = '<p class="text-muted small">Loading assignments...</p>';
+            currentRoomAssignmentsData = null;
+        });
+
+        // ============================================
+        // Room Assignments Functionality
+        // ============================================
+        let currentRoomAssignmentsData = null;
+
+        // Load room assignments when edit modal opens
+        async function loadRoomAssignments(scheduledLessonId) {
+            try {
+                const response = await fetch(`/Admin/Timetables/Edit?handler=RoomAssignments&scheduledLessonId=${scheduledLessonId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    currentRoomAssignmentsData = data;
+                    updateRoomAssignmentsUI();
+                }
+            } catch (error) {
+                console.error('Error loading room assignments:', error);
+            }
+        }
+
+        // Update room assignments UI based on selected rooms and available assignments
+        function updateRoomAssignmentsUI() {
+            const section = document.getElementById('roomAssignmentsSection');
+            const content = document.getElementById('roomAssignmentsContent');
+
+            // Get currently selected rooms
+            const selectedRooms = Array.from(document.querySelectorAll('.edit-room-checkbox:checked')).map(cb => ({
+                id: parseInt(cb.value),
+                label: cb.nextElementSibling.textContent.trim()
+            }));
+
+            // Only show if multiple rooms selected and lesson has assignments
+            if (selectedRooms.length < 2 || !currentRoomAssignmentsData?.hasLessonAssignments || !currentRoomAssignmentsData?.lessonAssignments?.length) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+
+            // Build assignment UI
+            let html = '<p class="small text-muted mb-2"><i class="bi bi-info-circle"></i> Assign teacher-subject-class combinations to rooms. If left empty, all will show in each room.</p>';
+            html += '<div id="roomAssignmentValidation"></div>';
+            html += '<div class="table-responsive"><table class="table table-sm table-bordered mb-0">';
+            html += '<thead class="table-light"><tr><th>Room</th><th>Assigned Combinations</th></tr></thead><tbody>';
+
+            selectedRooms.forEach(room => {
+                // Find existing assignments for this room
+                const existingRoom = currentRoomAssignmentsData.roomAssignments?.find(ra => ra.roomId === room.id);
+                const existingAssignmentIds = existingRoom?.assignedLessonAssignmentIds || [];
+
+                html += `<tr><td class="fw-bold">${room.label}</td><td>`;
+
+                // Create checkbox list for lesson assignments
+                currentRoomAssignmentsData.lessonAssignments.forEach(la => {
+                    const isChecked = existingAssignmentIds.includes(la.id) ? 'checked' : '';
+                    html += `
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input room-assignment-checkbox" type="checkbox"
+                                   data-room-id="${room.id}" data-lesson-assignment-id="${la.id}"
+                                   onchange="validateRoomAssignmentsCoverage()"
+                                   ${isChecked} id="ra_${room.id}_${la.id}">
+                            <label class="form-check-label small" for="ra_${room.id}_${la.id}">${la.displayText}</label>
+                        </div>
+                    `;
+                });
+
+                html += '</td></tr>';
+            });
+
+            html += '</tbody></table></div>';
+            content.innerHTML = html;
+
+            // Validate coverage on load
+            validateRoomAssignmentsCoverage();
+        }
+
+        // Validate that all lesson assignments are covered by room assignments
+        function validateRoomAssignmentsCoverage() {
+            const validationDiv = document.getElementById('roomAssignmentValidation');
+            if (!validationDiv || !currentRoomAssignmentsData?.lessonAssignments) return;
+
+            const allLessonAssignmentIds = currentRoomAssignmentsData.lessonAssignments.map(la => la.id);
+            const assignedIds = new Set();
+
+            document.querySelectorAll('.room-assignment-checkbox:checked').forEach(cb => {
+                assignedIds.add(parseInt(cb.dataset.lessonAssignmentId));
+            });
+
+            // Check if any assignments are checked at all
+            if (assignedIds.size === 0) {
+                validationDiv.innerHTML = '';
+                return;
+            }
+
+            const uncoveredIds = allLessonAssignmentIds.filter(id => !assignedIds.has(id));
+            if (uncoveredIds.length > 0) {
+                const uncoveredNames = currentRoomAssignmentsData.lessonAssignments
+                    .filter(la => uncoveredIds.includes(la.id))
+                    .map(la => la.displayText);
+                validationDiv.innerHTML = `
+                    <div class="alert alert-warning py-1 mb-2 small">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Warning:</strong> Not assigned to any room: ${uncoveredNames.join(', ')}
+                    </div>
+                `;
+            } else {
+                validationDiv.innerHTML = `
+                    <div class="alert alert-success py-1 mb-2 small">
+                        <i class="bi bi-check-circle"></i> All combinations are assigned to rooms.
+                    </div>
+                `;
+            }
+        }
+
+        // Listen to room checkbox changes to update room assignments UI
+        document.querySelectorAll('.edit-room-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                updateRoomAssignmentsUI();
+            });
+        });
+
+        // Extend edit button click to load room assignments
+        const originalEditButtons = document.querySelectorAll('.btn-edit-lesson');
+        originalEditButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const scheduledLessonId = this.dataset.scheduledLessonId;
+                if (scheduledLessonId) {
+                    loadRoomAssignments(scheduledLessonId);
+                }
+            });
+        });
+
+        // Save room assignments before form submit
+        document.querySelector('#editLessonModal form').addEventListener('submit', function(e) {
+            // Collect room assignments data and store in hidden field
+            const assignmentCheckboxes = document.querySelectorAll('.room-assignment-checkbox');
+
+            if (assignmentCheckboxes.length > 0) {
+                // Collect room assignments - keyed by roomId (not scheduledLessonRoomId since those are created fresh)
+                const roomAssignments = {};
+                assignmentCheckboxes.forEach(cb => {
+                    const roomId = cb.dataset.roomId;
+                    const lessonAssignmentId = parseInt(cb.dataset.lessonAssignmentId);
+
+                    if (cb.checked) {
+                        if (!roomAssignments[roomId]) {
+                            roomAssignments[roomId] = [];
+                        }
+                        roomAssignments[roomId].push(lessonAssignmentId);
+                    }
+                });
+
+                // Store as JSON in hidden field
+                document.getElementById('editRoomAssignmentsJson').value = JSON.stringify(roomAssignments);
+            } else {
+                // Clear the hidden field if no assignment checkboxes
+                document.getElementById('editRoomAssignmentsJson').value = '';
+            }
+        });
+
+        // ============================================
+        // Advanced Highlighting Functionality with Dynamic Cascading Filters
+        // ============================================
+
+        // Extract all lesson data from cards on page load
+        const allLessonsData = [];
+        document.querySelectorAll('.lesson-card').forEach(card => {
+            // Parse multi-value data (pipe-separated lists) into arrays
+            const teachersList = (card.dataset.teacher || '').split('|').filter(t => t.trim());
+            const subjectsList = (card.dataset.subject || '').split('|').filter(s => s.trim());
+            const classesList = (card.dataset.class || '').split('|').filter(c => c.trim());
+            const roomsList = (card.dataset.rooms || '').split('|').filter(r => r.trim());
+
+            allLessonsData.push({
+                teachers: teachersList,  // Array of teacher names
+                subjects: subjectsList,  // Array of subject names
+                classes: classesList,    // Array of class names
+                rooms: roomsList,        // Array of room numbers
+                element: card
+            });
+        });
+
+        // Function to get available filter values based on current selections
+        function getAvailableFilterValues(filterType, currentFilters) {
+            const values = new Set();
+
+            allLessonsData.forEach(lesson => {
+                // Check if this lesson matches all OTHER selected filters
+                let matches = true;
+
+                // Check teacher filter - lesson must include the selected teacher
+                if (filterType !== 'teacher' && currentFilters.teacher) {
+                    const hasMatchingTeacher = lesson.teachers && lesson.teachers.length > 0
+                        ? lesson.teachers.includes(currentFilters.teacher)
+                        : false;
+                    if (!hasMatchingTeacher) {
+                        matches = false;
+                    }
+                }
+
+                // Check subject filter - lesson must include the selected subject
+                if (filterType !== 'subject' && currentFilters.subject) {
+                    const hasMatchingSubject = lesson.subjects && lesson.subjects.length > 0
+                        ? lesson.subjects.includes(currentFilters.subject)
+                        : false;
+                    if (!hasMatchingSubject) {
+                        matches = false;
+                    }
+                }
+
+                // Check class filter - lesson must include the selected class
+                if (filterType !== 'class' && currentFilters.class) {
+                    const hasMatchingClass = lesson.classes && lesson.classes.length > 0
+                        ? lesson.classes.includes(currentFilters.class)
+                        : false;
+                    if (!hasMatchingClass) {
+                        matches = false;
+                    }
+                }
+
+                // Check room filter - lesson must include the selected room
+                if (filterType !== 'room' && currentFilters.room) {
+                    const hasMatchingRoom = lesson.rooms && lesson.rooms.length > 0
+                        ? lesson.rooms.includes(currentFilters.room)
+                        : false;
+                    if (!hasMatchingRoom) {
+                        matches = false;
+                    }
+                }
+
+                // If it matches, add ALL values for this filter type from this lesson
+                if (matches) {
+                    if (filterType === 'teacher') {
+                        lesson.teachers.forEach(t => { if (t) values.add(t); });
+                    } else if (filterType === 'subject') {
+                        lesson.subjects.forEach(s => { if (s) values.add(s); });
+                    } else if (filterType === 'class') {
+                        lesson.classes.forEach(c => { if (c) values.add(c); });
+                    } else if (filterType === 'room') {
+                        lesson.rooms.forEach(r => { if (r) values.add(r); });
+                    }
+                }
+            });
+
+            return Array.from(values).sort();
+        }
+
+        // Function to update filter dropdown options dynamically
+        function updateFilterOptions(filterType, availableValues, currentValue) {
+            const select = document.getElementById('filter' + filterType.charAt(0).toUpperCase() + filterType.slice(1));
+            const emptyText = `-- All ${filterType.charAt(0).toUpperCase() + filterType.slice(1)}s --`;
+
+            // Store current selection
+            const selectedValue = currentValue || select.value;
+
+            // Clear existing options
+            select.innerHTML = `<option value="">${emptyText}</option>`;
+
+            // Add available options
+            availableValues.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+
+                // Mark as selected if it was previously selected
+                if (value === selectedValue) {
+                    option.selected = true;
+                }
+
+                select.appendChild(option);
+            });
+
+            // If previously selected value is no longer available, clear selection
+            if (selectedValue && !availableValues.includes(selectedValue)) {
+                select.value = '';
+            }
+        }
+
+        // Function to update all filter options based on current selections
+        function updateAllFilterOptions(changedFilter = null) {
+            const currentFilters = {
+                teacher: document.getElementById('filterTeacher').value,
+                subject: document.getElementById('filterSubject').value,
+                class: document.getElementById('filterClass').value,
+                room: document.getElementById('filterRoom').value
+            };
+
+            // Update each filter except the one that just changed
+            if (changedFilter !== 'teacher') {
+                const availableTeachers = getAvailableFilterValues('teacher', currentFilters);
+                updateFilterOptions('teacher', availableTeachers, currentFilters.teacher);
+            }
+
+            if (changedFilter !== 'subject') {
+                const availableSubjects = getAvailableFilterValues('subject', currentFilters);
+                updateFilterOptions('subject', availableSubjects, currentFilters.subject);
+            }
+
+            if (changedFilter !== 'class') {
+                const availableClasses = getAvailableFilterValues('class', currentFilters);
+                updateFilterOptions('class', availableClasses, currentFilters.class);
+            }
+
+            if (changedFilter !== 'room') {
+                const availableRooms = getAvailableFilterValues('room', currentFilters);
+                updateFilterOptions('room', availableRooms, currentFilters.room);
+            }
+        }
+
+        function applyHighlighting() {
+            const filterTeacher = document.getElementById('filterTeacher').value;
+            const filterSubject = document.getElementById('filterSubject').value;
+            const filterClass = document.getElementById('filterClass').value;
+            const filterRoom = document.getElementById('filterRoom').value;
+            const hideNonMatching = document.getElementById('hideNonMatching').checked;
+
+            // Check if any filter is active
+            const hasActiveFilters = filterTeacher || filterSubject || filterClass || filterRoom;
+
+            // Get all lesson cards
+            const allCards = document.querySelectorAll('.lesson-card');
+            let matchCount = 0;
+
+            allCards.forEach(card => {
+                const cardTeachers = (card.dataset.teacher || '').split('|').filter(t => t.trim());
+                const cardSubjects = (card.dataset.subject || '').split('|').filter(s => s.trim());
+                const cardClasses = (card.dataset.class || '').split('|').filter(c => c.trim());
+                const cardRooms = (card.dataset.rooms || '').split('|').filter(r => r.trim());
+
+                // Check if card matches ALL active filters
+                let matches = true;
+
+                if (filterTeacher) {
+                    const hasMatchingTeacher = cardTeachers.length > 0
+                        ? cardTeachers.includes(filterTeacher)
+                        : false;
+                    if (!hasMatchingTeacher) {
+                        matches = false;
+                    }
+                }
+                if (filterSubject) {
+                    const hasMatchingSubject = cardSubjects.length > 0
+                        ? cardSubjects.includes(filterSubject)
+                        : false;
+                    if (!hasMatchingSubject) {
+                        matches = false;
+                    }
+                }
+                if (filterClass) {
+                    const hasMatchingClass = cardClasses.length > 0
+                        ? cardClasses.includes(filterClass)
+                        : false;
+                    if (!hasMatchingClass) {
+                        matches = false;
+                    }
+                }
+                if (filterRoom) {
+                    // For multi-room lessons, check if ANY room matches
+                    const hasMatchingRoom = cardRooms.length > 0
+                        ? cardRooms.includes(filterRoom)
+                        : false;
+                    if (!hasMatchingRoom) {
+                        matches = false;
+                    }
+                }
+
+                // Apply highlighting or hiding
+                if (hasActiveFilters) {
+                    if (matches) {
+                        card.classList.add('highlighted');
+                        card.classList.remove('dimmed');
+                        card.style.display = '';
+                        matchCount++;
+                    } else {
+                        card.classList.remove('highlighted');
+                        if (hideNonMatching) {
+                            // Hide non-matching lessons
+                            card.style.display = 'none';
+                            card.classList.remove('dimmed');
+                        } else {
+                            // Dim non-matching lessons
+                            card.classList.add('dimmed');
+                            card.style.display = '';
+                        }
+                    }
+                } else {
+                    // No filters active, reset all
+                    card.classList.remove('highlighted');
+                    card.classList.remove('dimmed');
+                    card.style.display = '';
+                }
+            });
+
+            // Update match count display
+            const matchCountEl = document.getElementById('matchCount');
+            if (hasActiveFilters) {
+                matchCountEl.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> <strong>${matchCount}</strong> lesson(s) match the selected criteria`;
+                if (matchCount === 0) {
+                    matchCountEl.innerHTML = `<i class="bi bi-exclamation-triangle-fill text-warning"></i> No lessons match the selected criteria`;
+                }
+            } else {
+                matchCountEl.innerHTML = '';
+            }
+
+            // Filter supervision badges based on teacher and room filters
+            const supervisionBadges = document.querySelectorAll('.supervision-badge');
+            supervisionBadges.forEach(badge => {
+                const badgeTeacher = badge.dataset.teacher || '';
+                const badgeRoom = badge.dataset.room || '';
+
+                let showBadge = true;
+
+                // If teacher filter is active, check if supervision matches
+                if (filterTeacher && badgeTeacher !== filterTeacher) {
+                    showBadge = false;
+                }
+
+                // If room filter is active, check if supervision matches
+                if (filterRoom && badgeRoom !== filterRoom) {
+                    showBadge = false;
+                }
+
+                // Apply visibility
+                if (hasActiveFilters && (filterTeacher || filterRoom)) {
+                    if (showBadge) {
+                        badge.style.display = '';
+                        badge.classList.remove('opacity-25');
+                    } else {
+                        if (hideNonMatching) {
+                            badge.style.display = 'none';
+                        } else {
+                            badge.style.display = '';
+                            badge.classList.add('opacity-25');
+                        }
+                    }
+                } else {
+                    // No relevant filters, show all
+                    badge.style.display = '';
+                    badge.classList.remove('opacity-25');
+                }
+            });
+        }
+
+        // Handle filter changes with cascading updates
+        function handleFilterChange(filterType, skipSave = false) {
+            updateAllFilterOptions(filterType);
+            applyHighlighting();
+
+            // Save filter state (unless restoring)
+            if (!skipSave) {
+                saveFilterState();
+            }
+        }
+
+        // Save current filter values to FilterState
+        function saveFilterState() {
+            FilterState.save({
+                teacher: document.getElementById('filterTeacher').value,
+                subject: document.getElementById('filterSubject').value,
+                class: document.getElementById('filterClass').value,
+                room: document.getElementById('filterRoom').value,
+                hideNonMatching: document.getElementById('hideNonMatching').checked ? '1' : ''
+            });
+        }
+
+        // Add event listeners to filter dropdowns
+        document.getElementById('filterTeacher').addEventListener('change', () => handleFilterChange('teacher'));
+        document.getElementById('filterSubject').addEventListener('change', () => handleFilterChange('subject'));
+        document.getElementById('filterClass').addEventListener('change', () => handleFilterChange('class'));
+        document.getElementById('filterRoom').addEventListener('change', () => handleFilterChange('room'));
+
+        // Add event listener for hide/dim toggle
+        document.getElementById('hideNonMatching').addEventListener('change', function() {
+            applyHighlighting();
+            saveFilterState();
+        });
+
+        // Clear filters button
+        document.getElementById('clearFilters').addEventListener('click', function() {
+            document.getElementById('filterTeacher').value = '';
+            document.getElementById('filterSubject').value = '';
+            document.getElementById('filterClass').value = '';
+            document.getElementById('filterRoom').value = '';
+
+            // Reset all filter options to show all available values
+            updateAllFilterOptions();
+            applyHighlighting();
+
+            // Clear saved filter state
+            FilterState.clear();
+        });
+
+        // Restore filters on page load
+        (function restoreFilters() {
+            const savedFilters = FilterState.restore();
+            if (savedFilters.teacher || savedFilters.subject || savedFilters.class || savedFilters.room) {
+                if (savedFilters.teacher) {
+                    document.getElementById('filterTeacher').value = savedFilters.teacher;
+                }
+                if (savedFilters.subject) {
+                    document.getElementById('filterSubject').value = savedFilters.subject;
+                }
+                if (savedFilters.class) {
+                    document.getElementById('filterClass').value = savedFilters.class;
+                }
+                if (savedFilters.room) {
+                    document.getElementById('filterRoom').value = savedFilters.room;
+                }
+                if (savedFilters.hideNonMatching !== undefined) {
+                    document.getElementById('hideNonMatching').checked = savedFilters.hideNonMatching === '1';
+                }
+                // Apply highlighting without saving again
+                handleFilterChange(null, true);
+            }
+        })();
+
+        // ============================================
+        // Display Mode Toggle (Detailed / Compact)
+        // ============================================
+
+        let currentDisplayMode = 'detailed'; // Start in detailed mode by default
+        let tooltipInstances = [];
+
+        // Initialize Bootstrap tooltips
+        function initializeTooltips() {
+            // Destroy existing tooltips
+            tooltipInstances.forEach(tooltip => tooltip.dispose());
+            tooltipInstances = [];
+
+            // Only initialize tooltips in compact mode
+            if (currentDisplayMode === 'compact') {
+                const tooltipTriggerList = document.querySelectorAll('.lesson-card[data-bs-toggle="tooltip"]');
+                tooltipInstances = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+            }
+        }
+
+        // Toggle display mode for all lessons
+        function setDisplayMode(mode) {
+            currentDisplayMode = mode;
+            const allLessonCards = document.querySelectorAll('.lesson-card');
+
+            allLessonCards.forEach(card => {
+                if (mode === 'compact') {
+                    card.classList.add('compact-mode');
+                    card.classList.remove('expanded');
+                } else {
+                    // Detailed mode (default)
+                    card.classList.remove('compact-mode');
+                    card.classList.remove('expanded');
+                }
+            });
+
+            // Reinitialize tooltips
+            initializeTooltips();
+        }
+
+        // Handle radio button changes
+        document.querySelectorAll('input[name="displayMode"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                setDisplayMode(this.value);
+            });
+        });
+
+        // Handle click on compact lesson cards to expand individually
+        document.addEventListener('click', function(e) {
+            const lessonCard = e.target.closest('.lesson-card.compact-mode');
+
+            if (lessonCard) {
+                // Check if clicked on action buttons (lock, edit, delete)
+                const isActionButton = e.target.closest('.btn-sm, form button');
+
+                if (!isActionButton) {
+                    // Toggle expanded state for this specific card
+                    lessonCard.classList.toggle('expanded');
+
+                    // Hide tooltip when expanding
+                    if (lessonCard.classList.contains('expanded')) {
+                        const tooltip = bootstrap.Tooltip.getInstance(lessonCard);
+                        if (tooltip) {
+                            tooltip.hide();
+                        }
+                    }
+                }
+            }
+        });
+
+        // ============================================
+        // Automatic Conflict Detection and Highlighting
+        // ============================================
+
+        // Function to detect conflicts based on scheduling rules
+        function detectConflicts() {
+            const allLessonCards = document.querySelectorAll('.lesson-card');
+            const conflictMap = new Map(); // Map to store conflicts for each lesson
+
+            // Build a schedule map for easy lookup
+            const scheduleMap = {};
+
+            allLessonCards.forEach(card => {
+                // Parse multiple teachers, classes, subjects from data attributes
+                const teachersStr = card.dataset.teacher || '';
+                const classesStr = card.dataset.class || '';
+                const roomsStr = card.dataset.rooms || '';
+
+                // Split by delimiters to get arrays (pipe-separated)
+                const teachers = teachersStr.split('|').map(t => t.trim()).filter(t => t);
+                const classes = classesStr.split('|').map(c => c.trim()).filter(c => c);
+                const rooms = roomsStr.split('|').map(r => r.trim()).filter(r => r);
+
+                // Get day and period from parent cell
+                const cell = card.closest('td');
+                const row = cell.closest('tr');
+                const dayIndex = Array.from(row.children).indexOf(cell) - 1; // -1 for period column
+                const periodIndex = Array.from(row.parentElement.children).indexOf(row);
+                const scheduleKey = `${dayIndex}-${periodIndex}`;
+
+                if (!scheduleMap[scheduleKey]) {
+                    scheduleMap[scheduleKey] = [];
+                }
+                scheduleMap[scheduleKey].push({
+                    card: card,
+                    teachers: teachers,
+                    classes: classes,
+                    rooms: rooms
+                });
+            });
+
+            // Check for conflicts in each time slot
+            Object.keys(scheduleMap).forEach(scheduleKey => {
+                const lessons = scheduleMap[scheduleKey];
+
+                if (lessons.length > 1) {
+                    // Check for teacher conflicts
+                    const teacherMap = {};
+                    const classMap = {};
+                    const roomMap = {};
+
+                    lessons.forEach(lesson => {
+                        // Track conflicts by teacher (check ALL teachers in the lesson)
+                        lesson.teachers.forEach(teacher => {
+                            // Skip "xy" - placeholder for interns
+                            if (teacher && teacher.toLowerCase().trim() !== 'xy') {
+                                if (!teacherMap[teacher]) {
+                                    teacherMap[teacher] = [];
+                                }
+                                teacherMap[teacher].push(lesson.card);
+                            }
+                        });
+
+                        // Track conflicts by class (check ALL classes in the lesson)
+                        lesson.classes.forEach(className => {
+                            // Skip "v-res" - reserve for substitution
+                            if (className && className.toLowerCase().trim() !== 'v-res') {
+                                if (!classMap[className]) {
+                                    classMap[className] = [];
+                                }
+                                classMap[className].push(lesson.card);
+                            }
+                        });
+
+                        // Track conflicts by room (check ALL rooms in the lesson)
+                        lesson.rooms.forEach(room => {
+                            if (room) {
+                                if (!roomMap[room]) {
+                                    roomMap[room] = [];
+                                }
+                                roomMap[room].push(lesson.card);
+                            }
+                        });
+                    });
+
+                    // Mark conflicts
+                    [teacherMap, classMap, roomMap].forEach(map => {
+                        Object.values(map).forEach(cards => {
+                            if (cards.length > 1) {
+                                // Multiple lessons with same teacher/class/room in same slot = conflict
+                                cards.forEach(card => {
+                                    card.classList.add('has-conflict');
+
+                                    // Store related conflicting cards
+                                    if (!conflictMap.has(card)) {
+                                        conflictMap.set(card, new Set());
+                                    }
+                                    cards.forEach(otherCard => {
+                                        if (otherCard !== card) {
+                                            conflictMap.get(card).add(otherCard);
+                                        }
+                                    });
+                                });
+                            }
+                        });
+                    });
+                }
+            });
+
+            // Check for availability conflicts (entity scheduled when unavailable - Importance = -3)
+            allLessonCards.forEach(card => {
+                const dayNum = card.dataset.dayNum;
+                const periodId = card.dataset.periodId;
+
+                if (!dayNum || !periodId) return;
+
+                // Get entity IDs from data attributes (comma-separated)
+                const teacherIds = (card.dataset.teacherIds || '').split(',').filter(id => id);
+                const classIds = (card.dataset.classIds || '').split(',').filter(id => id);
+                const subjectIds = (card.dataset.subjectIds || '').split(',').filter(id => id);
+                const roomIds = (card.dataset.roomIds || '').split(',').filter(id => id);
+
+                const availabilityConflicts = [];
+
+                // Check teacher unavailability
+                teacherIds.forEach(teacherId => {
+                    const key = `${teacherId}:${dayNum}:${periodId}`;
+                    if (teacherUnavailability[key]) {
+                        availabilityConflicts.push('Teacher');
+                    }
+                });
+
+                // Check class unavailability
+                classIds.forEach(classId => {
+                    const key = `${classId}:${dayNum}:${periodId}`;
+                    if (classUnavailability[key]) {
+                        availabilityConflicts.push('Class');
+                    }
+                });
+
+                // Check subject unavailability
+                subjectIds.forEach(subjectId => {
+                    const key = `${subjectId}:${dayNum}:${periodId}`;
+                    if (subjectUnavailability[key]) {
+                        availabilityConflicts.push('Subject');
+                    }
+                });
+
+                // Check room unavailability
+                roomIds.forEach(roomId => {
+                    const key = `${roomId}:${dayNum}:${periodId}`;
+                    if (roomUnavailability[key]) {
+                        availabilityConflicts.push('Room');
+                    }
+                });
+
+                // Mark with green border and show conflict details if any entity is unavailable
+                if (availabilityConflicts.length > 0) {
+                    card.classList.add('has-availability-conflict');
+
+                    // Add conflict indicator at the bottom of the card
+                    const uniqueConflicts = [...new Set(availabilityConflicts)];
+                    const conflictDiv = document.createElement('div');
+                    conflictDiv.className = 'availability-conflict-indicator';
+                    conflictDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${uniqueConflicts.join(', ')} unavailable`;
+                    card.appendChild(conflictDiv);
+                }
+            });
+
+            return conflictMap;
+        }
+
+        // Hover behavior for conflicts
+        let conflictMap = null;
+
+        function setupConflictHover() {
+            conflictMap = detectConflicts();
+
+            document.querySelectorAll('.lesson-card').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    if (this.classList.contains('has-conflict') && conflictMap.has(this)) {
+                        const relatedCards = conflictMap.get(this);
+
+                        // Dim all cards except conflicting ones
+                        document.querySelectorAll('.lesson-card').forEach(c => {
+                            if (!relatedCards.has(c) && c !== this) {
+                                c.classList.add('conflict-dimmed');
+                            }
+                        });
+
+                        // Highlight related conflicting cards
+                        relatedCards.forEach(relatedCard => {
+                            relatedCard.classList.add('conflict-related');
+                        });
+                    }
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    // Remove all hover effects
+                    document.querySelectorAll('.lesson-card').forEach(c => {
+                        c.classList.remove('conflict-dimmed');
+                        c.classList.remove('conflict-related');
+                    });
+                });
+            });
+        }
+
+        // Initialize tooltips and set default detailed mode on page load
+        setDisplayMode('detailed');
+        initializeTooltips();
+
+        // Setup conflict detection and hover behavior
+        setupConflictHover();
+
+        // ============================================
+        // Edit Lesson Definition Modal Functionality
+        // ============================================
+
+        // Current lesson data for editing
+        let defCurrentLessonData = null;
+        let defCurrentTeachers = [];
+        let defCurrentSubjects = [];
+        let defCurrentClasses = [];
+
+        // Setup event listeners for edit lesson definition buttons
+        document.querySelectorAll('.edit-lesson-definition-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const lessonId = this.dataset.lessonId;
+                const lessonNumber = this.dataset.lessonNumber;
+                openEditLessonDefinitionModal(lessonId, lessonNumber);
+            });
+        });
+
+        // Open edit lesson definition modal and load lesson data
+        async function openEditLessonDefinitionModal(lessonId, lessonNumber) {
+            try {
+                const response = await fetch(`/Admin/Timetables/Edit?handler=LessonDefinition&id=${lessonId}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert('Error loading lesson: ' + data.message);
+                    return;
+                }
+
+                defCurrentLessonData = data.lesson;
+                document.getElementById('editDefLessonId').value = lessonId;
+
+                // Update modal title with lesson number
+                document.getElementById('editLessonDefinitionModalLabel').innerHTML =
+                    `<i class="bi bi-sliders"></i> Edit Lesson Definition #${lessonNumber || lessonId}`;
+
+                // Load teachers
+                defCurrentTeachers = data.lesson.teachers.map(t => ({
+                    id: t.teacherId,
+                    name: t.teacherName
+                }));
+                defRenderTeachersList();
+
+                // Load subjects
+                defCurrentSubjects = data.lesson.subjects.map(s => ({
+                    id: s.subjectId,
+                    name: s.subjectName,
+                    code: s.subjectCode
+                }));
+                defRenderSubjectsList();
+
+                // Load classes
+                defCurrentClasses = data.lesson.classes.map(c => ({
+                    id: c.classId,
+                    name: c.className
+                }));
+                defRenderClassesList();
+
+                // Load properties
+                document.getElementById('defEditDuration').value = data.lesson.duration;
+                document.getElementById('defEditFrequency').value = data.lesson.frequencyPerWeek;
+                document.getElementById('defEditDescription').value = data.lesson.description || '';
+                document.getElementById('defEditSpecialRequirements').value = data.lesson.specialRequirements || '';
+                document.getElementById('defEditIsActive').checked = data.lesson.isActive;
+
+                // Reset to first tab
+                const firstTab = document.getElementById('def-teachers-tab');
+                const tab = new bootstrap.Tab(firstTab);
+                tab.show();
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('editLessonDefinitionModal'));
+                modal.show();
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error loading lesson data');
+            }
+        }
+
+        // Render teachers list
+        function defRenderTeachersList() {
+            const container = document.getElementById('defCurrentTeachersList');
+            if (defCurrentTeachers.length === 0) {
+                container.innerHTML = '<div class="text-muted fst-italic">No teachers assigned</div>';
+                return;
+            }
+
+            container.innerHTML = defCurrentTeachers.map((t, index) => `
+                <div class="d-flex align-items-center justify-content-between mb-2 p-2 bg-light rounded">
+                    <div>
+                        <span class="badge bg-primary me-2">${index + 1}</span>
+                        <span>${t.name}</span>
+                        ${index === 0 ? '<span class="badge bg-success ms-2">Lead</span>' : ''}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="defRemoveTeacher(${t.id})">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Add teacher
+        function defAddTeacher() {
+            const select = document.getElementById('defTeacherSelect');
+            const teacherId = parseInt(select.value);
+            if (!teacherId) return;
+
+            // Check if already added
+            if (defCurrentTeachers.some(t => t.id === teacherId)) {
+                alert('This teacher is already assigned to this lesson');
+                return;
+            }
+
+            const teacherName = select.options[select.selectedIndex].text;
+            defCurrentTeachers.push({ id: teacherId, name: teacherName });
+            defRenderTeachersList();
+            select.value = '';
+        }
+
+        // Remove teacher
+        function defRemoveTeacher(teacherId) {
+            defCurrentTeachers = defCurrentTeachers.filter(t => t.id !== teacherId);
+            defRenderTeachersList();
+        }
+
+        // Save teachers
+        async function defSaveTeachers() {
+            const lessonId = parseInt(document.getElementById('editDefLessonId').value);
+            const teacherIds = defCurrentTeachers.map(t => t.id);
+
+            try {
+                const response = await fetch('/Admin/Timetables/Edit?handler=UpdateLessonTeachers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ lessonId, teacherIds })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    defShowToast('Teachers updated successfully', 'success');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error saving teachers');
+            }
+        }
+
+        // Render subjects list
+        function defRenderSubjectsList() {
+            const container = document.getElementById('defCurrentSubjectsList');
+            if (defCurrentSubjects.length === 0) {
+                container.innerHTML = '<div class="text-muted fst-italic">No subjects assigned</div>';
+                return;
+            }
+
+            container.innerHTML = defCurrentSubjects.map((s, index) => `
+                <div class="d-flex align-items-center justify-content-between mb-2 p-2 bg-light rounded">
+                    <div>
+                        <span class="badge bg-secondary me-2">${s.code}</span>
+                        <span>${s.name}</span>
+                        ${index === 0 ? '<span class="badge bg-success ms-2">Primary</span>' : ''}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="defRemoveSubject(${s.id})">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Add subject
+        function defAddSubject() {
+            const select = document.getElementById('defSubjectSelect');
+            const subjectId = parseInt(select.value);
+            if (!subjectId) return;
+
+            // Check if already added
+            if (defCurrentSubjects.some(s => s.id === subjectId)) {
+                alert('This subject is already assigned to this lesson');
+                return;
+            }
+
+            const text = select.options[select.selectedIndex].text;
+            const parts = text.split(' - ');
+            defCurrentSubjects.push({ id: subjectId, code: parts[0], name: parts[1] || parts[0] });
+            defRenderSubjectsList();
+            select.value = '';
+        }
+
+        // Remove subject
+        function defRemoveSubject(subjectId) {
+            defCurrentSubjects = defCurrentSubjects.filter(s => s.id !== subjectId);
+            defRenderSubjectsList();
+        }
+
+        // Save subjects
+        async function defSaveSubjects() {
+            const lessonId = parseInt(document.getElementById('editDefLessonId').value);
+            const subjectIds = defCurrentSubjects.map(s => s.id);
+
+            try {
+                const response = await fetch('/Admin/Timetables/Edit?handler=UpdateLessonSubjects', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ lessonId, subjectIds })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    defShowToast('Subjects updated successfully', 'success');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error saving subjects');
+            }
+        }
+
+        // Render classes list
+        function defRenderClassesList() {
+            const container = document.getElementById('defCurrentClassesList');
+            if (defCurrentClasses.length === 0) {
+                container.innerHTML = '<div class="text-muted fst-italic">No classes assigned</div>';
+                return;
+            }
+
+            container.innerHTML = defCurrentClasses.map((c, index) => `
+                <div class="d-flex align-items-center justify-content-between mb-2 p-2 bg-light rounded">
+                    <div>
+                        <span class="badge bg-info me-2">${index + 1}</span>
+                        <span>${c.name}</span>
+                        ${index === 0 ? '<span class="badge bg-success ms-2">Primary</span>' : ''}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="defRemoveClass(${c.id})">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Add class
+        function defAddClass() {
+            const select = document.getElementById('defClassSelect');
+            const classId = parseInt(select.value);
+            if (!classId) return;
+
+            // Check if already added
+            if (defCurrentClasses.some(c => c.id === classId)) {
+                alert('This class is already assigned to this lesson');
+                return;
+            }
+
+            const className = select.options[select.selectedIndex].text;
+            defCurrentClasses.push({ id: classId, name: className });
+            defRenderClassesList();
+            select.value = '';
+        }
+
+        // Remove class
+        function defRemoveClass(classId) {
+            defCurrentClasses = defCurrentClasses.filter(c => c.id !== classId);
+            defRenderClassesList();
+        }
+
+        // Save classes
+        async function defSaveClasses() {
+            const lessonId = parseInt(document.getElementById('editDefLessonId').value);
+            const classIds = defCurrentClasses.map(c => c.id);
+
+            try {
+                const response = await fetch('/Admin/Timetables/Edit?handler=UpdateLessonClasses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ lessonId, classIds })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    defShowToast('Classes updated successfully', 'success');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error saving classes');
+            }
+        }
+
+        // Save properties
+        async function defSaveProperties() {
+            const lessonId = parseInt(document.getElementById('editDefLessonId').value);
+            const model = {
+                id: lessonId,
+                duration: parseInt(document.getElementById('defEditDuration').value) || 1,
+                frequencyPerWeek: parseInt(document.getElementById('defEditFrequency').value) || 1,
+                description: document.getElementById('defEditDescription').value,
+                specialRequirements: document.getElementById('defEditSpecialRequirements').value,
+                isActive: document.getElementById('defEditIsActive').checked
+            };
+
+            try {
+                const response = await fetch('/Admin/Timetables/Edit?handler=UpdateLessonDefinition', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify(model)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    defShowToast('Properties updated successfully', 'success');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error saving properties');
+            }
+        }
+
+        // Toast notification helper for edit lesson definition
+        function defShowToast(message, type = 'success') {
+            // Create toast container if it doesn't exist
+            let toastContainer = document.getElementById('defToastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'defToastContainer';
+                toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                toastContainer.style.zIndex = '9999';
+                document.body.appendChild(toastContainer);
+            }
+
+            const toastHtml = `
+                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+
+            const toastEl = document.createElement('div');
+            toastEl.innerHTML = toastHtml;
+            const toast = toastEl.firstElementChild;
+            toastContainer.appendChild(toast);
+
+            const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+            bsToast.show();
+
+            toast.addEventListener('hidden.bs.toast', () => {
+                toast.remove();
+            });
+        }
+    </script>
+}

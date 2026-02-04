@@ -1,0 +1,553 @@
+@page
+@model SchedulingSystem.Pages.Admin.Lessons.EditModel
+@{
+    ViewData["Title"] = Model.IsNewLesson ? "Create Lesson" : "Edit Lesson";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header @(Model.IsNewLesson ? "bg-success" : "bg-primary") text-white">
+                    <h4 class="mb-0">
+                        <i class="bi @(Model.IsNewLesson ? "bi-plus-circle" : "bi-pencil-square")"></i>
+                        @(Model.IsNewLesson ? "Create New Lesson" : $"Edit Lesson #{Model.LessonInput.Id}")
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form method="post">
+                        <input type="hidden" asp-for="LessonInput.Id" />
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <!-- Row 1: Lesson Properties (Full Width) -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light py-2">
+                                <strong><i class="bi bi-gear"></i> Lesson Properties</strong>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="row">
+                                    <div class="col-md-2 mb-2">
+                                        <label asp-for="LessonInput.Duration" class="form-label small mb-1">
+                                            <i class="bi bi-clock"></i> Duration (Periods)
+                                        </label>
+                                        <input asp-for="LessonInput.Duration" class="form-control form-control-sm" type="number" min="1" max="10" />
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label asp-for="LessonInput.FrequencyPerWeek" class="form-label small mb-1">
+                                            <i class="bi bi-calendar-week"></i> Times/Week
+                                        </label>
+                                        <input asp-for="LessonInput.FrequencyPerWeek" class="form-control form-control-sm" type="number" min="1" max="20" />
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label asp-for="LessonInput.RequiredRoomType" class="form-label small mb-1">
+                                            <i class="bi bi-door-open"></i> Required Room Type
+                                        </label>
+                                        <select asp-for="LessonInput.RequiredRoomType" class="form-select form-select-sm">
+                                            <option value="">Any Room Type</option>
+                                            <option value="Classroom">Classroom</option>
+                                            <option value="Laboratory">Laboratory</option>
+                                            <option value="Computer Lab">Computer Lab</option>
+                                            <option value="Gymnasium">Gymnasium</option>
+                                            <option value="Music Room">Music Room</option>
+                                            <option value="Art Room">Art Room</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label asp-for="LessonInput.Description" class="form-label small mb-1">
+                                            <i class="bi bi-card-text"></i> Description
+                                        </label>
+                                        <input asp-for="LessonInput.Description" class="form-control form-control-sm" placeholder="Optional description" />
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label asp-for="LessonInput.SpecialRequirements" class="form-label small mb-1">
+                                            <i class="bi bi-exclamation-circle"></i> Special Requirements
+                                        </label>
+                                        <input asp-for="LessonInput.SpecialRequirements" class="form-control form-control-sm" placeholder="Special requirements" />
+                                    </div>
+                                    <div class="col-md-1 mb-2 d-flex align-items-end">
+                                        <div class="form-check">
+                                            <input asp-for="LessonInput.IsActive" class="form-check-input" />
+                                            <label asp-for="LessonInput.IsActive" class="form-check-label small">
+                                                Active
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Three Columns - Classes, Teachers, Subjects -->
+                        <div class="row">
+                            <!-- Column 1: Classes -->
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light py-2">
+                                        <strong><i class="bi bi-people"></i> Classes</strong>
+                                        <span class="badge bg-info ms-2" id="classCount">@Model.SelectedClassIds.Count</span>
+                                    </div>
+                                    <div class="card-body py-2">
+                                        <div id="selectedClassesList" class="mb-2" style="min-height: 60px; max-height: 150px; overflow-y: auto;">
+                                            @if (Model.SelectedClassIds.Count == 0)
+                                            {
+                                                <span class="text-muted fst-italic no-selection-text">No classes selected</span>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var classId in Model.SelectedClassIds)
+                                                {
+                                                    var cls = Model.AllClasses.FirstOrDefault(c => c.Id == classId);
+                                                    if (cls != null)
+                                                    {
+                                                        <span class="badge bg-info me-1 mb-1 selected-item" data-id="@cls.Id" data-type="class">
+                                                            @cls.Name (Grade @cls.YearLevel)
+                                                            <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.5rem;" onclick="removeItem('class', @cls.Id)"></button>
+                                                            <input type="hidden" name="SelectedClassIds" value="@cls.Id" />
+                                                        </span>
+                                                    }
+                                                }
+                                            }
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <select id="classSelect" class="form-select form-select-sm">
+                                                <option value="">-- Select a class to add --</option>
+                                                @foreach (var cls in Model.AllClasses)
+                                                {
+                                                    <option value="@cls.Id" data-name="@cls.Name (Grade @cls.YearLevel)">@cls.Name (Grade @cls.YearLevel)</option>
+                                                }
+                                            </select>
+                                            <button type="button" class="btn btn-outline-primary" onclick="addItem('class')">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Column 2: Teachers -->
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light py-2">
+                                        <strong><i class="bi bi-person-badge"></i> Teachers</strong>
+                                        <span class="badge bg-primary ms-2" id="teacherCount">@Model.SelectedTeacherIds.Count</span>
+                                    </div>
+                                    <div class="card-body py-2">
+                                        <div id="selectedTeachersList" class="mb-2" style="min-height: 60px; max-height: 150px; overflow-y: auto;">
+                                            @if (Model.SelectedTeacherIds.Count == 0)
+                                            {
+                                                <span class="text-muted fst-italic no-selection-text">No teachers selected</span>
+                                            }
+                                            else
+                                            {
+                                                var isFirst = true;
+                                                @foreach (var teacherId in Model.SelectedTeacherIds)
+                                                {
+                                                    var teacher = Model.AllTeachers.FirstOrDefault(t => t.Id == teacherId);
+                                                    if (teacher != null)
+                                                    {
+                                                        <span class="badge bg-primary me-1 mb-1 selected-item" data-id="@teacher.Id" data-type="teacher">
+                                                            @teacher.FullName @(isFirst ? "(Lead)" : "")
+                                                            <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.5rem;" onclick="removeItem('teacher', @teacher.Id)"></button>
+                                                            <input type="hidden" name="SelectedTeacherIds" value="@teacher.Id" />
+                                                        </span>
+                                                        isFirst = false;
+                                                    }
+                                                }
+                                            }
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <select id="teacherSelect" class="form-select form-select-sm">
+                                                <option value="">-- Select a teacher to add --</option>
+                                                @foreach (var teacher in Model.AllTeachers)
+                                                {
+                                                    <option value="@teacher.Id" data-name="@teacher.FullName">@teacher.FullName</option>
+                                                }
+                                            </select>
+                                            <button type="button" class="btn btn-outline-primary" onclick="addItem('teacher')">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">First teacher is lead</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Column 3: Subjects -->
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light py-2">
+                                        <strong><i class="bi bi-book"></i> Subjects</strong>
+                                        <span class="badge bg-secondary ms-2" id="subjectCount">@Model.SelectedSubjectIds.Count</span>
+                                    </div>
+                                    <div class="card-body py-2">
+                                        <div id="selectedSubjectsList" class="mb-2" style="min-height: 60px; max-height: 150px; overflow-y: auto;">
+                                            @if (Model.SelectedSubjectIds.Count == 0)
+                                            {
+                                                <span class="text-muted fst-italic no-selection-text">No subjects selected</span>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var subjectId in Model.SelectedSubjectIds)
+                                                {
+                                                    var subject = Model.AllSubjects.FirstOrDefault(s => s.Id == subjectId);
+                                                    if (subject != null)
+                                                    {
+                                                        <span class="badge bg-secondary me-1 mb-1 selected-item" data-id="@subject.Id" data-type="subject">
+                                                            @subject.Code - @subject.Name
+                                                            <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.5rem;" onclick="removeItem('subject', @subject.Id)"></button>
+                                                            <input type="hidden" name="SelectedSubjectIds" value="@subject.Id" />
+                                                        </span>
+                                                    }
+                                                }
+                                            }
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <select id="subjectSelect" class="form-select form-select-sm">
+                                                <option value="">-- Select a subject to add --</option>
+                                                @foreach (var subject in Model.AllSubjects)
+                                                {
+                                                    <option value="@subject.Id" data-name="@subject.Code - @subject.Name">@subject.Code - @subject.Name</option>
+                                                }
+                                            </select>
+                                            <button type="button" class="btn btn-outline-primary" onclick="addItem('subject')">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Teacher-Subject-Class Assignments (Optional - for complex lessons) -->
+                        @if (!Model.IsNewLesson)
+                        {
+                            <div class="card mb-3">
+                                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong><i class="bi bi-diagram-3"></i> Teacher-Subject-Class Assignments</strong>
+                                        <span class="badge bg-secondary ms-2" id="assignmentCount">@Model.LessonAssignments.Count</span>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#assignmentsSection">
+                                        <i class="bi bi-chevron-down"></i> Toggle
+                                    </button>
+                                </div>
+                                <div class="collapse @(Model.LessonAssignments.Any() ? "show" : "")" id="assignmentsSection">
+                                    <div class="card-body py-2">
+                                        <p class="text-muted small mb-2">
+                                            <i class="bi bi-info-circle"></i>
+                                            Optional: Define specific teacher-subject-class combinations for multi-teacher or multi-subject lessons.
+                                            If no assignments are defined, all participants will be shown together.
+                                        </p>
+
+                                        <!-- Existing Assignments -->
+                                        <div id="assignmentsList" class="mb-3">
+                                            @if (!Model.LessonAssignments.Any())
+                                            {
+                                                <div class="text-muted fst-italic no-assignments-text">No assignments defined</div>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var assignment in Model.LessonAssignments)
+                                                {
+                                                    <div class="assignment-row border rounded p-2 mb-2 bg-white" data-assignment-index="@Model.LessonAssignments.IndexOf(assignment)">
+                                                        <div class="row g-2 align-items-center">
+                                                            <div class="col-md-3">
+                                                                <select name="Assignment_TeacherId" class="form-select form-select-sm">
+                                                                    <option value="">-- Teacher --</option>
+                                                                    @foreach (var teacher in Model.AllTeachers)
+                                                                    {
+                                                                        if (assignment.TeacherId == teacher.Id)
+                                                                        {
+                                                                            <option value="@teacher.Id" selected>@teacher.FullName</option>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <option value="@teacher.Id">@teacher.FullName</option>
+                                                                        }
+                                                                    }
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <select name="Assignment_SubjectId" class="form-select form-select-sm">
+                                                                    <option value="">-- Subject --</option>
+                                                                    @foreach (var subject in Model.AllSubjects)
+                                                                    {
+                                                                        if (assignment.SubjectId == subject.Id)
+                                                                        {
+                                                                            <option value="@subject.Id" selected>@subject.Code - @subject.Name</option>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <option value="@subject.Id">@subject.Code - @subject.Name</option>
+                                                                        }
+                                                                    }
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <select name="Assignment_ClassId" class="form-select form-select-sm">
+                                                                    <option value="">-- Class --</option>
+                                                                    @foreach (var cls in Model.AllClasses)
+                                                                    {
+                                                                        if (assignment.ClassId == cls.Id)
+                                                                        {
+                                                                            <option value="@cls.Id" selected>@cls.Name</option>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <option value="@cls.Id">@cls.Name</option>
+                                                                        }
+                                                                    }
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-2">
+                                                                <input type="text" name="Assignment_Notes" class="form-control form-control-sm" placeholder="Notes" value="@assignment.Notes" />
+                                                            </div>
+                                                            <div class="col-md-1 text-end">
+                                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeAssignment(this)">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+
+                                        <!-- Add New Assignment Button -->
+                                        <button type="button" class="btn btn-outline-success btn-sm" onclick="addAssignment()">
+                                            <i class="bi bi-plus-circle"></i> Add Assignment
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between mt-3">
+                            <button type="submit" asp-page-handler="Cancel" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                            <button type="submit" class="btn @(Model.IsNewLesson ? "btn-success" : "btn-primary")">
+                                <i class="bi bi-check-circle"></i> @(Model.IsNewLesson ? "Create Lesson" : "Save Changes")
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function getListId(type) {
+            // Handle pluralization correctly
+            if (type === 'class') {
+                return 'selectedClassesList';
+            }
+            return 'selected' + type.charAt(0).toUpperCase() + type.slice(1) + 'sList';
+        }
+
+        function addItem(type) {
+            const select = document.getElementById(type + 'Select');
+            const id = parseInt(select.value);
+            if (!id) return;
+
+            const name = select.options[select.selectedIndex].getAttribute('data-name');
+            const container = document.getElementById(getListId(type));
+            const countId = type + 'Count';
+
+            // Check if already added
+            if (container.querySelector(`[data-id="${id}"]`)) {
+                alert('This ' + type + ' is already added');
+                return;
+            }
+
+            // Remove "no selection" text if present
+            const noSelectionText = container.querySelector('.no-selection-text');
+            if (noSelectionText) {
+                noSelectionText.remove();
+            }
+
+            // Determine badge color and label
+            let badgeClass = 'bg-secondary';
+            let inputName = '';
+            let label = name;
+
+            if (type === 'class') {
+                badgeClass = 'bg-info';
+                inputName = 'SelectedClassIds';
+            } else if (type === 'subject') {
+                badgeClass = 'bg-secondary';
+                inputName = 'SelectedSubjectIds';
+            } else if (type === 'teacher') {
+                badgeClass = 'bg-primary';
+                inputName = 'SelectedTeacherIds';
+                // Check if this is the first teacher (lead)
+                if (!container.querySelector('.selected-item')) {
+                    label = name + ' (Lead)';
+                }
+            }
+
+            // Create badge element
+            const badge = document.createElement('span');
+            badge.className = `badge ${badgeClass} me-1 mb-1 selected-item`;
+            badge.setAttribute('data-id', id);
+            badge.setAttribute('data-type', type);
+            badge.innerHTML = `
+                ${label}
+                <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.5rem;" onclick="removeItem('${type}', ${id})"></button>
+                <input type="hidden" name="${inputName}" value="${id}" />
+            `;
+
+            container.appendChild(badge);
+            select.value = '';
+
+            // Update count
+            updateCount(type);
+        }
+
+        function removeItem(type, id) {
+            const container = document.getElementById(getListId(type));
+            const item = container.querySelector(`[data-id="${id}"]`);
+
+            if (item) {
+                item.remove();
+
+                // If no items left, show "no selection" text
+                if (!container.querySelector('.selected-item')) {
+                    const text = document.createElement('span');
+                    text.className = 'text-muted fst-italic no-selection-text';
+                    text.textContent = 'No ' + type + 's selected';
+                    container.appendChild(text);
+                }
+
+                // If teacher was removed and there are still teachers, update lead label
+                if (type === 'teacher') {
+                    updateTeacherLeadLabel();
+                }
+
+                updateCount(type);
+            }
+        }
+
+        function updateTeacherLeadLabel() {
+            const container = document.getElementById('selectedTeachersList');
+            const items = container.querySelectorAll('.selected-item');
+
+            items.forEach((item, index) => {
+                const id = item.getAttribute('data-id');
+                const select = document.getElementById('teacherSelect');
+                const option = select.querySelector(`option[value="${id}"]`);
+                const name = option ? option.getAttribute('data-name') : '';
+
+                // Update the text content (keeping the button and input)
+                const button = item.querySelector('button');
+                const input = item.querySelector('input');
+                item.innerHTML = '';
+                item.textContent = name + (index === 0 ? ' (Lead)' : '');
+                item.appendChild(document.createTextNode(' '));
+                item.appendChild(button);
+                item.appendChild(input);
+            });
+        }
+
+        function updateCount(type) {
+            const container = document.getElementById(getListId(type));
+            const count = container.querySelectorAll('.selected-item').length;
+            document.getElementById(type + 'Count').textContent = count;
+        }
+
+        // Assignment management functions
+        function addAssignment() {
+            const container = document.getElementById('assignmentsList');
+
+            // Remove "no assignments" text if present
+            const noText = container.querySelector('.no-assignments-text');
+            if (noText) {
+                noText.remove();
+            }
+
+            // Get current teachers, subjects, and classes from the selected items
+            const teacherOptions = buildOptionsFromSelect('teacherSelect', 'FullName');
+            const subjectOptions = buildOptionsFromSelect('subjectSelect', 'Code - Name');
+            const classOptions = buildOptionsFromSelect('classSelect', 'Name');
+
+            const row = document.createElement('div');
+            row.className = 'assignment-row border rounded p-2 mb-2 bg-white';
+            row.innerHTML = `
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-3">
+                        <select name="Assignment_TeacherId" class="form-select form-select-sm">
+                            <option value="">-- Teacher --</option>
+                            ${teacherOptions}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="Assignment_SubjectId" class="form-select form-select-sm">
+                            <option value="">-- Subject --</option>
+                            ${subjectOptions}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="Assignment_ClassId" class="form-select form-select-sm">
+                            <option value="">-- Class --</option>
+                            ${classOptions}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" name="Assignment_Notes" class="form-control form-control-sm" placeholder="Notes" />
+                    </div>
+                    <div class="col-md-1 text-end">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeAssignment(this)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(row);
+            updateAssignmentCount();
+        }
+
+        function buildOptionsFromSelect(selectId, dataName) {
+            const select = document.getElementById(selectId);
+            let options = '';
+            for (let i = 1; i < select.options.length; i++) {
+                const opt = select.options[i];
+                options += `<option value="${opt.value}">${opt.getAttribute('data-name') || opt.text}</option>`;
+            }
+            return options;
+        }
+
+        function removeAssignment(button) {
+            const row = button.closest('.assignment-row');
+            row.remove();
+
+            const container = document.getElementById('assignmentsList');
+            if (!container.querySelector('.assignment-row')) {
+                const text = document.createElement('div');
+                text.className = 'text-muted fst-italic no-assignments-text';
+                text.textContent = 'No assignments defined';
+                container.appendChild(text);
+            }
+
+            updateAssignmentCount();
+        }
+
+        function updateAssignmentCount() {
+            const count = document.querySelectorAll('#assignmentsList .assignment-row').length;
+            const countElement = document.getElementById('assignmentCount');
+            if (countElement) {
+                countElement.textContent = count;
+            }
+        }
+    </script>
+}

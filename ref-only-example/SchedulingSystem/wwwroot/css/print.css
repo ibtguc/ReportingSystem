@@ -1,0 +1,311 @@
+/* Print Styles for Timetable Views */
+
+@media print {
+    /* Hide navigation and interactive elements */
+    nav,
+    .navbar,
+    .btn,
+    .btn-toolbar,
+    .btn-group,
+    footer,
+    .alert,
+    .dropdown,
+    .form-select,
+    .form-control,
+    #optimizationLevelDiv,
+    #algorithmSelect,
+    .card-header {
+        display: none !important;
+    }
+
+    /* Reset body styles for print */
+    body {
+        font-size: 10pt;
+        line-height: 1.4;
+        color: #000;
+        background: white;
+    }
+
+    /* Page setup */
+    @page {
+        size: A4 landscape;
+        margin: 1.5cm 1cm;
+    }
+
+    /* Headers */
+    h1, h2 {
+        font-size: 16pt;
+        font-weight: bold;
+        margin-bottom: 10pt;
+        color: #000;
+        page-break-after: avoid;
+    }
+
+    h3, h4, h5, h6 {
+        font-size: 12pt;
+        font-weight: bold;
+        margin-bottom: 8pt;
+        color: #000;
+        page-break-after: avoid;
+    }
+
+    /* Container adjustments */
+    .container,
+    .container-fluid {
+        width: 100%;
+        max-width: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Timetable grid optimization */
+    .timetable-grid {
+        font-size: 9pt;
+        width: 100%;
+        border-collapse: collapse;
+        page-break-inside: auto;
+    }
+
+    .timetable-grid th,
+    .timetable-grid td {
+        border: 1px solid #000;
+        padding: 4pt;
+        vertical-align: top;
+    }
+
+    .timetable-grid thead {
+        display: table-header-group;
+    }
+
+    .timetable-grid thead th {
+        background-color: #e0e0e0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .timetable-grid tbody tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+
+    /* Period cell */
+    .period-cell {
+        background-color: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-weight: 600;
+        width: 100pt;
+    }
+
+    /* Lesson cells */
+    .lesson-cell {
+        min-height: 50pt;
+        padding: 4pt;
+    }
+
+    .lesson-cell strong {
+        font-size: 10pt;
+        font-weight: bold;
+        display: block;
+        margin-bottom: 2pt;
+    }
+
+    .lesson-cell small {
+        font-size: 8pt;
+        display: block;
+        line-height: 1.2;
+    }
+
+    /* Preserve lesson colors for print */
+    .lesson-cell {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Empty cells */
+    .empty-cell {
+        background-color: white !important;
+    }
+
+    /* Cards */
+    .card {
+        border: 1px solid #ddd;
+        margin-bottom: 10pt;
+        page-break-inside: avoid;
+    }
+
+    .card-body {
+        padding: 10pt;
+    }
+
+    /* Tables */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    table th,
+    table td {
+        border: 1px solid #ddd;
+        padding: 4pt 6pt;
+        text-align: left;
+    }
+
+    table thead {
+        display: table-header-group;
+    }
+
+    table thead th {
+        background-color: #e0e0e0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-weight: bold;
+    }
+
+    /* Badges and labels */
+    .badge {
+        border: 1px solid #000;
+        padding: 2pt 4pt;
+        font-size: 8pt;
+        font-weight: normal;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Icons - hide or replace with text */
+    .bi::before {
+        display: none;
+    }
+
+    /* Links */
+    a {
+        color: #000;
+        text-decoration: none;
+    }
+
+    a[href]:after {
+        content: none;
+    }
+
+    /* Quality metrics */
+    .metric-box h2 {
+        font-size: 18pt;
+        margin-bottom: 4pt;
+    }
+
+    .metric-box p {
+        font-size: 9pt;
+        margin: 0;
+    }
+
+    /* Conflict reports */
+    .conflict-details {
+        font-size: 9pt;
+        margin-bottom: 8pt;
+        page-break-inside: avoid;
+    }
+
+    /* Statistics tables */
+    .statistics-table {
+        font-size: 9pt;
+    }
+
+    /* Page breaks */
+    .page-break {
+        page-break-before: always;
+    }
+
+    .no-break {
+        page-break-inside: avoid;
+    }
+
+    /* Header for each page */
+    .print-header {
+        text-align: center;
+        margin-bottom: 15pt;
+        border-bottom: 2pt solid #000;
+        padding-bottom: 8pt;
+    }
+
+    .print-header h1 {
+        margin: 0;
+        font-size: 18pt;
+    }
+
+    .print-header p {
+        margin: 2pt 0 0 0;
+        font-size: 10pt;
+        color: #666;
+    }
+
+    /* Footer */
+    .print-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 8pt;
+        color: #666;
+        border-top: 1pt solid #ccc;
+        padding-top: 4pt;
+    }
+
+    /* Ensure colors print */
+    * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Timetable specific */
+    .view-container {
+        page-break-before: always;
+    }
+
+    .view-container:first-child {
+        page-break-before: avoid;
+    }
+
+    /* Day headers in timetable */
+    .timetable-grid th {
+        padding: 6pt;
+    }
+
+    /* Compact mode for multi-class printouts */
+    .compact-print .timetable-grid {
+        font-size: 8pt;
+    }
+
+    .compact-print .timetable-grid th,
+    .compact-print .timetable-grid td {
+        padding: 2pt;
+    }
+
+    /* Landscape orientation hint */
+    .landscape-note {
+        display: none;
+    }
+
+    @page :first {
+        margin-top: 2cm;
+    }
+}
+
+/* Print button styling (visible on screen, hidden in print) */
+@media screen {
+    .print-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+}
+
+@media print {
+    .print-button {
+        display: none !important;
+    }
+}

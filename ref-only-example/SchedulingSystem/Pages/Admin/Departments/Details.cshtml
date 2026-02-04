@@ -1,0 +1,130 @@
+@page
+@model SchedulingSystem.Pages.Admin.Departments.DetailsModel
+@{
+    ViewData["Title"] = "Department Details";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="bi bi-building"></i> Department Details</h4>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Department Code</dt>
+                        <dd class="col-sm-9"><strong>@Model.Department.Name</strong></dd>
+
+                        <dt class="col-sm-3">Full Name</dt>
+                        <dd class="col-sm-9">@(Model.Department.FullName ?? "-")</dd>
+
+                        <dt class="col-sm-3">Status</dt>
+                        <dd class="col-sm-9">
+                            @if (Model.Department.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </dd>
+                    </dl>
+
+                    <hr />
+
+                    @if (Model.Department.Teachers.Any())
+                    {
+                        <h5 class="mt-4"><i class="bi bi-person-badge"></i> Teachers (@Model.Department.Teachers.Count)</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Short Name</th>
+                                        <th>Full Name</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var teacher in Model.Department.Teachers.OrderBy(t => t.ShortName))
+                                    {
+                                        <tr>
+                                            <td><strong>@teacher.ShortName</strong></td>
+                                            <td>@teacher.FullName</td>
+                                            <td>
+                                                @if (teacher.IsActive)
+                                                {
+                                                    <span class="badge bg-success">Active</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Inactive</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted"><i class="bi bi-info-circle"></i> No teachers assigned to this department.</p>
+                    }
+
+                    @if (Model.Department.Subjects.Any())
+                    {
+                        <h5 class="mt-4"><i class="bi bi-book"></i> Subjects (@Model.Department.Subjects.Count)</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var subject in Model.Department.Subjects.OrderBy(s => s.Code))
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(subject.Color))
+                                                {
+                                                    <span class="badge" style="background-color: @subject.Color;">@subject.Code</span>
+                                                }
+                                                else
+                                                {
+                                                    <strong>@subject.Code</strong>
+                                                }
+                                            </td>
+                                            <td>@subject.Name</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted"><i class="bi bi-info-circle"></i> No subjects assigned to this department.</p>
+                    }
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a asp-page="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                        <div>
+                            <a asp-page="Edit" asp-route-id="@Model.Department.Id" class="btn btn-primary">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <a asp-page="Delete" asp-route-id="@Model.Department.Id" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

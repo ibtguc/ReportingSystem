@@ -1,0 +1,204 @@
+@page
+@using SchedulingSystem.Models
+@model SchedulingSystem.Pages.Admin.Teachers.DetailsModel
+@{
+    ViewData["Title"] = "Teacher Details";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="bi bi-info-circle"></i> Teacher Details</h4>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Name</dt>
+                        <dd class="col-sm-9"><strong>@Model.Teacher.FullName</strong></dd>
+
+                        <dt class="col-sm-3">Email</dt>
+                        <dd class="col-sm-9">
+                            <a href="mailto:@Model.Teacher.Email">@Model.Teacher.Email</a>
+                        </dd>
+
+                        <dt class="col-sm-3">Phone Number</dt>
+                        <dd class="col-sm-9">
+                            @if (!string.IsNullOrEmpty(Model.Teacher.PhoneNumber))
+                            {
+                                @Model.Teacher.PhoneNumber
+                            }
+                            else
+                            {
+                                <span class="text-muted">Not provided</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-3">Max Hours/Week</dt>
+                        <dd class="col-sm-9">@Model.Teacher.MaxHoursPerWeek hours</dd>
+
+                        <dt class="col-sm-3">Status</dt>
+                        <dd class="col-sm-9">
+                            @if (Model.Teacher.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </dd>
+                    </dl>
+
+                    <hr />
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Subject Qualifications</h5>
+                        <a asp-page="ManageQualifications" asp-route-id="@Model.Teacher.Id" class="btn btn-sm btn-primary">
+                            <i class="bi bi-gear"></i> Manage Qualifications
+                        </a>
+                    </div>
+                    @if (!Model.Teacher.TeacherSubjects.Any())
+                    {
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> No subject qualifications defined for this teacher.
+                            <a asp-page="ManageQualifications" asp-route-id="@Model.Teacher.Id" class="alert-link">Add qualifications now</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            @foreach (var ts in Model.Teacher.TeacherSubjects.OrderBy(ts => ts.Subject?.Name))
+                            {
+                                <div class="col-md-6 mb-2">
+                                    <div class="card border-start border-primary border-3">
+                                        <div class="card-body py-2 px-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>@ts.Subject?.Name</strong>
+                                                    @if (!string.IsNullOrEmpty(ts.QualificationLevel))
+                                                    {
+                                                        <span class="badge bg-info ms-2">@ts.QualificationLevel</span>
+                                                    }
+                                                    @if (ts.IsPreferred)
+                                                    {
+                                                        <span class="badge bg-success ms-1">Preferred</span>
+                                                    }
+                                                </div>
+                                                <span class="text-muted">@ts.Subject?.Code</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <hr />
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Time Constraints</h5>
+                        <a asp-page="ManageAvailability" asp-route-id="@Model.Teacher.Id" class="btn btn-sm btn-primary">
+                            <i class="bi bi-gear"></i> Manage Constraints
+                        </a>
+                    </div>
+                    <p class="text-muted small">Scheduling preferences: Negative = Avoid scheduling, Positive = Try to schedule</p>
+                    @if (!Model.Teacher.Availabilities.Any())
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No availability constraints. Teacher is available all periods by default.
+                            <a asp-page="ManageAvailability" asp-route-id="@Model.Teacher.Id" class="alert-link">Add constraints if needed</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Day</th>
+                                        <th>Period</th>
+                                        <th>Status</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var availability in Model.Teacher.Availabilities.OrderBy(a => a.DayOfWeek).ThenBy(a => a.Period?.PeriodNumber))
+                                    {
+                                        var (badgeClass, label) = availability.Importance switch
+                                        {
+                                            3 => ("bg-success", "Try +3 (strongest)"),
+                                            2 => ("bg-info", "Try +2 (medium)"),
+                                            1 => ("bg-light text-dark", "Try +1 (weakest)"),
+                                            0 => ("bg-secondary", "Neutral (0)"),
+                                            -1 => ("bg-light text-dark border", "Avoid -1 (weakest)"),
+                                            -2 => ("bg-warning text-dark", "Avoid -2 (medium)"),
+                                            -3 => ("bg-danger", "Avoid -3 (strongest)"),
+                                            _ => ("bg-secondary", "Unknown")
+                                        };
+                                        <tr>
+                                            <td>@availability.DayOfWeek</td>
+                                            <td>@availability.Period?.Name</td>
+                                            <td>
+                                                <span class="badge @badgeClass">@label</span>
+                                            </td>
+                                            <td>@(availability.Reason ?? "-")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    <hr />
+
+                    <h5><i class="bi bi-calendar2-week"></i> Assigned Lessons</h5>
+                    @if (Model.Teacher.LessonTeachers.Count == 0)
+                    {
+                        <p class="text-muted">No lessons assigned to this teacher.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Class</th>
+                                        <th>Frequency/Week</th>
+                                        <th>Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var lesson in Model.Teacher.LessonTeachers.Select(lt => lt.Lesson))
+                                    {
+                                        <tr>
+                                            <td>@lesson?.LessonSubjects.FirstOrDefault()?.Subject?.Name</td>
+                                            <td>@lesson?.LessonClasses.FirstOrDefault()?.Class?.Name</td>
+                                            <td>@lesson?.FrequencyPerWeek times</td>
+                                            <td>@lesson?.Duration period(s)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    <div class="mt-4 d-flex justify-content-between">
+                        <a asp-page="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                        <div>
+                            <a asp-page="Edit" asp-route-id="@Model.Teacher.Id" class="btn btn-primary">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <a asp-page="Delete" asp-route-id="@Model.Teacher.Id" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

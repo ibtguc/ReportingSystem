@@ -1,0 +1,111 @@
+@page
+@model SchedulingSystem.Pages.Admin.Rooms.CreateModel
+@{
+    ViewData["Title"] = "Create Room";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Create New Room</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label asp-for="Room.RoomNumber" class="form-label"></label>
+                                <input asp-for="Room.RoomNumber" class="form-control" placeholder="e.g., 101" />
+                                <span asp-validation-for="Room.RoomNumber" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Room.Name" class="form-label"></label>
+                                <input asp-for="Room.Name" class="form-control" placeholder="e.g., Science Lab 1" />
+                                <span asp-validation-for="Room.Name" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label asp-for="Room.Capacity" class="form-label"></label>
+                                <input asp-for="Room.Capacity" class="form-control" type="number" min="1" max="500" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Room.RoomType" class="form-label"></label>
+                                <select asp-for="Room.RoomType" class="form-select">
+                                    <option value="">-- Select Type --</option>
+                                    <option value="Classroom">Classroom</option>
+                                    <option value="Laboratory">Laboratory</option>
+                                    <option value="Computer Lab">Computer Lab</option>
+                                    <option value="Gymnasium">Gymnasium</option>
+                                    <option value="Art Room">Art Room</option>
+                                    <option value="Music Room">Music Room</option>
+                                    <option value="Auditorium">Auditorium</option>
+                                    <option value="Library">Library</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Room.Building" class="form-label"></label>
+                                <input asp-for="Room.Building" class="form-control" placeholder="e.g., Main Building" />
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Room.Floor" class="form-label"></label>
+                                <input asp-for="Room.Floor" class="form-control" placeholder="e.g., 1st Floor" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Room.DepartmentId" class="form-label"></label>
+                                <select asp-for="Room.DepartmentId" class="form-select" asp-items="Model.DepartmentList">
+                                    <option value="">-- Select Department --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Room.AlternativeRoomId" class="form-label"></label>
+                                <select asp-for="Room.AlternativeRoomId" class="form-select" asp-items="Model.AlternativeRoomList">
+                                    <option value="">-- No Alternative --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check mt-4 pt-2">
+                                    <input asp-for="Room.IsActive" class="form-check-input" type="checkbox" />
+                                    <label asp-for="Room.IsActive" class="form-check-label"></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="Room.Facilities" class="form-label"></label>
+                                <textarea asp-for="Room.Facilities" class="form-control" rows="2" placeholder="e.g., Projector, Whiteboard, Smart TV"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-page="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to List
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Create Room
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

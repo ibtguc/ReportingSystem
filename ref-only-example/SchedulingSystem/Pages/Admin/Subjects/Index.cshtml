@@ -1,0 +1,166 @@
+@page
+@model SchedulingSystem.Pages.Admin.Subjects.IndexModel
+@functions {
+    /// <summary>
+    /// Converts a decimal COLORREF value to hex RGB color code.
+    /// Colors stored as Windows COLORREF in BGR format: 0x00BBGGRR
+    /// </summary>
+    public static string ConvertDecimalColorToHex(string? decimalColor, string defaultColor = "#6c757d")
+    {
+        if (string.IsNullOrWhiteSpace(decimalColor))
+            return defaultColor;
+
+        // If already a hex color, return as-is
+        if (decimalColor.StartsWith("#"))
+            return decimalColor;
+
+        if (!long.TryParse(decimalColor, out long colorValue))
+            return defaultColor;
+
+        // Extract RGB from COLORREF (BGR format: 0x00BBGGRR)
+        int r = (int)(colorValue & 0xFF);
+        int g = (int)((colorValue >> 8) & 0xFF);
+        int b = (int)((colorValue >> 16) & 0xFF);
+
+        return $"#{r:X2}{g:X2}{b:X2}";
+    }
+
+    /// <summary>
+    /// Determines appropriate foreground color (black or white) based on background luminance.
+    /// </summary>
+    public static string GetContrastingTextColor(string hexBgColor)
+    {
+        if (string.IsNullOrWhiteSpace(hexBgColor) || !hexBgColor.StartsWith("#") || hexBgColor.Length < 7)
+            return "#FFFFFF";
+
+        try
+        {
+            int r = Convert.ToInt32(hexBgColor.Substring(1, 2), 16);
+            int g = Convert.ToInt32(hexBgColor.Substring(3, 2), 16);
+            int b = Convert.ToInt32(hexBgColor.Substring(5, 2), 16);
+
+            // Calculate relative luminance using sRGB formula
+            double luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+            return luminance > 0.5 ? "#000000" : "#FFFFFF";
+        }
+        catch
+        {
+            return "#FFFFFF";
+        }
+    }
+}
+@{
+    ViewData["Title"] = "Subjects";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-book"></i> Subjects</h2>
+            <p class="text-muted">Manage subjects in the system</p>
+        </div>
+        <div class="col text-end">
+            <a asp-page="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add New Subject
+            </a>
+        </div>
+    </div>
+
+    @if (Model.Subjects.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No subjects found. Click "Add New Subject" to create one.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Constraints</th>
+                                <th>Factor</th>
+                                <th>Lessons</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var subject in Model.Subjects)
+                            {
+                                <tr>
+                                    <td>
+                                        @{
+                                            var bgColor = ConvertDecimalColorToHex(subject.BackgroundColor);
+                                            var fgColor = GetContrastingTextColor(bgColor);
+                                        }
+                                        <span class="badge" style="background-color: @bgColor; color: @fgColor;">@subject.Code</span>
+                                    </td>
+                                    <td>@subject.Name</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(subject.Category))
+                                        {
+                                            <span class="badge bg-secondary">@subject.Category</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>
+                                            @if (subject.MinPeriodsPerWeek.HasValue || subject.MaxPeriodsPerWeek.HasValue)
+                                            {
+                                                <text>Week: @(subject.MinPeriodsPerWeek ?? 0)-@(subject.MaxPeriodsPerWeek ?? 0)<br/></text>
+                                            }
+                                            @if (subject.MinPeriodsPerDay.HasValue || subject.MaxPeriodsPerDay.HasValue)
+                                            {
+                                                <text>Day: @(subject.MinPeriodsPerDay ?? 0)-@(subject.MaxPeriodsPerDay ?? 0)</text>
+                                            }
+                                            @if (!subject.MinPeriodsPerWeek.HasValue && !subject.MaxPeriodsPerWeek.HasValue && !subject.MinPeriodsPerDay.HasValue && !subject.MaxPeriodsPerDay.HasValue)
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </small>
+                                    </td>
+                                    <td>
+                                        @if (subject.Factor.HasValue)
+                                        {
+                                            @subject.Factor.Value.ToString("0.##")
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>@subject.LessonSubjects.Count</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-page="ManageAvailability" asp-route-id="@subject.Id" class="btn btn-outline-secondary" title="Manage Availability">
+                                                <i class="bi bi-calendar-week"></i>
+                                            </a>
+                                            <a asp-page="Details" asp-route-id="@subject.Id" class="btn btn-outline-info" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-page="Edit" asp-route-id="@subject.Id" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-page="Delete" asp-route-id="@subject.Id" class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

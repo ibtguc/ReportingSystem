@@ -1,0 +1,133 @@
+@page
+@model SchedulingSystem.Pages.Admin.Import.RoomsModel
+@{
+    ViewData["Title"] = "Import Rooms";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-upload"></i> Import Rooms</h2>
+            <p class="text-muted">Upload a CSV file to import room data</p>
+        </div>
+        <div class="col-auto">
+            <a asp-page="Index" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Import Hub
+            </a>
+        </div>
+    </div>
+
+    @if (Model.ShowResults)
+    {
+        @if (Model.ImportedCount > 0)
+        {
+            <div class="alert alert-success alert-dismissible fade show">
+                <i class="bi bi-check-circle"></i> <strong>Success!</strong> Imported @Model.ImportedCount room(s).
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @if (Model.SkippedCount > 0)
+        {
+            <div class="alert alert-warning alert-dismissible fade show">
+                <i class="bi bi-exclamation-triangle"></i> <strong>Note:</strong> Skipped @Model.SkippedCount record(s) due to duplicates or validation issues.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @if (Model.Warnings.Any())
+        {
+            <div class="alert alert-warning">
+                <h6><i class="bi bi-exclamation-triangle"></i> Warnings</h6>
+                <ul class="mb-0">
+                    @foreach (var warning in Model.Warnings)
+                    {
+                        <li>@warning</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (Model.Errors.Any())
+        {
+            <div class="alert alert-danger">
+                <h6><i class="bi bi-x-circle"></i> Errors</h6>
+                <ul class="mb-0">
+                    @foreach (var error in Model.Errors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Upload CSV File</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="uploadedFile" class="form-label">Select CSV File</label>
+                            <input type="file" class="form-control" asp-for="UploadedFile" accept=".csv" required />
+                            <div class="form-text">Upload a CSV file following the template format</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-page-handler="DownloadTemplate" class="btn btn-outline-secondary">
+                                <i class="bi bi-download"></i> Download Template
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Import Rooms
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> CSV Format</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Required Fields:</h6>
+                    <ul>
+                        <li><code>RoomNumber</code> (must be unique)</li>
+                        <li><code>Name</code></li>
+                        <li><code>Capacity</code> (numeric)</li>
+                    </ul>
+
+                    <h6>Optional Fields:</h6>
+                    <ul>
+                        <li><code>RoomType</code> (e.g., Classroom, Laboratory)</li>
+                        <li><code>IsActive</code> (default: true)</li>
+                    </ul>
+
+                    <h6>Example:</h6>
+                    <pre class="bg-light p-2 small">RoomNumber,Name,RoomType,Capacity
+101,Room 101,Classroom,30
+LAB1,Science Lab 1,Laboratory,24</pre>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-warning mt-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Important</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="small mb-0">
+                        <li>Duplicate RoomNumbers will be skipped automatically</li>
+                        <li>Capacity must be a positive number</li>
+                        <li>Invalid rows will be reported but won't stop the import</li>
+                        <li>Existing rooms won't be modified</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

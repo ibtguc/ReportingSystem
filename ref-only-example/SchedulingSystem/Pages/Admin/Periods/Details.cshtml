@@ -1,0 +1,61 @@
+@page
+@model SchedulingSystem.Pages.Admin.Periods.DetailsModel
+@{
+    ViewData["Title"] = "Period Details";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="bi bi-eye"></i> Period Details</h4>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Period Number</dt>
+                        <dd class="col-sm-8"><strong>@Model.Period.PeriodNumber</strong></dd>
+
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8">@Model.Period.Name</dd>
+
+                        <dt class="col-sm-4">Start Time</dt>
+                        <dd class="col-sm-8">@Model.Period.StartTime.ToString(@"hh\:mm")</dd>
+
+                        <dt class="col-sm-4">End Time</dt>
+                        <dd class="col-sm-8">@Model.Period.EndTime.ToString(@"hh\:mm")</dd>
+
+                        <dt class="col-sm-4">Duration</dt>
+                        <dd class="col-sm-8">@Model.Period.DurationMinutes minutes</dd>
+
+                        <dt class="col-sm-4">Type</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Period.IsBreak)
+                            {
+                                <span class="badge bg-warning text-dark">Break</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-info">Lesson</span>
+                            }
+                        </dd>
+                    </dl>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a asp-page="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                        <div>
+                            <a asp-page="Edit" asp-route-id="@Model.Period.Id" class="btn btn-primary">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <a asp-page="Delete" asp-route-id="@Model.Period.Id" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

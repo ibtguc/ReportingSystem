@@ -1,0 +1,78 @@
+@page
+@model SchedulingSystem.Pages.Admin.Departments.DeleteModel
+@{
+    ViewData["Title"] = "Delete Department";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-trash"></i> Delete Department</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i> Are you sure you want to delete this department?
+                    </div>
+
+                    @if (Model.HasRelatedData)
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-octagon"></i> <strong>Warning:</strong> This department has related data:
+                            <ul class="mb-0 mt-2">
+                                @if (Model.TeacherCount > 0)
+                                {
+                                    <li>@Model.TeacherCount teacher(s) assigned</li>
+                                }
+                                @if (Model.SubjectCount > 0)
+                                {
+                                    <li>@Model.SubjectCount subject(s) assigned</li>
+                                }
+                            </ul>
+                            <p class="mt-2 mb-0">Deleting this department will remove these associations.</p>
+                        </div>
+                    }
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Department Code</dt>
+                        <dd class="col-sm-8"><strong>@Model.Department.Name</strong></dd>
+
+                        <dt class="col-sm-4">Full Name</dt>
+                        <dd class="col-sm-8">@(Model.Department.FullName ?? "-")</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Department.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Teachers</dt>
+                        <dd class="col-sm-8">@Model.TeacherCount</dd>
+
+                        <dt class="col-sm-4">Subjects</dt>
+                        <dd class="col-sm-8">@Model.SubjectCount</dd>
+                    </dl>
+
+                    <form method="post">
+                        <input type="hidden" asp-for="Department.Id" />
+                        <div class="d-flex justify-content-between">
+                            <a asp-page="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to List
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete Department
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
