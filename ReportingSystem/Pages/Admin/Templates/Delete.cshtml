@@ -1,0 +1,87 @@
+@page "{id:int}"
+@using ReportingSystem.Models
+@model ReportingSystem.Pages.Admin.Templates.DeleteModel
+@{
+    ViewData["Title"] = "Delete Template";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Delete Template</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong>Warning:</strong> Are you sure you want to delete this template? This will also remove all fields, periods, and assignments. This action cannot be undone.
+                    </div>
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Template Name</dt>
+                        <dd class="col-sm-8"><strong>@Model.Template.Name</strong></dd>
+
+                        <dt class="col-sm-4">Schedule</dt>
+                        <dd class="col-sm-8"><span class="badge bg-primary">@ReportSchedule.DisplayName(Model.Template.Schedule)</span></dd>
+
+                        <dt class="col-sm-4">Version</dt>
+                        <dd class="col-sm-8">v@(Model.Template.Version)</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Template.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Created</dt>
+                        <dd class="col-sm-8">@Model.Template.CreatedAt.ToString("yyyy-MM-dd HH:mm")</dd>
+                    </dl>
+
+                    @if (Model.FieldCount > 0 || Model.PeriodCount > 0 || Model.AssignmentCount > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            This template has:
+                            <ul class="mb-0 mt-1">
+                                @if (Model.FieldCount > 0) { <li><strong>@Model.FieldCount</strong> field(s)</li> }
+                                @if (Model.PeriodCount > 0) { <li><strong>@Model.PeriodCount</strong> period(s)</li> }
+                                @if (Model.AssignmentCount > 0) { <li><strong>@Model.AssignmentCount</strong> assignment(s)</li> }
+                            </ul>
+                            All will be deleted.
+                        </div>
+                    }
+
+                    @if (Model.ReportCount > 0)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-octagon-fill"></i>
+                            <strong>Cannot delete:</strong> This template has <strong>@Model.ReportCount</strong> report(s). Deactivate the template instead.
+                        </div>
+                    }
+
+                    <form method="post">
+                        <input type="hidden" asp-for="Template.Id" />
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-page="Details" asp-route-id="@Model.Template.Id" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            @if (Model.ReportCount == 0)
+                            {
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> Delete Template
+                                </button>
+                            }
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -41,6 +41,8 @@ public class User
     public OrganizationalUnit? OrganizationalUnit { get; set; }
 
     public ICollection<MagicLink> MagicLinks { get; set; } = new List<MagicLink>();
+    public ICollection<Report> SubmittedReports { get; set; } = new List<Report>();
+    public ICollection<Report> ReviewedReports { get; set; } = new List<Report>();
 }
 
 /// <summary>

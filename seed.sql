@@ -411,6 +411,252 @@ VALUES (5, '18', 7, 'Delegation Active', 'Your approval authority has been deleg
 
 
 -- =============================================================================
+-- 5. REPORT TEMPLATES
+-- =============================================================================
+-- Define the report templates that users will fill out.
+-- Schedule: Daily, Weekly, BiWeekly, Monthly, Quarterly, Annual, Custom
+-- =============================================================================
+
+DELETE FROM ReportFieldValues;
+DELETE FROM Attachments;
+DELETE FROM Reports;
+DELETE FROM ReportPeriods;
+DELETE FROM ReportFields;
+DELETE FROM ReportTemplateAssignments;
+DELETE FROM ReportTemplates;
+DELETE FROM sqlite_sequence WHERE name IN ('ReportTemplates', 'ReportTemplateAssignments', 'ReportFields', 'ReportPeriods', 'Reports', 'ReportFieldValues', 'Attachments');
+
+-- Template 1: Monthly Department Status Report
+INSERT INTO ReportTemplates (Id, Name, Description, Schedule, Version, VersionNotes, IncludeSuggestedActions, IncludeNeededResources, IncludeNeededSupport, AutoSaveIntervalSeconds, AllowPrePopulation, AllowBulkImport, MaxAttachmentSizeMb, AllowedFileTypes, IsActive, CreatedAt, UpdatedAt, CreatedById)
+VALUES (1, 'Monthly Department Status Report', 'Standard monthly report for department heads covering KPIs, activities, challenges, and resource needs.', 'Monthly', 1, 'Initial template version', 1, 1, 1, 60, 1, 0, 10, '.pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg', 1, datetime('now'), NULL, 6);
+
+-- Template 2: Weekly Team Progress Report
+INSERT INTO ReportTemplates (Id, Name, Description, Schedule, Version, VersionNotes, IncludeSuggestedActions, IncludeNeededResources, IncludeNeededSupport, AutoSaveIntervalSeconds, AllowPrePopulation, AllowBulkImport, MaxAttachmentSizeMb, AllowedFileTypes, IsActive, CreatedAt, UpdatedAt, CreatedById)
+VALUES (2, 'Weekly Team Progress Report', 'Weekly progress report for team leads covering sprint progress, blockers, and upcoming work.', 'Weekly', 1, 'Initial template version', 1, 0, 1, 30, 1, 0, 5, '.pdf,.doc,.docx,.png,.jpg,.jpeg', 1, datetime('now'), NULL, 6);
+
+-- Template 3: Quarterly Academic Performance Report
+INSERT INTO ReportTemplates (Id, Name, Description, Schedule, Version, VersionNotes, IncludeSuggestedActions, IncludeNeededResources, IncludeNeededSupport, AutoSaveIntervalSeconds, AllowPrePopulation, AllowBulkImport, MaxAttachmentSizeMb, AllowedFileTypes, IsActive, CreatedAt, UpdatedAt, CreatedById)
+VALUES (3, 'Quarterly Academic Performance Report', 'Quarterly report for faculty departments covering teaching effectiveness, research output, and student outcomes.', 'Quarterly', 1, 'Initial template version', 1, 1, 1, 60, 1, 1, 20, '.pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.pptx', 1, datetime('now'), NULL, 6);
+
+-- Template 4: Annual Executive Summary Report
+INSERT INTO ReportTemplates (Id, Name, Description, Schedule, Version, VersionNotes, IncludeSuggestedActions, IncludeNeededResources, IncludeNeededSupport, AutoSaveIntervalSeconds, AllowPrePopulation, AllowBulkImport, MaxAttachmentSizeMb, AllowedFileTypes, IsActive, CreatedAt, UpdatedAt, CreatedById)
+VALUES (4, 'Annual Executive Summary Report', 'Annual summary report prepared by campus deans and division heads for the university president.', 'Annual', 1, 'Initial template version', 1, 1, 1, 60, 1, 1, 50, '.pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.pptx', 1, datetime('now'), NULL, 6);
+
+-- Template 5: IT Infrastructure Health Report (monthly)
+INSERT INTO ReportTemplates (Id, Name, Description, Schedule, Version, VersionNotes, IncludeSuggestedActions, IncludeNeededResources, IncludeNeededSupport, AutoSaveIntervalSeconds, AllowPrePopulation, AllowBulkImport, MaxAttachmentSizeMb, AllowedFileTypes, IsActive, CreatedAt, UpdatedAt, CreatedById)
+VALUES (5, 'IT Infrastructure Health Report', 'Monthly report on IT infrastructure status, uptime, incidents, and capacity.', 'Monthly', 1, 'Initial template version', 1, 1, 0, 60, 1, 1, 10, '.pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg', 1, datetime('now'), NULL, 6);
+
+
+-- =============================================================================
+-- 6. REPORT FIELDS (Template field definitions)
+-- =============================================================================
+-- FieldType: 0=Text, 1=Numeric, 2=Date, 3=Dropdown, 4=Checkbox, 5=FileUpload, 6=RichText, 7=TableGrid
+-- =============================================================================
+
+-- ---- Template 1 Fields: Monthly Department Status Report ----
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (1, 1, 'Department Summary', 'dept_summary', 'Provide a brief overview of the department''s status this month.', 6, 'General', 0, 1, 1, NULL, NULL, 50, 2000, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (2, 1, 'Total Active Staff', 'total_staff', 'Number of currently active staff in the department.', 1, 'Key Metrics', 1, 1, 1, 0, 500, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 1, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (3, 1, 'Projects Completed', 'projects_completed', 'Number of projects completed this month.', 1, 'Key Metrics', 1, 2, 1, 0, 100, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (4, 1, 'Projects In Progress', 'projects_in_progress', 'Number of projects currently in progress.', 1, 'Key Metrics', 1, 3, 1, 0, 100, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (5, 1, 'Budget Utilization (%)', 'budget_utilization', 'Percentage of allocated budget used this month.', 1, 'Key Metrics', 1, 4, 1, 0, 100, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (6, 1, 'Overall Status', 'overall_status', 'Select the overall status of the department.', 3, 'Key Metrics', 1, 5, 1, NULL, NULL, NULL, NULL, NULL, NULL, '["On Track","At Risk","Behind Schedule","Exceeding Expectations"]', 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (7, 1, 'Key Achievements', 'achievements', 'List the key achievements this month.', 6, 'Activities', 2, 1, 0, NULL, NULL, NULL, 3000, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (8, 1, 'Current Challenges', 'challenges', 'Describe any challenges or blockers encountered.', 6, 'Activities', 2, 2, 0, NULL, NULL, NULL, 3000, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (9, 1, 'Plans for Next Month', 'next_month_plans', 'Key plans and objectives for the upcoming month.', 6, 'Planning', 3, 1, 0, NULL, NULL, NULL, 3000, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (10, 1, 'Requires Executive Attention', 'needs_attention', 'Check if this report requires immediate executive attention.', 4, 'Planning', 3, 2, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, 'false', 0, 1, datetime('now'));
+
+-- ---- Template 2 Fields: Weekly Team Progress Report ----
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (11, 2, 'Sprint/Week Summary', 'week_summary', 'Brief overview of the week''s progress.', 0, 'Summary', 0, 1, 1, NULL, NULL, 10, 500, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (12, 2, 'Tasks Completed', 'tasks_completed', 'Number of tasks completed this week.', 1, 'Metrics', 1, 1, 1, 0, 200, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (13, 2, 'Tasks In Progress', 'tasks_in_progress', 'Number of tasks currently being worked on.', 1, 'Metrics', 1, 2, 1, 0, 200, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (14, 2, 'Blockers', 'blockers', 'Describe any current blockers preventing progress.', 6, 'Issues', 2, 1, 0, NULL, NULL, NULL, 2000, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (15, 2, 'Team Velocity', 'velocity', 'Story points or tasks completed per team member.', 1, 'Metrics', 1, 3, 0, 0, 100, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (16, 2, 'Next Week Focus', 'next_week', 'Key tasks and priorities for next week.', 0, 'Planning', 3, 1, 1, NULL, NULL, 10, 1000, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+-- ---- Template 5 Fields: IT Infrastructure Health Report ----
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (17, 5, 'System Uptime (%)', 'uptime_pct', 'Overall system uptime percentage for the month.', 1, 'Availability', 0, 1, 1, 0, 100, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (18, 5, 'Total Incidents', 'total_incidents', 'Total number of infrastructure incidents this month.', 1, 'Incidents', 1, 1, 1, 0, 500, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (19, 5, 'Critical Incidents', 'critical_incidents', 'Number of critical (P1/P2) incidents.', 1, 'Incidents', 1, 2, 1, 0, 100, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (20, 5, 'Server Capacity Status', 'server_capacity', 'Current server capacity utilization level.', 3, 'Capacity', 2, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '["Green (< 60%)","Yellow (60-80%)","Orange (80-90%)","Red (> 90%)"]', 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (21, 5, 'Network Bandwidth Usage (%)', 'network_usage', 'Average network bandwidth utilization.', 1, 'Capacity', 2, 2, 1, 0, 100, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+INSERT INTO ReportFields (Id, ReportTemplateId, Label, FieldKey, HelpText, Type, Section, SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, MinLength, MaxLength, RegexPattern, ValidationMessage, OptionsJson, IsCalculated, Formula, VisibilityConditionJson, TableColumnsJson, DefaultValue, PrePopulateFromPrevious, IsActive, CreatedAt)
+VALUES (22, 5, 'Incident Summary', 'incident_summary', 'Brief summary of major incidents and resolutions.', 6, 'Incidents', 1, 3, 0, NULL, NULL, NULL, 3000, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, 0, 1, datetime('now'));
+
+
+-- =============================================================================
+-- 7. TEMPLATE ASSIGNMENTS
+-- =============================================================================
+
+-- Monthly Dept Report assigned to all department heads
+INSERT INTO ReportTemplateAssignments (Id, ReportTemplateId, AssignmentType, TargetId, RoleValue, IncludeSubUnits, CreatedAt)
+VALUES (1, 1, 'Role', NULL, 'DepartmentHead', 0, datetime('now'));
+
+-- Weekly Team Report assigned to IT & Admin division (includes sub-units)
+INSERT INTO ReportTemplateAssignments (Id, ReportTemplateId, AssignmentType, TargetId, RoleValue, IncludeSubUnits, CreatedAt)
+VALUES (2, 2, 'OrgUnit', 9, NULL, 1, datetime('now'));
+
+-- Weekly Team Report also assigned to team managers by role
+INSERT INTO ReportTemplateAssignments (Id, ReportTemplateId, AssignmentType, TargetId, RoleValue, IncludeSubUnits, CreatedAt)
+VALUES (3, 2, 'Role', NULL, 'TeamManager', 0, datetime('now'));
+
+-- Quarterly Academic Report assigned to Engineering Faculty
+INSERT INTO ReportTemplateAssignments (Id, ReportTemplateId, AssignmentType, TargetId, RoleValue, IncludeSubUnits, CreatedAt)
+VALUES (4, 3, 'OrgUnit', 4, NULL, 1, datetime('now'));
+
+-- Quarterly Academic Report assigned to MET Faculty
+INSERT INTO ReportTemplateAssignments (Id, ReportTemplateId, AssignmentType, TargetId, RoleValue, IncludeSubUnits, CreatedAt)
+VALUES (5, 3, 'OrgUnit', 5, NULL, 1, datetime('now'));
+
+-- Annual Executive Report assigned to executives
+INSERT INTO ReportTemplateAssignments (Id, ReportTemplateId, AssignmentType, TargetId, RoleValue, IncludeSubUnits, CreatedAt)
+VALUES (6, 4, 'Role', NULL, 'Executive', 0, datetime('now'));
+
+-- IT Infrastructure Report assigned to Head of Infrastructure
+INSERT INTO ReportTemplateAssignments (Id, ReportTemplateId, AssignmentType, TargetId, RoleValue, IncludeSubUnits, CreatedAt)
+VALUES (7, 5, 'Individual', 19, NULL, 0, datetime('now'));
+
+
+-- =============================================================================
+-- 8. REPORT PERIODS
+-- =============================================================================
+-- PeriodStatus: 0=Upcoming, 1=Open, 2=Closed, 3=Archived
+-- =============================================================================
+
+-- Monthly Dept Report periods
+INSERT INTO ReportPeriods (Id, ReportTemplateId, Name, StartDate, EndDate, SubmissionDeadline, GracePeriodDays, Status, IsActive, CreatedAt)
+VALUES (1, 1, 'January 2026', '2026-01-01', '2026-01-31', '2026-02-05', 3, 2, 1, datetime('now'));
+
+INSERT INTO ReportPeriods (Id, ReportTemplateId, Name, StartDate, EndDate, SubmissionDeadline, GracePeriodDays, Status, IsActive, CreatedAt)
+VALUES (2, 1, 'February 2026', '2026-02-01', '2026-02-28', '2026-03-05', 3, 1, 1, datetime('now'));
+
+INSERT INTO ReportPeriods (Id, ReportTemplateId, Name, StartDate, EndDate, SubmissionDeadline, GracePeriodDays, Status, IsActive, CreatedAt)
+VALUES (3, 1, 'March 2026', '2026-03-01', '2026-03-31', '2026-04-05', 3, 0, 1, datetime('now'));
+
+-- Weekly Team Report periods
+INSERT INTO ReportPeriods (Id, ReportTemplateId, Name, StartDate, EndDate, SubmissionDeadline, GracePeriodDays, Status, IsActive, CreatedAt)
+VALUES (4, 2, 'Week of Jan 27, 2026', '2026-01-27', '2026-02-02', '2026-02-03', 1, 2, 1, datetime('now'));
+
+INSERT INTO ReportPeriods (Id, ReportTemplateId, Name, StartDate, EndDate, SubmissionDeadline, GracePeriodDays, Status, IsActive, CreatedAt)
+VALUES (5, 2, 'Week of Feb 03, 2026', '2026-02-03', '2026-02-09', '2026-02-10', 1, 1, 1, datetime('now'));
+
+-- Quarterly Academic periods
+INSERT INTO ReportPeriods (Id, ReportTemplateId, Name, StartDate, EndDate, SubmissionDeadline, GracePeriodDays, Status, IsActive, CreatedAt)
+VALUES (6, 3, 'Q4 2025', '2025-10-01', '2025-12-31', '2026-01-15', 5, 2, 1, datetime('now'));
+
+INSERT INTO ReportPeriods (Id, ReportTemplateId, Name, StartDate, EndDate, SubmissionDeadline, GracePeriodDays, Status, IsActive, CreatedAt)
+VALUES (7, 3, 'Q1 2026', '2026-01-01', '2026-03-31', '2026-04-15', 5, 1, 1, datetime('now'));
+
+-- IT Infrastructure Health Report periods
+INSERT INTO ReportPeriods (Id, ReportTemplateId, Name, StartDate, EndDate, SubmissionDeadline, GracePeriodDays, Status, IsActive, CreatedAt)
+VALUES (8, 5, 'January 2026', '2026-01-01', '2026-01-31', '2026-02-05', 3, 2, 1, datetime('now'));
+
+INSERT INTO ReportPeriods (Id, ReportTemplateId, Name, StartDate, EndDate, SubmissionDeadline, GracePeriodDays, Status, IsActive, CreatedAt)
+VALUES (9, 5, 'February 2026', '2026-02-01', '2026-02-28', '2026-03-05', 3, 1, 1, datetime('now'));
+
+
+-- =============================================================================
+-- 9. SAMPLE REPORTS
+-- =============================================================================
+
+-- Submitted report: Head of Software Dev - Monthly Dept Report - January 2026
+INSERT INTO Reports (Id, ReportTemplateId, ReportPeriodId, SubmittedById, AssignedReviewerId, Status, SubmittedAt, ReviewedAt, ReviewComments, IsLocked, LastAutoSaveAt, AmendmentCount, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (1, 1, 1, 18, 3, 'Approved', datetime('now', '-25 days'), datetime('now', '-23 days'), 'Good comprehensive report. Approved.', 1, datetime('now', '-25 days'), 0, 0, datetime('now', '-30 days'), datetime('now', '-23 days'));
+
+-- Report field values for Report 1
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (1, 1, 1, '<p>The Software Development department had a productive January. We completed 3 major projects and are on track with our Q1 roadmap. Team morale is high after the successful launch of the Student Portal v2.</p>', NULL, 0, datetime('now', '-25 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (2, 1, 2, '24', 24, 0, datetime('now', '-25 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (3, 1, 3, '3', 3, 0, datetime('now', '-25 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (4, 1, 4, '5', 5, 0, datetime('now', '-25 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (5, 1, 5, '72', 72, 0, datetime('now', '-25 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (6, 1, 6, 'On Track', NULL, 0, datetime('now', '-25 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (7, 1, 7, '<ul><li>Student Portal v2 launched successfully</li><li>API gateway migration completed</li><li>Automated testing coverage increased to 85%</li></ul>', NULL, 0, datetime('now', '-25 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (8, 1, 8, '<p>Two senior developers resigned, creating a knowledge gap in the mobile team. Recruitment is in progress.</p>', NULL, 0, datetime('now', '-25 days'), NULL);
+
+-- Draft report: Head of IT Infrastructure - Monthly Dept Report - February 2026
+INSERT INTO Reports (Id, ReportTemplateId, ReportPeriodId, SubmittedById, AssignedReviewerId, Status, SubmittedAt, ReviewedAt, ReviewComments, IsLocked, LastAutoSaveAt, AmendmentCount, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (2, 1, 2, 19, NULL, 'Draft', NULL, NULL, NULL, 0, datetime('now', '-1 day'), 0, 0, datetime('now', '-3 days'), datetime('now', '-1 day'));
+
+-- Submitted report: Backend Team Lead - Weekly Progress - Week of Feb 03
+INSERT INTO Reports (Id, ReportTemplateId, ReportPeriodId, SubmittedById, AssignedReviewerId, Status, SubmittedAt, ReviewedAt, ReviewComments, IsLocked, LastAutoSaveAt, AmendmentCount, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (3, 2, 5, 26, 22, 'Submitted', datetime('now', '-1 day'), NULL, NULL, 0, datetime('now', '-1 day'), 0, 0, datetime('now', '-2 days'), datetime('now', '-1 day'));
+
+-- Report field values for Report 3
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (9, 3, 11, 'Sprint 4 is progressing well. Completed migration of authentication service to new identity provider.', NULL, 0, datetime('now', '-1 day'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (10, 3, 12, '8', 8, 0, datetime('now', '-1 day'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (11, 3, 13, '4', 4, 0, datetime('now', '-1 day'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (12, 3, 14, '<p>Waiting for DevOps team to provision staging environment for new API.</p>', NULL, 0, datetime('now', '-1 day'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (13, 3, 16, 'Complete API integration tests. Begin user acceptance testing for the reporting module.', NULL, 0, datetime('now', '-1 day'), NULL);
+
+-- Submitted report: Head of Infrastructure - IT Health - January 2026 (Approved)
+INSERT INTO Reports (Id, ReportTemplateId, ReportPeriodId, SubmittedById, AssignedReviewerId, Status, SubmittedAt, ReviewedAt, ReviewComments, IsLocked, LastAutoSaveAt, AmendmentCount, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (4, 5, 8, 19, 3, 'Approved', datetime('now', '-20 days'), datetime('now', '-18 days'), 'Excellent uptime numbers. Approved.', 1, datetime('now', '-20 days'), 0, 0, datetime('now', '-25 days'), datetime('now', '-18 days'));
+
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (14, 4, 17, '99.7', 99.7, 0, datetime('now', '-20 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (15, 4, 18, '12', 12, 0, datetime('now', '-20 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (16, 4, 19, '1', 1, 0, datetime('now', '-20 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (17, 4, 20, 'Yellow (60-80%)', NULL, 0, datetime('now', '-20 days'), NULL);
+INSERT INTO ReportFieldValues (Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, CreatedAt, UpdatedAt)
+VALUES (18, 4, 21, '65', 65, 0, datetime('now', '-20 days'), NULL);
+
+
+-- =============================================================================
 -- SUMMARY
 -- =============================================================================
 -- Organizational Units: 36 units across 6 levels
@@ -436,6 +682,18 @@ VALUES (5, '18', 7, 'Delegation Active', 'Your approval authority has been deleg
 --   - 1 Upcoming (starts in 2 weeks)
 --   - 1 Past (completed)
 --   - 1 Revoked
+--
+-- Report Templates: 5 templates
+--   - Monthly Department Status Report (10 fields)
+--   - Weekly Team Progress Report (6 fields)
+--   - Quarterly Academic Performance Report (no fields yet)
+--   - Annual Executive Summary Report (no fields yet)
+--   - IT Infrastructure Health Report (6 fields)
+--
+-- Template Assignments: 7 assignments (by role, org unit, individual)
+-- Report Periods: 9 periods across templates
+-- Sample Reports: 4 reports (1 approved, 1 draft, 1 submitted, 1 approved)
+-- Report Field Values: 18 sample data entries
 --
 -- Notifications: 5 initial system notifications
 -- =============================================================================

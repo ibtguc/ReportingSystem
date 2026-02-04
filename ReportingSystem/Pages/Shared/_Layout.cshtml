@@ -26,6 +26,18 @@
                             <a class="nav-link" asp-area="" asp-page="/Admin/Dashboard">Home</a>
                         </li>
                         <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="reportDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                Reporting
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="reportDropdown">
+                                <li><a class="dropdown-item" asp-page="/Admin/Reports/Index"><i class="bi bi-file-earmark-text"></i> Reports</a></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/Reports/Create"><i class="bi bi-file-earmark-plus"></i> New Report</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/Templates/Index"><i class="bi bi-file-earmark-ruled"></i> Templates</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="orgDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 Organization

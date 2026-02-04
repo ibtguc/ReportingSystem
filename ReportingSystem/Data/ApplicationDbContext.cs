@@ -21,6 +21,15 @@ public class ApplicationDbContext : DbContext
     public DbSet<OrganizationalUnit> OrganizationalUnits { get; set; }
     public DbSet<Delegation> Delegations { get; set; }
 
+    // Reporting DbSets
+    public DbSet<ReportTemplate> ReportTemplates { get; set; }
+    public DbSet<ReportTemplateAssignment> ReportTemplateAssignments { get; set; }
+    public DbSet<ReportField> ReportFields { get; set; }
+    public DbSet<ReportPeriod> ReportPeriods { get; set; }
+    public DbSet<Report> Reports { get; set; }
+    public DbSet<ReportFieldValue> ReportFieldValues { get; set; }
+    public DbSet<Attachment> Attachments { get; set; }
+
     // Notification DbSets
     public DbSet<Notification> Notifications { get; set; }
 
@@ -93,6 +102,130 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Delegate)
                 .WithMany()
                 .HasForeignKey(e => e.DelegateId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ReportTemplate
+        modelBuilder.Entity<ReportTemplate>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.Schedule);
+            entity.HasIndex(e => e.IsActive);
+
+            entity.HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure ReportTemplateAssignment
+        modelBuilder.Entity<ReportTemplateAssignment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ReportTemplateId, e.AssignmentType });
+            entity.HasIndex(e => e.TargetId);
+
+            entity.HasOne(e => e.ReportTemplate)
+                .WithMany(t => t.Assignments)
+                .HasForeignKey(e => e.ReportTemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure ReportField
+        modelBuilder.Entity<ReportField>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ReportTemplateId, e.SectionOrder, e.FieldOrder });
+            entity.HasIndex(e => e.FieldKey);
+
+            entity.HasOne(e => e.ReportTemplate)
+                .WithMany(t => t.Fields)
+                .HasForeignKey(e => e.ReportTemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure ReportPeriod
+        modelBuilder.Entity<ReportPeriod>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ReportTemplateId, e.StartDate, e.EndDate });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.SubmissionDeadline);
+
+            entity.HasOne(e => e.ReportTemplate)
+                .WithMany(t => t.Periods)
+                .HasForeignKey(e => e.ReportTemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure Report
+        modelBuilder.Entity<Report>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ReportTemplateId, e.ReportPeriodId, e.SubmittedById }).IsUnique();
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.SubmittedById);
+            entity.HasIndex(e => e.AssignedReviewerId);
+
+            entity.HasOne(e => e.ReportTemplate)
+                .WithMany(t => t.Reports)
+                .HasForeignKey(e => e.ReportTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ReportPeriod)
+                .WithMany(p => p.Reports)
+                .HasForeignKey(e => e.ReportPeriodId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.SubmittedBy)
+                .WithMany(u => u.SubmittedReports)
+                .HasForeignKey(e => e.SubmittedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.AssignedReviewer)
+                .WithMany(u => u.ReviewedReports)
+                .HasForeignKey(e => e.AssignedReviewerId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure ReportFieldValue
+        modelBuilder.Entity<ReportFieldValue>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ReportId, e.ReportFieldId }).IsUnique();
+
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.FieldValues)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ReportField)
+                .WithMany(f => f.Values)
+                .HasForeignKey(e => e.ReportFieldId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Attachment
+        modelBuilder.Entity<Attachment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.ReportFieldId);
+
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.Attachments)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ReportField)
+                .WithMany()
+                .HasForeignKey(e => e.ReportFieldId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.UploadedBy)
+                .WithMany()
+                .HasForeignKey(e => e.UploadedById)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

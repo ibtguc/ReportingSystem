@@ -1,0 +1,208 @@
+@page "{id:int}"
+@using ReportingSystem.Models
+@using System.Text.Json
+@model ReportingSystem.Pages.Admin.Reports.FillModel
+@{
+    ViewData["Title"] = $"Fill Report - {Model.Report.ReportTemplate.Name}";
+}
+
+<div class="container mt-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Report Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2><i class="bi bi-file-earmark-text"></i> @Model.Report.ReportTemplate.Name</h2>
+            <p class="text-muted mb-1">
+                Period: <strong>@Model.Report.ReportPeriod.Name</strong>
+                <span class="badge @ReportStatus.BadgeClass(Model.Report.Status) ms-2">@Model.Report.StatusDisplayName</span>
+            </p>
+            <p class="text-muted">
+                Author: <strong>@Model.Report.SubmittedBy.Name</strong>
+                @if (Model.Report.SubmittedBy.OrganizationalUnit != null)
+                {
+                    <text> - @Model.Report.SubmittedBy.OrganizationalUnit.Name</text>
+                }
+            </p>
+            @if (Model.Report.WasPrePopulated)
+            {
+                <div class="alert alert-info py-1 px-2 d-inline-block">
+                    <small><i class="bi bi-info-circle"></i> Some fields were pre-populated from a previous period.</small>
+                </div>
+            }
+        </div>
+        <a asp-page="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <form method="post" asp-route-id="@Model.Report.Id" enctype="multipart/form-data">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        @{
+            var sections = Model.Fields
+                .GroupBy(f => f.Section ?? "General")
+                .OrderBy(g => g.Min(f => f.SectionOrder));
+        }
+
+        @foreach (var section in sections)
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">@(section.Key)</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var field in section.OrderBy(f => f.FieldOrder))
+                    {
+                        var currentValue = Model.Values.GetValueOrDefault(field.Id);
+                        var fieldValue = Model.FieldValues.GetValueOrDefault(field.Id);
+                        var inputName = $"Values[{field.Id}]";
+
+                        <div class="mb-3">
+                            <label class="form-label" for="field_@field.Id">
+                                @field.Label
+                                @if (field.IsRequired)
+                                {
+                                    <span class="text-danger">*</span>
+                                }
+                                @if (field.IsCalculated)
+                                {
+                                    <span class="badge bg-info ms-1">Calculated</span>
+                                }
+                                @if (fieldValue?.WasPrePopulated == true)
+                                {
+                                    <span class="badge bg-warning text-dark ms-1">Pre-populated</span>
+                                }
+                            </label>
+
+                            @switch (field.Type)
+                            {
+                                case FieldType.Text:
+                                    if (field.MaxLength > 200)
+                                    {
+                                        <textarea name="@inputName" id="field_@field.Id" class="form-control"
+                                                  rows="3" maxlength="@(field.MaxLength ?? 2000)">@currentValue</textarea>
+                                    }
+                                    else
+                                    {
+                                        <input type="text" name="@inputName" id="field_@field.Id"
+                                               class="form-control" value="@currentValue"
+                                               maxlength="@(field.MaxLength ?? 500)" />
+                                    }
+                                    break;
+
+                                case FieldType.Numeric:
+                                    <input type="number" name="@inputName" id="field_@field.Id"
+                                           class="form-control" value="@currentValue"
+                                           step="any"
+                                           min="@(field.MinValue?.ToString() ?? "")"
+                                           max="@(field.MaxValue?.ToString() ?? "")" />
+                                    break;
+
+                                case FieldType.Date:
+                                    <input type="date" name="@inputName" id="field_@field.Id"
+                                           class="form-control" value="@currentValue" />
+                                    break;
+
+                                case FieldType.Dropdown:
+                                    <select name="@inputName" id="field_@field.Id" class="form-select">
+                                        <option value="">-- Select --</option>
+                                        @if (!string.IsNullOrEmpty(field.OptionsJson))
+                                        {
+                                            try
+                                            {
+                                                var options = JsonSerializer.Deserialize<string[]>(field.OptionsJson);
+                                                if (options != null)
+                                                {
+                                                    foreach (var opt in options)
+                                                    {
+                                                        <option value="@opt" selected="@(currentValue == opt)">@opt</option>
+                                                    }
+                                                }
+                                            }
+                                            catch { }
+                                        }
+                                    </select>
+                                    break;
+
+                                case FieldType.Checkbox:
+                                    <div class="form-check">
+                                        <input type="hidden" name="@inputName" value="false" />
+                                        <input type="checkbox" name="@inputName" id="field_@field.Id"
+                                               class="form-check-input" value="true"
+                                               checked="@(currentValue == "true")" />
+                                        <label class="form-check-label" for="field_@field.Id">Yes</label>
+                                    </div>
+                                    break;
+
+                                case FieldType.RichText:
+                                    <textarea name="@inputName" id="field_@field.Id" class="form-control"
+                                              rows="6">@currentValue</textarea>
+                                    <div class="form-text">HTML formatting is supported.</div>
+                                    break;
+
+                                case FieldType.FileUpload:
+                                    <input type="text" name="@inputName" id="field_@field.Id"
+                                           class="form-control" value="@currentValue"
+                                           placeholder="File upload will be available in a future update" readonly />
+                                    break;
+
+                                case FieldType.TableGrid:
+                                    <textarea name="@inputName" id="field_@field.Id" class="form-control"
+                                              rows="4" placeholder="Enter JSON data for table rows">@currentValue</textarea>
+                                    <div class="form-text">Enter data as JSON array of objects.</div>
+                                    break;
+                            }
+
+                            @if (!string.IsNullOrEmpty(field.HelpText))
+                            {
+                                <div class="form-text">@field.HelpText</div>
+                            }
+
+                            <span asp-validation-for="@($"Values[{field.Id}]")" class="text-danger"></span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (Model.Fields.Count == 0)
+        {
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                No fields have been defined for this template yet. Add fields in the
+                <a asp-page="/Admin/Templates/Details" asp-route-id="@Model.Report.ReportTemplateId">template designer</a>.
+            </div>
+        }
+
+        <!-- Action Buttons -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <a asp-page="Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Reports
+                    </a>
+                    <div>
+                        <button type="submit" name="SubmitAction" value="save" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-floppy"></i> Save Draft
+                        </button>
+                        <button type="submit" name="SubmitAction" value="submit" class="btn btn-success"
+                                onclick="return confirm('Submit this report? It will be sent for review.');">
+                            <i class="bi bi-send"></i> Submit Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,144 @@
+@page
+@using ReportingSystem.Models
+@model ReportingSystem.Pages.Admin.Reports.IndexModel
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-file-earmark-text"></i> Reports</h2>
+            <p class="text-muted">View and manage submitted reports</p>
+        </div>
+        <div class="col text-end">
+            <a asp-page="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> New Report
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Template</label>
+                    <select asp-for="TemplateId" asp-items="Model.TemplateOptions" class="form-select">
+                        <option value="">All Templates</option>
+                    </select>
+                </div>
+                @if (Model.PeriodOptions.Count > 0)
+                {
+                    <div class="col-md-3">
+                        <label class="form-label">Period</label>
+                        <select asp-for="PeriodId" asp-items="Model.PeriodOptions" class="form-select">
+                            <option value="">All Periods</option>
+                        </select>
+                    </div>
+                }
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select asp-for="StatusFilter" asp-items="Model.StatusOptions" class="form-select">
+                        <option value="">All Statuses</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.Reports.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No reports found matching the selected criteria.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Template</th>
+                            <th>Period</th>
+                            <th>Submitted By</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Reviewer</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var report in Model.Reports)
+                        {
+                            <tr>
+                                <td>@report.Id</td>
+                                <td>@report.ReportTemplate.Name</td>
+                                <td>@report.ReportPeriod.Name</td>
+                                <td>
+                                    @report.SubmittedBy.Name
+                                    @if (report.SubmittedBy.OrganizationalUnit != null)
+                                    {
+                                        <br /><small class="text-muted">@report.SubmittedBy.OrganizationalUnit.Name</small>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge @ReportStatus.BadgeClass(report.Status)">
+                                        @report.StatusDisplayName
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (report.SubmittedAt.HasValue)
+                                    {
+                                        @report.SubmittedAt.Value.ToString("MMM dd, yyyy")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Draft</span>
+                                    }
+                                </td>
+                                <td>@(report.AssignedReviewer?.Name ?? "-")</td>
+                                <td class="text-end">
+                                    @if (report.IsEditable)
+                                    {
+                                        <a asp-page="Fill" asp-route-id="@report.Id" class="btn btn-sm btn-primary" title="Edit report">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </a>
+                                    }
+                                    <a asp-page="View" asp-route-id="@report.Id" class="btn btn-sm btn-outline-secondary" title="View report">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="text-muted small mt-2">
+            Showing @Model.Reports.Count report(s)
+        </div>
+    }
+</div>

@@ -35,12 +35,15 @@ Dev URL: http://localhost:5296 / https://localhost:7155
 ReportingSystem/
 ├── Data/                  # EF Core DbContext, seed data, user seeder
 ├── Filters/               # AutomaticBackupFilter (pre-POST/PUT/DELETE backups)
-├── Models/                # Domain entities (User, MagicLink, OrganizationalUnit, Delegation, Notification, DatabaseBackup)
+├── Models/                # Domain entities (User, MagicLink, OrganizationalUnit, Delegation, Report*, Attachment, Notification, DatabaseBackup)
 ├── Pages/
 │   ├── Admin/             # Requires authentication
 │   │   ├── Backup/        # Database backup management (create/restore/delete/WAL)
 │   │   ├── Delegations/   # Delegation CRUD (Index, Create) with revoke
 │   │   ├── OrgUnits/      # Org unit CRUD (Index, Create, Edit, Delete) with tree view
+│   │   ├── Periods/       # Report period management (Index, Create, Edit)
+│   │   ├── Reports/       # Report lifecycle (Index, Create, Fill, View) with review
+│   │   ├── Templates/     # Template management (Index, Create, Edit, Details, Delete)
 │   │   ├── Users/         # User CRUD (Index, Create, Edit, Details, Delete)
 │   │   └── Dashboard.cshtml
 │   ├── Auth/              # Anonymous access (Login, Verify, Logout)
@@ -72,7 +75,7 @@ ReportingSystem/
 - **Dev**: SQLite at `db/reporting.db` (auto-created via `EnsureCreatedAsync`)
 - **Prod**: SQL Server (configure in appsettings.json)
 - **Seeded users**: admin@reporting.com, admin1@reporting.com, admin2@reporting.com (all Administrators)
-- **SQL seed script**: `seed.sql` at project root - seeds full org hierarchy, 60 users, delegations, notifications
+- **SQL seed script**: `seed.sql` at project root - seeds full org hierarchy, 60 users, delegations, templates, fields, periods, sample reports, notifications
 - **Org hierarchy**: GUC > Campuses > Faculties > Departments > Sectors > Teams (6 levels via OrgUnitLevel enum)
 - **Known limitation**: `TimeSpan` properties cannot be used in `ORDER BY` with SQLite provider
 
@@ -91,6 +94,7 @@ ReportingSystem/
 
 Phase 1 (complete): Infrastructure - Auth, backup, notifications, admin pages, layout
 Phase 2 (complete): Organization & User Hierarchy - Org units, user roles, delegations, SQL seed script
+Phase 3 (complete): Report Templates & Report Entry - Templates, fields, periods, reports, review workflow
 
 ### Key Models (Phase 2)
 - **OrganizationalUnit**: self-referential hierarchy with OrgUnitLevel enum (Root=0 → Team=5), Parent/Children nav props, DeleteBehavior.Restrict
@@ -99,15 +103,14 @@ Phase 2 (complete): Organization & User Hierarchy - Org units, user roles, deleg
 - **Delegation**: DelegatorId/DelegateId FKs (Restrict), StartDate/EndDate, Scope (Full/ReportingOnly/ApprovalOnly), IsCurrentlyEffective computed property
 - **DelegationScope**: Full, ReportingOnly, ApprovalOnly (string constants with DisplayName helper)
 
-### Phase 3: Report Templates & Report Entry
-- **ReportTemplate** model: name, description, version, assigned org units/roles, schedule (daily/weekly/monthly/quarterly/annual)
-- **ReportField** definition: field types (numeric, text, date, dropdown, checkbox, file upload, rich text, table/grid), validation rules, calculated fields with formulas
-- **ReportPeriod** model: time period definition linked to template schedule
-- **Report** model: instance for specific user + period + template, status (Draft, Submitted, UnderReview, Approved, Rejected, Amended)
-- **ReportFieldValue**: actual data entries per report per field
-- **Attachment** model: file uploads with size/type constraints
-- Pages: Template designer (admin), report entry screen (dynamic form from template), draft auto-save, bulk import from Excel/CSV
-- Pre-populate from previous period data
+### Key Models (Phase 3)
+- **ReportTemplate**: name, description, schedule (ReportSchedule constants), version, standard sections (SuggestedActions/NeededResources/NeededSupport), auto-save interval, attachment settings
+- **ReportTemplateAssignment**: assigns template to OrgUnit/Role/Individual (TemplateAssignmentType constants), IncludeSubUnits flag
+- **ReportField**: FieldType enum (Text=0→TableGrid=7), section/order, validation (min/max/regex), OptionsJson for dropdowns, Formula for calculated fields, VisibilityConditionJson, PrePopulateFromPrevious
+- **ReportPeriod**: StartDate/EndDate, SubmissionDeadline, GracePeriodDays, PeriodStatus enum (Upcoming/Open/Closed/Archived), IsOpen/IsOverdue/IsFullyClosed computed
+- **Report**: ReportTemplateId+ReportPeriodId+SubmittedById (unique composite), ReportStatus constants (Draft→Submitted→UnderReview→Approved/Rejected/Amended), IsLocked, review workflow
+- **ReportFieldValue**: ReportId+ReportFieldId (unique), Value as string, NumericValue for aggregation, WasPrePopulated
+- **Attachment**: file storage with FileName/OriginalFileName/ContentType/StoragePath, linked to Report and optionally ReportField
 
 ### Phase 4: Upward Flow (Suggestions, Resources, Support)
 - **SuggestedAction** model: title, description, justification, expected outcome, timeline, category (Process Improvement, Cost Reduction, Quality Enhancement, Innovation, Risk Mitigation), priority (Critical/High/Medium/Low), status tracking
