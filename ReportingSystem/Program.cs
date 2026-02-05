@@ -29,6 +29,7 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<MagicLinkService>();
 builder.Services.AddScoped<DatabaseBackupService>();
+builder.Services.AddScoped<DashboardService>();
 
 // Register background service for daily automatic backups
 builder.Services.AddHostedService<DailyBackupHostedService>();

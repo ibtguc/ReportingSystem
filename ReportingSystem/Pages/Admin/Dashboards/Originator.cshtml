@@ -1,0 +1,441 @@
+@page
+@model ReportingSystem.Pages.Admin.Dashboards.OriginatorModel
+@using ReportingSystem.Models
+@{
+    ViewData["Title"] = "My Dashboard";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-person-circle"></i> My Dashboard</h2>
+            <p class="text-muted">
+                Your reports, requests, and pending items
+                @if (Model.CurrentUser != null)
+                {
+                    <span class="badge bg-secondary ms-2">@Model.CurrentUser.Name</span>
+                }
+            </p>
+        </div>
+        <div class="col-auto">
+            <a asp-page="/Admin/Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Main Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-primary">
+                <div class="card-body text-center">
+                    <div class="display-4 text-primary">@Model.Data.TotalMyReports</div>
+                    <div class="text-muted">My Reports</div>
+                    <small class="text-secondary">@Model.Data.DraftReports draft(s)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-warning">
+                <div class="card-body text-center">
+                    <div class="display-4 text-warning">@Model.Data.FeedbackPendingMyAcknowledgment</div>
+                    <div class="text-muted">Feedback to Acknowledge</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-info">
+                <div class="card-body text-center">
+                    <div class="display-4 text-info">@Model.Data.ConfirmationTagsToRespond</div>
+                    <div class="text-muted">Confirmations Pending</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-body text-center">
+                    <div class="display-4 text-success">@Model.Data.ActiveRecommendationsForMe</div>
+                    <div class="text-muted">Active Recommendations</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Reports Section -->
+    <div class="row mb-4">
+        <div class="col-md-8 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> My Recent Reports</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.MyReports.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Template</th>
+                                        <th>Period</th>
+                                        <th>Status</th>
+                                        <th>Submitted</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var report in Model.Data.MyReports)
+                                    {
+                                        <tr>
+                                            <td>@report.TemplateName</td>
+                                            <td>@report.PeriodName</td>
+                                            <td>
+                                                <span class="badge @ReportStatus.BadgeClass(report.Status)">
+                                                    @ReportStatus.DisplayName(report.Status)
+                                                </span>
+                                            </td>
+                                            <td>@(report.SubmittedAt?.ToString("MMM dd, yyyy") ?? "Not submitted")</td>
+                                            <td>
+                                                @if (report.IsEditable)
+                                                {
+                                                    <a asp-page="/Admin/Reports/Fill" asp-route-id="@report.ReportId"
+                                                       class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-pencil"></i> Edit
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a asp-page="/Admin/Reports/View" asp-route-id="@report.ReportId"
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </a>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-file-earmark-x display-4 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">No reports yet</p>
+                            <a asp-page="/Admin/Reports/Create" class="btn btn-primary mt-3">
+                                <i class="bi bi-plus-circle"></i> Create Your First Report
+                            </a>
+                        </div>
+                    }
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/Reports/Index" class="btn btn-sm btn-outline-primary me-2">
+                        <i class="bi bi-list"></i> View All Reports
+                    </a>
+                    <a asp-page="/Admin/Reports/Create" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> New Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Reports by Status</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.MyReportsByStatus.Any())
+                    {
+                        @foreach (var status in Model.Data.MyReportsByStatus.OrderByDescending(s => s.Count))
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge @ReportStatus.BadgeClass(status.Status)" style="min-width: 100px;">
+                                    @ReportStatus.DisplayName(status.Status)
+                                </span>
+                                <span class="fw-bold">@status.Count</span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-0">No data</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upward Flow Status -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-lightbulb"></i> My Suggested Actions</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.MySuggestedActionsByStatus.Any())
+                    {
+                        @foreach (var status in Model.Data.MySuggestedActionsByStatus)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge @ActionStatus.BadgeClass(status.Status)">
+                                    @ActionStatus.DisplayName(status.Status)
+                                </span>
+                                <span class="fw-bold">@status.Count</span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-0">No suggested actions</p>
+                    }
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/UpwardFlow/SuggestedActions/Index" class="btn btn-sm btn-outline-info">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-box-seam"></i> My Resource Requests</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.MyResourceRequestsByStatus.Any())
+                    {
+                        @foreach (var status in Model.Data.MyResourceRequestsByStatus)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge @ResourceStatus.BadgeClass(status.Status)">
+                                    @ResourceStatus.DisplayName(status.Status)
+                                </span>
+                                <span class="fw-bold">@status.Count</span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-0">No resource requests</p>
+                    }
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/UpwardFlow/ResourceRequests/Index" class="btn btn-sm btn-outline-warning">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-life-preserver"></i> My Support Requests</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.MySupportRequestsByStatus.Any())
+                    {
+                        @foreach (var status in Model.Data.MySupportRequestsByStatus)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge @SupportStatus.BadgeClass(status.Status)">
+                                    @SupportStatus.DisplayName(status.Status)
+                                </span>
+                                <span class="fw-bold">@status.Count</span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-0">No support requests</p>
+                    }
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/UpwardFlow/SupportRequests/Index" class="btn btn-sm btn-outline-danger">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback & Decisions -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Feedback Received</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <div class="h3 mb-0 text-primary">@Model.Data.FeedbackReceived</div>
+                                <small class="text-muted">Total Feedback</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <div class="h3 mb-0 text-warning">@Model.Data.FeedbackPendingMyAcknowledgment</div>
+                                <small class="text-muted">Pending Ack.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/Downward/Feedback/Index" class="btn btn-sm btn-outline-success">
+                        View Feedback
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-check2-circle"></i> Decisions on My Requests</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <div class="h3 mb-0 text-info">@Model.Data.DecisionsReceived</div>
+                                <small class="text-muted">Total Decisions</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <div class="h3 mb-0 text-warning">@Model.Data.DecisionsPendingAcknowledgment</div>
+                                <small class="text-muted">Pending Ack.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/Downward/Decisions/Index" class="btn btn-sm btn-outline-dark">
+                        View Decisions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Tags & Deadlines -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-purple" style="background-color: #6f42c1; color: white;">
+                    <h5 class="mb-0"><i class="bi bi-tag"></i> Confirmation Tags</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="text-center">
+                                <div class="h4 mb-0 text-warning">@Model.Data.MyConfirmationTagsPending</div>
+                                <small class="text-muted">My Pending</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <div class="h4 mb-0 text-success">@Model.Data.MyConfirmationTagsConfirmed</div>
+                                <small class="text-muted">Confirmed</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <div class="h4 mb-0 text-danger">@Model.Data.ConfirmationTagsToRespond</div>
+                                <small class="text-muted">To Respond</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/Workflow/Confirmations/Index" class="btn btn-sm btn-outline-secondary">
+                        View Confirmations
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Upcoming Deadlines</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.UpcomingDeadlines.Any())
+                    {
+                        @foreach (var deadline in Model.Data.UpcomingDeadlines.Take(4))
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                                <div>
+                                    <strong>@deadline.TemplateName</strong>
+                                    <br />
+                                    <small class="text-muted">@deadline.PeriodName</small>
+                                </div>
+                                <div>
+                                    @if (deadline.DaysRemaining <= 1)
+                                    {
+                                        <span class="badge bg-danger">@deadline.DaysRemaining day(s)</span>
+                                    }
+                                    else if (deadline.DaysRemaining <= 3)
+                                    {
+                                        <span class="badge bg-warning text-dark">@deadline.DaysRemaining days</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info">@deadline.DaysRemaining days</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-3">
+                            <i class="bi bi-calendar-check display-6 text-success"></i>
+                            <p class="text-muted mt-2 mb-0">No upcoming deadlines</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Reports/Create" class="btn btn-primary w-100">
+                                <i class="bi bi-file-earmark-plus"></i> Create New Report
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Reports/Index" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-file-earmark-text"></i> View My Reports
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Workflow/Comments/Index" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-chat-left-text"></i> View Comments
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Downward/Recommendations/Index" class="btn btn-outline-info w-100">
+                                <i class="bi bi-signpost"></i> View Recommendations
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

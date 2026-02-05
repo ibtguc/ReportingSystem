@@ -26,6 +26,18 @@
                             <a class="nav-link" asp-area="" asp-page="/Admin/Dashboard">Home</a>
                         </li>
                         <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="dashboardsDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-speedometer2"></i> Dashboards
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="dashboardsDropdown">
+                                <li><a class="dropdown-item" asp-page="/Admin/Dashboards/Executive"><i class="bi bi-graph-up-arrow text-primary"></i> Executive Dashboard</a></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/Dashboards/Manager"><i class="bi bi-people-fill text-success"></i> Manager Dashboard</a></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/Dashboards/Reviewer"><i class="bi bi-clipboard-check text-info"></i> Reviewer Dashboard</a></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/Dashboards/Originator"><i class="bi bi-person-circle text-warning"></i> My Dashboard</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="reportDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 Reporting

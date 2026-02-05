@@ -180,16 +180,16 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 ## Session Handoff
 
 ### Current Status
-**Phase 7 complete** (of 9 phases) - Aggregation & Drill-Down (Aggregation Rules, Aggregated Values, Manager Amendments, Audit Log) fully implemented.
+**Phase 8a complete** (Phase 8 in progress, 9 phases total) - Dashboard Infrastructure & KPIs implemented with role-based dashboards.
 
 ### Project Statistics
 | Category | Count |
 |----------|-------|
-| Total .cs/.cshtml files | ~130 |
+| Total .cs/.cshtml files | ~140 |
 | Model classes | 24 |
-| Razor Pages (.cshtml) | 58 |
-| Services | 5 |
-| Admin page sections | 14 |
+| Razor Pages (.cshtml) | 66 |
+| Services | 6 |
+| Admin page sections | 15 |
 
 ### Implemented Models (24)
 | Model | Phase | Purpose |
@@ -219,7 +219,7 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | `ManagerAmendment` | 7 | Manager annotations/corrections to aggregates |
 | `AuditLog` | 7 | Comprehensive change tracking for compliance |
 
-### Implemented Admin Pages (14 sections, 58 pages)
+### Implemented Admin Pages (15 sections, 66 pages)
 | Section | Pages | Purpose |
 |---------|-------|---------|
 | `/Admin/Backup` | 4 | Create, restore, delete, WAL checkpoint |
@@ -241,6 +241,7 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | `/Admin/Aggregation/Summary` | 1 | View aggregates with drill-down to sources |
 | `/Admin/AuditLog` | 1 | View all changes with filtering and CSV export |
 | `/Admin/Dashboard` | 1 | Quick-access buttons for all sections |
+| `/Admin/Dashboards` | 4 | Executive, Manager, Reviewer, Originator role-based dashboards |
 
 ### Seed Data (seed.sql)
 | Entity | Count | Notes |
@@ -270,48 +271,67 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 - **seed.sql**: Complete SQL seed script with all Phase 1-6 data (org units, users, templates, reports, upward flow, workflow, downward flow)
 - **SeedData.cs**: C# seeding for minimal data (includes Phase 5+6 sample data)
 
-### Remaining Phases (2)
-| Phase | Name | Key Deliverables |
-|-------|------|------------------|
-| 8 | Dashboards & Export | Role-based dashboards, charts, PDF/Excel export |
-| 9 | Polish | Enhanced notifications, preferences, responsive design, performance |
+### Remaining Phases
+| Phase | Name | Status | Key Deliverables |
+|-------|------|--------|------------------|
+| 8a | Dashboard Infrastructure | **Complete** | Role-based dashboards with KPIs (no charts yet) |
+| 8b | Chart Visualizations | Pending | Chart.js integration, bar/line/pie/gauge charts |
+| 8c | Export Capabilities | Pending | PDF/Excel/Word export, batch export |
+| 8d | Ad-hoc Report Builder | Pending | Custom queries, filtering, saved reports |
+| 9 | Polish | Pending | Enhanced notifications, responsive design, performance |
 
-### Next Phase: Phase 8 - Dashboards & Export
-Implement role-based dashboards and export capabilities:
+### Phase 8a Complete: Dashboard Infrastructure & KPIs
+Implemented role-based dashboards with comprehensive KPIs:
 
-1. **Role-Based Dashboards**
-   - Executive dashboard: high-level KPIs, org-wide trends, alerts
-   - Manager dashboard: team status, pending approvals, upward flow items
-   - Originator dashboard: my reports, deadlines, feedback received
-   - Reviewer dashboard: pending reviews, workload, completion rates
+1. **DashboardService** (`Services/DashboardService.cs`)
+   - `GetExecutiveDashboardAsync()` - Org-wide KPIs, approval rates, coverage
+   - `GetManagerDashboardAsync()` - Team stats, pending approvals, upward flow
+   - `GetOriginatorDashboardAsync()` - My reports, feedback, decisions
+   - `GetReviewerDashboardAsync()` - Review workload, completion stats
 
-2. **Chart Visualizations**
-   - Bar charts for comparisons
-   - Line charts for trends over time
-   - Pie charts for distribution
-   - Gauge charts for targets/progress
+2. **Dashboard Data Classes** (in DashboardService.cs)
+   - `ExecutiveDashboardData` - Total reports, approval rate, org coverage, upward/downward flow stats
+   - `ManagerDashboardData` - Team reports, pending approvals, upward flow items
+   - `OriginatorDashboardData` - My reports by status, feedback received, confirmations
+   - `ReviewerDashboardData` - Pending reviews, workload by org unit, my approval rate
 
-3. **Export Capabilities**
-   - PDF reports with customizable layouts
-   - Excel export with data tables and charts
-   - Word document export for formal reports
-   - Batch export for multiple reports
+3. **Dashboard Pages** (`/Admin/Dashboards/`)
+   - `Executive.cshtml` - Org-wide KPIs with Bootstrap cards
+   - `Manager.cshtml` - Team statistics with pending approval table
+   - `Originator.cshtml` - Personal reports with upward flow status
+   - `Reviewer.cshtml` - Review queue with workload distribution
 
-4. **Ad-hoc Report Builder**
-   - Custom queries across report data
-   - Filter by period, org unit, template
-   - Aggregation and grouping options
-   - Save and share custom reports
+4. **Navigation Updates**
+   - Added "Dashboards" dropdown in navbar with 4 role-based options
+   - Updated main Dashboard page with role-based dashboard section
+   - Updated "Analytics" button to link to Executive dashboard
 
-Admin pages:
-- `/Admin/Dashboard/Executive` - Executive-level dashboard
-- `/Admin/Dashboard/Manager` - Manager-level dashboard
-- `/Admin/Export/Index` - Export reports in various formats
-- `/Admin/Reports/Builder` - Ad-hoc report builder
+### Next Phase: Phase 8b - Chart Visualizations
+Add interactive charts to the dashboards:
+
+1. **Chart.js Integration**
+   - Add Chart.js via CDN or bundle
+   - Create reusable chart partial views
+
+2. **Charts to Implement**
+   - Bar chart: Reports by status, users by role
+   - Line chart: Report submissions over time
+   - Pie/Doughnut: Distribution of upward flow types
+   - Gauge: Approval rate, org coverage percentage
+
+Admin pages to update:
+- `/Admin/Dashboards/Executive` - Add trend charts
+- `/Admin/Dashboards/Manager` - Add team performance charts
+- `/Admin/Dashboards/Reviewer` - Add workload distribution charts
 
 ### Key Files to Reference
 | File | Pattern/Purpose |
 |------|-----------------|
+| `Services/DashboardService.cs` | KPI queries with DTO classes for each role dashboard |
+| `Pages/Admin/Dashboards/Executive.cshtml` | Org-wide KPIs with Bootstrap cards layout |
+| `Pages/Admin/Dashboards/Manager.cshtml` | Team stats with pending approval tables |
+| `Pages/Admin/Dashboards/Originator.cshtml` | Personal reports with upward flow status |
+| `Pages/Admin/Dashboards/Reviewer.cshtml` | Review queue with workload distribution |
 | `Models/Report.cs` | Status workflow with constants, computed properties |
 | `Models/SuggestedAction.cs` | Category/Priority/Status constants pattern |
 | `Models/ResourceRequest.cs` | Cost tracking, status workflow |
@@ -361,23 +381,43 @@ dotnet restore --source /home/user/ReportingSystem/local-packages/ /home/user/Re
 ### Session Handoff Notes (Latest)
 **Date**: February 5, 2026
 
-**Completed This Session**:
-1. Created comprehensive `DEMO_GUIDE.md` with end-to-end demonstration walkthrough
-2. Guide covers all 6 user role perspectives with specific login credentials
-3. Demonstrates bidirectional information flow (upward/downward)
-4. Includes key demo points to highlight during presentation
+**Completed This Session (Phase 8a - Dashboard Infrastructure)**:
+1. Created `DashboardService` with comprehensive KPI query methods for 4 role perspectives
+2. Implemented 4 role-based dashboard pages:
+   - **Executive Dashboard** (`/Admin/Dashboards/Executive`) - Org-wide KPIs, approval rates, coverage, upward/downward flow stats
+   - **Manager Dashboard** (`/Admin/Dashboards/Manager`) - Team reports, pending approvals table, team upward flow items
+   - **Originator Dashboard** (`/Admin/Dashboards/Originator`) - My reports, feedback received, confirmations, decisions
+   - **Reviewer Dashboard** (`/Admin/Dashboards/Reviewer`) - Review queue, workload distribution, completion stats
+3. Updated navigation with "Dashboards" dropdown menu
+4. Updated main Dashboard page with role-based dashboard section
+5. Registered DashboardService in Program.cs
+
+**New Files Created**:
+- `Services/DashboardService.cs` - KPI queries + DTO classes (ExecutiveDashboardData, ManagerDashboardData, etc.)
+- `Pages/Admin/Dashboards/Executive.cshtml` + `.cshtml.cs`
+- `Pages/Admin/Dashboards/Manager.cshtml` + `.cshtml.cs`
+- `Pages/Admin/Dashboards/Originator.cshtml` + `.cshtml.cs`
+- `Pages/Admin/Dashboards/Reviewer.cshtml` + `.cshtml.cs`
 
 **System Status**:
-- All Phase 1-7 features fully implemented and functional
-- Build succeeds with 0 errors
+- Phase 8a complete, Phase 8b-8d pending
+- All Phase 1-7 features remain functional
 - Seed data includes realistic sample data across all entities
 - 60 users across 7 roles, 36 org units, 4 sample reports with full workflow data
 
-**Ready for Demo**:
-- Login as any seeded user (magic link displayed in dev mode)
-- Key demo users: `president@guc.edu.eg` (Executive), `admin@guc.edu.eg` (Admin), `head.sdev@guc.edu.eg` (DeptHead), `mgr.backend@guc.edu.eg` (TeamManager), `dev.backend1@guc.edu.eg` (Originator)
+**Dashboard KPIs Implemented**:
+| Dashboard | Key Metrics |
+|-----------|-------------|
+| Executive | Total reports, approval rate (30d), org coverage %, pending reviews, upward/downward flow counts, upcoming deadlines |
+| Manager | Team member count, team reports by status, pending approval queue, team upward flow items, pending cost |
+| Originator | My reports by status, feedback pending ack, confirmations (sent/received), decisions received |
+| Reviewer | Pending review count, reviews completed, approval rate, workload by org unit, comments/feedback given |
 
 **Next Steps**:
-1. Phase 8: Dashboards & Export (role-based dashboards, charts, PDF/Excel export)
-2. Phase 9: Polish (enhanced notifications, responsive design, performance)
+1. Phase 8b: Chart Visualizations (Chart.js integration, trend charts)
+2. Phase 8c: Export Capabilities (PDF/Excel/Word export)
+3. Phase 8d: Ad-hoc Report Builder
+4. Phase 9: Polish (enhanced notifications, responsive design, performance)
+
+**Git Branch**: `claude/analyze-reporting-system-HhdJs` - Phase 8a work ready for commit
 

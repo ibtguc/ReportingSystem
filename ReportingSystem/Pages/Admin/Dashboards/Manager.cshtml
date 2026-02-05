@@ -1,0 +1,359 @@
+@page
+@model ReportingSystem.Pages.Admin.Dashboards.ManagerModel
+@using ReportingSystem.Models
+@{
+    ViewData["Title"] = "Manager Dashboard";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-people-fill"></i> Manager Dashboard</h2>
+            <p class="text-muted">
+                Team performance and pending approvals
+                @if (Model.CurrentUser?.OrganizationalUnit != null)
+                {
+                    <span class="badge bg-secondary ms-2">@Model.CurrentUser.OrganizationalUnit.Name</span>
+                }
+            </p>
+        </div>
+        <div class="col-auto">
+            <a asp-page="/Admin/Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Main Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-primary">
+                <div class="card-body text-center">
+                    <div class="display-4 text-primary">@Model.Data.TeamMemberCount</div>
+                    <div class="text-muted">Team Members</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-info">
+                <div class="card-body text-center">
+                    <div class="display-4 text-info">@Model.Data.TeamReportsThisPeriod</div>
+                    <div class="text-muted">Reports This Period</div>
+                    <small class="text-secondary">@Model.Data.TeamReportsTotal total</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-warning">
+                <div class="card-body text-center">
+                    <div class="display-4 text-warning">@Model.Data.PendingApprovalCount</div>
+                    <div class="text-muted">Pending Approvals</div>
+                    <small class="text-secondary">Awaiting your review</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-danger">
+                <div class="card-body text-center">
+                    <div class="display-4 text-danger">@Model.Data.PendingConfirmationTags</div>
+                    <div class="text-muted">Pending Confirmations</div>
+                    <small class="text-secondary">Awaiting your response</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Approvals Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> Pending Approvals</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.PendingApprovals.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Report</th>
+                                        <th>Period</th>
+                                        <th>Submitted By</th>
+                                        <th>Submitted At</th>
+                                        <th>Days Pending</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var report in Model.Data.PendingApprovals)
+                                    {
+                                        <tr>
+                                            <td>@report.TemplateName</td>
+                                            <td>@report.PeriodName</td>
+                                            <td>@report.SubmittedBy</td>
+                                            <td>@(report.SubmittedAt?.ToString("MMM dd, yyyy") ?? "N/A")</td>
+                                            <td>
+                                                @if (report.DaysPending > 5)
+                                                {
+                                                    <span class="badge bg-danger">@report.DaysPending days</span>
+                                                }
+                                                else if (report.DaysPending > 2)
+                                                {
+                                                    <span class="badge bg-warning text-dark">@report.DaysPending days</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-info">@report.DaysPending days</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge @ReportStatus.BadgeClass(report.Status)">
+                                                    @ReportStatus.DisplayName(report.Status)
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a asp-page="/Admin/Reports/View" asp-route-id="@report.ReportId"
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-eye"></i> Review
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-check-circle display-4 text-success"></i>
+                            <p class="text-muted mt-2 mb-0">No pending approvals</p>
+                        </div>
+                    }
+                </div>
+                @if (Model.Data.PendingApprovalCount > 10)
+                {
+                    <div class="card-footer">
+                        <a asp-page="/Admin/Reports/Index" class="btn btn-sm btn-outline-warning">
+                            View All (@Model.Data.PendingApprovalCount) <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Reports & Upward Flow -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Team Reports by Status</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.TeamReportsByStatus.Any())
+                    {
+                        @foreach (var status in Model.Data.TeamReportsByStatus.OrderByDescending(s => s.Count))
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge @ReportStatus.BadgeClass(status.Status)" style="min-width: 120px;">
+                                    @ReportStatus.DisplayName(status.Status)
+                                </span>
+                                <div class="progress flex-grow-1 mx-3" style="height: 20px;">
+                                    @{
+                                        var percentage = Model.Data.TeamReportsThisPeriod > 0
+                                            ? (int)((double)status.Count / Model.Data.TeamReportsThisPeriod * 100)
+                                            : 0;
+                                    }
+                                    <div class="progress-bar @ReportStatus.BadgeClass(status.Status).Replace("bg-", "bg-")"
+                                         style="width: @percentage%">
+                                        @status.Count
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-0">No team reports this period</p>
+                    }
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/Reports/Index" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-right"></i> View All Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-arrow-up-circle"></i> Team Upward Flow</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <div class="border rounded p-3 text-center">
+                                <i class="bi bi-lightbulb text-info" style="font-size: 1.5rem;"></i>
+                                <div class="h4 mb-0">@Model.Data.TeamSuggestedActions</div>
+                                <small class="text-muted">Suggested Actions</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="border rounded p-3 text-center">
+                                <i class="bi bi-box-seam text-warning" style="font-size: 1.5rem;"></i>
+                                <div class="h4 mb-0">@Model.Data.TeamResourceRequests</div>
+                                <small class="text-muted">Resource Requests</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="border rounded p-3 text-center">
+                                <i class="bi bi-life-preserver text-danger" style="font-size: 1.5rem;"></i>
+                                <div class="h4 mb-0">@Model.Data.TeamSupportRequests</div>
+                                <small class="text-muted">Support Requests</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="border rounded p-3 text-center">
+                                <i class="bi bi-currency-dollar text-success" style="font-size: 1.5rem;"></i>
+                                <div class="h5 mb-0">@Model.Data.TeamPendingResourceCost.ToString("N0")</div>
+                                <small class="text-muted">Est. Cost (EGP)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/UpwardFlow/SuggestedActions/Index" class="btn btn-sm btn-outline-info me-1">
+                        Actions
+                    </a>
+                    <a asp-page="/Admin/UpwardFlow/ResourceRequests/Index" class="btn btn-sm btn-outline-warning me-1">
+                        Resources
+                    </a>
+                    <a asp-page="/Admin/UpwardFlow/SupportRequests/Index" class="btn btn-sm btn-outline-danger">
+                        Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Status -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Workflow Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <div class="h3 mb-0 text-warning">@Model.Data.PendingConfirmationTags</div>
+                                <small class="text-muted">Confirmations to Respond</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <div class="h3 mb-0 text-info">@Model.Data.FeedbackPendingAcknowledgment</div>
+                                <small class="text-muted">Feedback Awaiting Ack.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/Workflow/Confirmations/Index" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="bi bi-check2-square"></i> Confirmations
+                    </a>
+                    <a asp-page="/Admin/Downward/Feedback/Index" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-chat-dots"></i> Feedback
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Deadlines -->
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Upcoming Deadlines</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.UpcomingDeadlines.Any())
+                    {
+                        @foreach (var deadline in Model.Data.UpcomingDeadlines.Take(5))
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                                <div>
+                                    <strong>@deadline.TemplateName</strong>
+                                    <br />
+                                    <small class="text-muted">@deadline.PeriodName</small>
+                                </div>
+                                <div class="text-end">
+                                    @if (deadline.DaysRemaining <= 1)
+                                    {
+                                        <span class="badge bg-danger">@deadline.DaysRemaining day(s)</span>
+                                    }
+                                    else if (deadline.DaysRemaining <= 3)
+                                    {
+                                        <span class="badge bg-warning text-dark">@deadline.DaysRemaining days</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info">@deadline.DaysRemaining days</span>
+                                    }
+                                    <br />
+                                    <small class="text-muted">@deadline.Deadline.ToString("MMM dd")</small>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-3">
+                            <i class="bi bi-calendar-check display-6 text-success"></i>
+                            <p class="text-muted mt-2 mb-0">No upcoming deadlines</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Reports/Create" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-file-earmark-plus"></i> Create Report
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Downward/Feedback/Index" class="btn btn-outline-info w-100">
+                                <i class="bi bi-chat-dots"></i> Give Feedback
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Downward/Recommendations/Index" class="btn btn-outline-warning w-100">
+                                <i class="bi bi-signpost"></i> Issue Recommendation
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Aggregation/Summary/Index" class="btn btn-outline-success w-100">
+                                <i class="bi bi-bar-chart-line"></i> View Aggregation
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
