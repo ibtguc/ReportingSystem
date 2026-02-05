@@ -128,19 +128,19 @@ public static class SeedReportTemplates
         var assignments = new List<ReportTemplateAssignment>
         {
             // Monthly Dept Report assigned to all department heads
-            new() { ReportTemplateId = 1, AssignmentType = AssignmentType.Role, RoleValue = SystemRoles.DepartmentHead, IncludeSubUnits = false, CreatedAt = now },
+            new() { ReportTemplateId = 1, AssignmentType = TemplateAssignmentType.Role, RoleValue = SystemRoles.DepartmentHead, IncludeSubUnits = false, CreatedAt = now },
             // Weekly Team Report assigned to IT & Admin division (includes sub-units)
-            new() { ReportTemplateId = 2, AssignmentType = AssignmentType.OrgUnit, TargetId = 9, IncludeSubUnits = true, CreatedAt = now },
+            new() { ReportTemplateId = 2, AssignmentType = TemplateAssignmentType.OrgUnit, TargetId = 9, IncludeSubUnits = true, CreatedAt = now },
             // Weekly Team Report also assigned to team managers by role
-            new() { ReportTemplateId = 2, AssignmentType = AssignmentType.Role, RoleValue = SystemRoles.TeamManager, IncludeSubUnits = false, CreatedAt = now },
+            new() { ReportTemplateId = 2, AssignmentType = TemplateAssignmentType.Role, RoleValue = SystemRoles.TeamManager, IncludeSubUnits = false, CreatedAt = now },
             // Quarterly Academic Report assigned to Engineering Faculty
-            new() { ReportTemplateId = 3, AssignmentType = AssignmentType.OrgUnit, TargetId = 4, IncludeSubUnits = true, CreatedAt = now },
+            new() { ReportTemplateId = 3, AssignmentType = TemplateAssignmentType.OrgUnit, TargetId = 4, IncludeSubUnits = true, CreatedAt = now },
             // Quarterly Academic Report assigned to MET Faculty
-            new() { ReportTemplateId = 3, AssignmentType = AssignmentType.OrgUnit, TargetId = 5, IncludeSubUnits = true, CreatedAt = now },
+            new() { ReportTemplateId = 3, AssignmentType = TemplateAssignmentType.OrgUnit, TargetId = 5, IncludeSubUnits = true, CreatedAt = now },
             // Annual Executive Report assigned to executives
-            new() { ReportTemplateId = 4, AssignmentType = AssignmentType.Role, RoleValue = SystemRoles.Executive, IncludeSubUnits = false, CreatedAt = now },
+            new() { ReportTemplateId = 4, AssignmentType = TemplateAssignmentType.Role, RoleValue = SystemRoles.Executive, IncludeSubUnits = false, CreatedAt = now },
             // IT Infrastructure Report assigned to Head of Infrastructure
-            new() { ReportTemplateId = 5, AssignmentType = AssignmentType.Individual, TargetId = 19, IncludeSubUnits = false, CreatedAt = now }
+            new() { ReportTemplateId = 5, AssignmentType = TemplateAssignmentType.Individual, TargetId = 19, IncludeSubUnits = false, CreatedAt = now }
         };
 
         context.ReportTemplateAssignments.AddRange(assignments);

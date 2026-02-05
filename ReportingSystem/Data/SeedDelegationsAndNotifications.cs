@@ -101,7 +101,7 @@ public static class SeedDelegationsAndNotifications
         {
             new()
             {
-                UserId = 6, // System Administrator
+                UserId = "6", // System Administrator
                 Type = NotificationType.General,
                 Title = "Welcome to HORS",
                 Message = "Welcome to the Hierarchical Organizational Reporting System. Your administrator account has been configured.",
@@ -112,7 +112,7 @@ public static class SeedDelegationsAndNotifications
             },
             new()
             {
-                UserId = 1, // University President
+                UserId = "1", // University President
                 Type = NotificationType.General,
                 Title = "System Ready",
                 Message = "The reporting system is now configured with organizational units and user accounts. You may begin reviewing reports.",
@@ -123,7 +123,7 @@ public static class SeedDelegationsAndNotifications
             },
             new()
             {
-                UserId = 9, // Head of CSE
+                UserId = "9", // Head of CSE
                 Type = NotificationType.DeadlineApproaching,
                 Title = "Delegation Active",
                 Message = "Your authority has been delegated to Dr. Hany Mourad while you attend the IEEE conference.",
@@ -136,7 +136,7 @@ public static class SeedDelegationsAndNotifications
             },
             new()
             {
-                UserId = 31, // Dr. Hany Mourad
+                UserId = "31", // Dr. Hany Mourad
                 Type = NotificationType.DeadlineApproaching,
                 Title = "Delegation Received",
                 Message = "You have received delegated authority from Prof. Nadia Kamel (Head of CSE). This delegation is active until the end of the conference period.",
@@ -149,7 +149,7 @@ public static class SeedDelegationsAndNotifications
             },
             new()
             {
-                UserId = 18, // Head of Software Dev
+                UserId = "18", // Head of Software Dev
                 Type = NotificationType.DeadlineApproaching,
                 Title = "Delegation Active",
                 Message = "Your approval authority has been delegated to Eng. Ali Kamal during your annual leave.",
