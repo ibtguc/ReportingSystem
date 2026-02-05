@@ -12,6 +12,26 @@
             <p class="text-muted">Organization-wide KPIs and performance metrics</p>
         </div>
         <div class="col-auto">
+            <div class="dropdown me-2 d-inline-block">
+                <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-download"></i> Export Data
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><h6 class="dropdown-header">Reports</h6></li>
+                    <li><a class="dropdown-item" href="/Admin/Export/Download?type=reports&format=csv"><i class="bi bi-filetype-csv"></i> All Reports (CSV)</a></li>
+                    <li><a class="dropdown-item" href="/Admin/Export/Download?type=reports&format=excel"><i class="bi bi-file-earmark-excel"></i> All Reports (Excel)</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li><h6 class="dropdown-header">Upward Flow</h6></li>
+                    <li><a class="dropdown-item" href="/Admin/Export/Download?type=suggested-actions&format=csv"><i class="bi bi-lightbulb"></i> Suggested Actions (CSV)</a></li>
+                    <li><a class="dropdown-item" href="/Admin/Export/Download?type=resource-requests&format=csv"><i class="bi bi-box-seam"></i> Resource Requests (CSV)</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li><h6 class="dropdown-header">Aggregation</h6></li>
+                    <li><a class="dropdown-item" href="/Admin/Export/Download?type=aggregation&format=excel"><i class="bi bi-bar-chart-line"></i> Aggregation Summary (Excel)</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li><h6 class="dropdown-header">Audit</h6></li>
+                    <li><a class="dropdown-item" href="/Admin/Export/Download?type=audit-log&format=csv"><i class="bi bi-journal-text"></i> Audit Log (CSV)</a></li>
+                </ul>
+            </div>
             <a asp-page="/Admin/Dashboard" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Main Dashboard
             </a>

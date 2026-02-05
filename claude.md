@@ -153,13 +153,23 @@ Phase 7 (complete): Aggregation & Drill-Down - Aggregation rules, aggregated val
 - AuditLog page: comprehensive filtering by action/entity/user/date, statistics, CSV export with pagination
 - Navigation updated with Aggregation dropdown menu (Summary Data, Aggregation Rules, Audit Log)
 
-### Phase 8: Dashboards & Export
-- Role-based dashboards with KPIs and visualizations
-- Submission status, pending actions, trends, alerts, recent activity
-- Request status dashboard (open suggestions, pending resource requests, unresolved support)
-- Chart visualizations (bar, line, pie, gauge)
-- Export: PDF/Word/Excel reports with customizable layouts
-- Ad-hoc report builder for custom queries
+### Phase 8: Dashboards & Export (complete)
+Phase 8a (complete): Dashboard Infrastructure & KPIs - Role-based dashboards (Executive, Manager, Reviewer, Originator) with KPI cards, quick actions, deadline tracking
+Phase 8b (complete): Chart Visualizations - Chart.js 4.4.1 integration with line, doughnut, and bar charts across all dashboards
+Phase 8c (complete): Export Capabilities - ExportService for CSV/Excel/PDF, export buttons on Reports/View, Reports/Index, and Dashboards
+Phase 8d (complete): Ad-hoc Report Builder - SavedReport model, ReportBuilder page with filter UI, save/load/share report configurations
+
+**Key Components (Phase 8c)**:
+- **ExportService**: CSV export (StringBuilder), Excel export (HTML-based for .xls compatibility), Print-friendly HTML for PDF (browser print)
+- **Export endpoints**: `/Admin/Export/Download` (CSV/Excel download), `/Admin/Export/Print/{reportId}` (printable HTML view)
+- **Export filters**: ReportExportFilter, AuditLogExportFilter with template/period/status/date range filtering
+- **Export types**: reports, report-detail, suggested-actions, resource-requests, audit-log, aggregation
+
+**Key Components (Phase 8d)**:
+- **SavedReport model**: stores ad-hoc report configurations with name, type, FilterConfiguration (JSON), IsPublic/IsPinnedToDashboard, run statistics
+- **SavedReportType**: Reports, SuggestedActions, ResourceRequests, SupportRequests, AuditLog, Aggregation, Users, Feedback, Recommendations
+- **ReportBuilder pages**: `/Admin/ReportBuilder/Index` (build/run/export/save), `/Admin/ReportBuilder/SavedReports` (manage saved reports)
+- **Features**: Filter by template/period/status/date/role/action, preview results (100 rows), export filtered data, save/share configurations
 
 ### Phase 9: Notifications & Polish
 - Enhanced notification system: deadline reminders, approval notifications, tag/mention alerts, feedback/decision notifications
@@ -180,18 +190,18 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 ## Session Handoff
 
 ### Current Status
-**Phase 8b complete** (Phase 8 in progress, 9 phases total) - Dashboard Infrastructure, KPIs, and Chart Visualizations implemented with role-based dashboards.
+**Phase 8 complete** (8 of 9 phases, Phase 9 remaining) - All dashboard, export, and ad-hoc report builder features implemented.
 
 ### Project Statistics
 | Category | Count |
 |----------|-------|
-| Total .cs/.cshtml files | ~140 |
-| Model classes | 24 |
-| Razor Pages (.cshtml) | 66 |
-| Services | 6 |
-| Admin page sections | 15 |
+| Total .cs/.cshtml files | ~155 |
+| Model classes | 25 |
+| Razor Pages (.cshtml) | 75 |
+| Services | 7 |
+| Admin page sections | 17 |
 
-### Implemented Models (24)
+### Implemented Models (25)
 | Model | Phase | Purpose |
 |-------|-------|---------|
 | `User` | 1,2 | Users with roles, org unit assignment, MagicLinks |
@@ -218,8 +228,9 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | `AggregatedValue` | 7 | Computed aggregates with drill-down support |
 | `ManagerAmendment` | 7 | Manager annotations/corrections to aggregates |
 | `AuditLog` | 7 | Comprehensive change tracking for compliance |
+| `SavedReport` | 8 | Ad-hoc report configurations with filters |
 
-### Implemented Admin Pages (15 sections, 66 pages)
+### Implemented Admin Pages (17 sections, 75 pages)
 | Section | Pages | Purpose |
 |---------|-------|---------|
 | `/Admin/Backup` | 4 | Create, restore, delete, WAL checkpoint |
@@ -242,6 +253,8 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | `/Admin/AuditLog` | 1 | View all changes with filtering and CSV export |
 | `/Admin/Dashboard` | 1 | Quick-access buttons for all sections |
 | `/Admin/Dashboards` | 4 | Executive, Manager, Reviewer, Originator role-based dashboards |
+| `/Admin/Export` | 2 | Download (CSV/Excel files), Print (PDF-ready HTML view) |
+| `/Admin/ReportBuilder` | 2 | Index (build/run/export/save), SavedReports (manage saved configs) |
 
 ### Seed Data (seed.sql)
 | Entity | Count | Notes |

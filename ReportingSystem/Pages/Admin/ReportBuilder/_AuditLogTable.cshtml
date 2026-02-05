@@ -1,0 +1,41 @@
+@using ReportingSystem.Models
+@model List<AuditLog>
+
+<table class="table table-hover table-sm mb-0">
+    <thead class="table-light">
+        <tr>
+            <th>Timestamp</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Entity Type</th>
+            <th>Entity ID</th>
+            <th>Details</th>
+            <th>IP Address</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var log in Model)
+        {
+            <tr>
+                <td>@log.Timestamp.ToString("MMM dd HH:mm:ss")</td>
+                <td>@(log.User?.Name ?? "System")</td>
+                <td><span class="badge bg-info">@log.Action</span></td>
+                <td>@log.EntityType</td>
+                <td>@(log.EntityId?.ToString() ?? "-")</td>
+                <td>
+                    @if (!string.IsNullOrEmpty(log.NewValue))
+                    {
+                        <span class="text-truncate d-inline-block" style="max-width: 200px;" title="@log.NewValue">
+                            @(log.NewValue.Length > 50 ? log.NewValue.Substring(0, 50) + "..." : log.NewValue)
+                        </span>
+                    }
+                    else
+                    {
+                        <text>-</text>
+                    }
+                </td>
+                <td><small>@(log.IpAddress ?? "-")</small></td>
+            </tr>
+        }
+    </tbody>
+</table>

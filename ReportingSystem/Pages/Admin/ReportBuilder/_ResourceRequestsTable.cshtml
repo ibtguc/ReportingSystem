@@ -1,0 +1,40 @@
+@using ReportingSystem.Models
+@model List<ResourceRequest>
+
+<table class="table table-hover table-sm mb-0">
+    <thead class="table-light">
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Urgency</th>
+            <th>Est. Cost</th>
+            <th>Approved</th>
+            <th>Status</th>
+            <th>Report</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td>@r.Id</td>
+                <td>
+                    @r.Title
+                    @if (!string.IsNullOrEmpty(r.Quantity))
+                    {
+                        <span class="badge bg-secondary ms-1">Qty: @r.Quantity</span>
+                    }
+                </td>
+                <td><span class="badge bg-secondary">@ResourceCategory.DisplayName(r.Category)</span></td>
+                <td><span class="badge @ResourceUrgency.BadgeClass(r.Urgency)">@r.Urgency</span></td>
+                <td>@(r.EstimatedCost?.ToString("N2") ?? "-") @r.Currency</td>
+                <td>@(r.ApprovedAmount?.ToString("N2") ?? "-")</td>
+                <td><span class="badge @ResourceStatus.BadgeClass(r.Status)">@ResourceStatus.DisplayName(r.Status)</span></td>
+                <td>@r.Report.ReportTemplate.Name</td>
+                <td>@r.CreatedAt.ToString("MMM dd, yyyy")</td>
+            </tr>
+        }
+    </tbody>
+</table>

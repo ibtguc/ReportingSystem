@@ -18,6 +18,18 @@
             </p>
         </div>
         <div class="col-auto">
+            <div class="dropdown me-2 d-inline-block">
+                <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-download"></i> Export
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="/Admin/Export/Download?type=reports&format=csv"><i class="bi bi-filetype-csv"></i> Reports (CSV)</a></li>
+                    <li><a class="dropdown-item" href="/Admin/Export/Download?type=reports&format=excel"><i class="bi bi-file-earmark-excel"></i> Reports (Excel)</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li><a class="dropdown-item" href="/Admin/Export/Download?type=suggested-actions&format=csv"><i class="bi bi-lightbulb"></i> Suggested Actions</a></li>
+                    <li><a class="dropdown-item" href="/Admin/Export/Download?type=resource-requests&format=csv"><i class="bi bi-box-seam"></i> Resource Requests</a></li>
+                </ul>
+            </div>
             <a asp-page="/Admin/Dashboard" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Main Dashboard
             </a>
