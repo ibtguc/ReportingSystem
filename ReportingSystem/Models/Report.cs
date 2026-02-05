@@ -74,6 +74,11 @@ public class Report
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<ConfirmationTag> ConfirmationTags { get; set; } = new List<ConfirmationTag>();
 
+    // Downward flow collections (Phase 6)
+    public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
+    public ICollection<Recommendation> Recommendations { get; set; } = new List<Recommendation>();
+    public ICollection<Decision> Decisions { get; set; } = new List<Decision>();
+
     /// <summary>
     /// Whether this report can still be edited.
     /// </summary>

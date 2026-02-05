@@ -18,6 +18,12 @@ public static class SeedData
         {
             await SeedWorkflowDataAsync(context);
         }
+
+        // Seed downward flow data (feedback, recommendations, decisions) if reports exist but no feedbacks
+        if (await context.Reports.AnyAsync() && !await context.Feedbacks.AnyAsync())
+        {
+            await SeedDownwardFlowDataAsync(context);
+        }
     }
 
     private static async Task SeedOrganizationalUnitsAsync(ApplicationDbContext context)
@@ -250,6 +256,168 @@ public static class SeedData
                 CreatedAt = DateTime.UtcNow.AddDays(-1)
             };
             context.Comments.Add(comment3);
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedDownwardFlowDataAsync(ApplicationDbContext context)
+    {
+        // Get reports and users for seeding
+        var reports = await context.Reports
+            .Include(r => r.SubmittedBy)
+            .Include(r => r.SuggestedActions)
+            .Include(r => r.ResourceRequests)
+            .Take(3)
+            .ToListAsync();
+
+        if (reports.Count == 0) return;
+
+        var users = await context.Users.Take(5).ToListAsync();
+        if (users.Count < 2) return;
+
+        var report = reports[0];
+        var manager = users[0];
+        var reviewer = users.Count > 1 ? users[1] : users[0];
+
+        // Seed Feedback
+        var feedback1 = new Feedback
+        {
+            ReportId = report.Id,
+            AuthorId = manager.Id,
+            Subject = "Excellent Q4 Performance",
+            Content = "The team has shown exceptional performance this quarter. The metrics demonstrate a clear improvement in efficiency.",
+            Category = FeedbackCategory.PositiveRecognition,
+            Visibility = FeedbackVisibility.TeamWide,
+            Status = FeedbackStatus.Active,
+            IsAcknowledged = true,
+            AcknowledgedAt = DateTime.UtcNow.AddDays(-3),
+            AcknowledgmentResponse = "Thank you for the recognition. The team worked very hard this quarter.",
+            CreatedAt = DateTime.UtcNow.AddDays(-5)
+        };
+        context.Feedbacks.Add(feedback1);
+
+        var feedback2 = new Feedback
+        {
+            ReportId = report.Id,
+            AuthorId = reviewer.Id,
+            Subject = "Budget Clarification Needed",
+            Content = "Please clarify the budget allocation in Section 3. Some figures need verification before approval.",
+            Category = FeedbackCategory.Question,
+            Visibility = FeedbackVisibility.Private,
+            Status = FeedbackStatus.Active,
+            CreatedAt = DateTime.UtcNow.AddDays(-2)
+        };
+        context.Feedbacks.Add(feedback2);
+
+        var feedback3 = new Feedback
+        {
+            ReportId = report.Id,
+            AuthorId = manager.Id,
+            Subject = "Timeline Concerns",
+            Content = "The proposed timeline for the new initiative seems aggressive. Consider extending it by 2 weeks.",
+            Category = FeedbackCategory.Concern,
+            Visibility = FeedbackVisibility.Private,
+            Status = FeedbackStatus.Active,
+            CreatedAt = DateTime.UtcNow.AddDays(-1)
+        };
+        context.Feedbacks.Add(feedback3);
+
+        // Seed Recommendations
+        var orgUnit = await context.OrganizationalUnits.FirstOrDefaultAsync();
+
+        var recommendation1 = new Recommendation
+        {
+            ReportId = report.Id,
+            IssuedById = manager.Id,
+            TargetOrgUnitId = orgUnit?.Id,
+            Title = "Implement Weekly Stand-ups",
+            Description = "Based on the report findings, I recommend implementing weekly stand-up meetings to improve communication.",
+            Rationale = "The report indicates communication gaps between team members that are affecting productivity.",
+            Category = RecommendationCategory.ProcessChange,
+            Priority = RecommendationPriority.High,
+            TargetScope = RecommendationScope.Team,
+            Status = RecommendationStatus.Issued,
+            DueDate = DateTime.UtcNow.AddDays(14),
+            CreatedAt = DateTime.UtcNow.AddDays(-4)
+        };
+        context.Recommendations.Add(recommendation1);
+
+        var recommendation2 = new Recommendation
+        {
+            ReportId = report.Id,
+            IssuedById = reviewer.Id,
+            TargetUserId = report.SubmittedById,
+            Title = "Complete Project Management Training",
+            Description = "Enroll in the advanced project management course to enhance leadership skills.",
+            Category = RecommendationCategory.SkillDevelopment,
+            Priority = RecommendationPriority.Medium,
+            TargetScope = RecommendationScope.Individual,
+            Status = RecommendationStatus.Acknowledged,
+            AcknowledgmentCount = 1,
+            DueDate = DateTime.UtcNow.AddDays(30),
+            CreatedAt = DateTime.UtcNow.AddDays(-3)
+        };
+        context.Recommendations.Add(recommendation2);
+
+        // Seed Decisions (linked to suggested actions or resource requests if available)
+        var suggestedAction = report.SuggestedActions.FirstOrDefault();
+        if (suggestedAction != null)
+        {
+            var decision1 = new Decision
+            {
+                ReportId = report.Id,
+                DecidedById = manager.Id,
+                RequestType = DecisionRequestType.SuggestedAction,
+                SuggestedActionId = suggestedAction.Id,
+                Title = $"Decision on: {suggestedAction.Title}",
+                Outcome = DecisionOutcome.Approved,
+                Justification = "The suggested action aligns with our strategic goals and has a clear ROI.",
+                EffectiveDate = DateTime.UtcNow.AddDays(7),
+                IsAcknowledged = true,
+                AcknowledgedAt = DateTime.UtcNow.AddDays(-1),
+                CreatedAt = DateTime.UtcNow.AddDays(-2)
+            };
+            context.Decisions.Add(decision1);
+        }
+
+        var resourceRequest = report.ResourceRequests.FirstOrDefault();
+        if (resourceRequest != null)
+        {
+            var decision2 = new Decision
+            {
+                ReportId = report.Id,
+                DecidedById = manager.Id,
+                RequestType = DecisionRequestType.ResourceRequest,
+                ResourceRequestId = resourceRequest.Id,
+                Title = $"Budget Decision: {resourceRequest.Title}",
+                Outcome = DecisionOutcome.ApprovedWithModifications,
+                Justification = "Approved with reduced scope. Initial phase funding approved.",
+                ApprovedAmount = resourceRequest.EstimatedCost.HasValue ? resourceRequest.EstimatedCost.Value * 0.7m : 5000m,
+                Currency = resourceRequest.Currency ?? "USD",
+                Modifications = "Approved for Phase 1 only. Phase 2 funding will be reviewed after Q1 results.",
+                Conditions = "Monthly progress reports required. Budget reallocation from training fund.",
+                EffectiveDate = DateTime.UtcNow.AddDays(3),
+                CreatedAt = DateTime.UtcNow.AddDays(-1)
+            };
+            context.Decisions.Add(decision2);
+        }
+
+        // Add pending decision
+        if (reports.Count > 1)
+        {
+            var report2 = reports[1];
+            var decision3 = new Decision
+            {
+                ReportId = report2.Id,
+                DecidedById = reviewer.Id,
+                RequestType = DecisionRequestType.SuggestedAction,
+                Title = "Process Improvement Initiative",
+                Outcome = DecisionOutcome.Deferred,
+                Justification = "Good proposal but requires more analysis. Deferred to next quarter planning cycle.",
+                CreatedAt = DateTime.UtcNow.AddDays(-1)
+            };
+            context.Decisions.Add(decision3);
         }
 
         await context.SaveChangesAsync();

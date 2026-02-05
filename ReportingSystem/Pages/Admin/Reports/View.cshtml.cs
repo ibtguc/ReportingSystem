@@ -30,6 +30,11 @@ public class ViewModel : PageModel
     public List<ConfirmationTag> ConfirmationTags { get; set; } = new();
     public List<User> AvailableUsers { get; set; } = new();
 
+    // Downward flow items (Phase 6)
+    public List<Feedback> Feedbacks { get; set; } = new();
+    public List<Recommendation> Recommendations { get; set; } = new();
+    public List<Decision> Decisions { get; set; } = new();
+
     [BindProperty]
     public string? ReviewComments { get; set; }
 
@@ -176,6 +181,32 @@ public class ViewModel : PageModel
         AvailableUsers = await _context.Users
             .Where(u => u.IsActive)
             .OrderBy(u => u.Name)
+            .ToListAsync();
+
+        // Load downward flow items (Phase 6)
+        Feedbacks = await _context.Feedbacks
+            .Where(f => f.ReportId == id && f.ParentFeedbackId == null)
+            .Include(f => f.Author)
+            .Include(f => f.Replies)
+                .ThenInclude(r => r.Author)
+            .OrderByDescending(f => f.CreatedAt)
+            .ToListAsync();
+
+        Recommendations = await _context.Recommendations
+            .Where(r => r.ReportId == id)
+            .Include(r => r.IssuedBy)
+            .Include(r => r.TargetOrgUnit)
+            .Include(r => r.TargetUser)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+
+        Decisions = await _context.Decisions
+            .Where(d => d.ReportId == id)
+            .Include(d => d.DecidedBy)
+            .Include(d => d.SuggestedAction)
+            .Include(d => d.ResourceRequest)
+            .Include(d => d.SupportRequest)
+            .OrderByDescending(d => d.CreatedAt)
             .ToListAsync();
 
         return Page();

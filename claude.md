@@ -97,6 +97,7 @@ Phase 2 (complete): Organization & User Hierarchy - Org units, user roles, deleg
 Phase 3 (complete): Report Templates & Report Entry - Templates, fields, periods, reports, review workflow
 Phase 4 (complete): Upward Flow - Suggested actions, resource requests, support requests with status tracking
 Phase 5 (complete): Workflow & Tagging - Comments, confirmation tags, threaded discussions, workflow admin pages
+Phase 6 (complete): Downward Flow - Feedback, recommendations, decisions with acknowledgment tracking
 
 ### Key Models (Phase 2)
 - **OrganizationalUnit**: self-referential hierarchy with OrgUnitLevel enum (Root=0 → Team=5), Parent/Children nav props, DeleteBehavior.Restrict
@@ -131,11 +132,14 @@ Phase 5 (complete): Workflow & Tagging - Comments, confirmation tags, threaded d
 - Navigation updated with Workflow dropdown menu
 - SeedData.cs updated with Phase 5 sample data (comments and confirmation tags)
 
-### Phase 6: Downward Flow (Feedback, Recommendations, Decisions)
-- **Feedback** model: category (Positive Recognition, Concern, Observation, Question, General), visibility (Private, Team-wide, Department-wide), threading support, acknowledgment tracking
-- **Recommendation** model: title, description, rationale, timeline, priority, category (Process Change, Skill Development, Performance Improvement, Compliance, Strategic Alignment), target scope (Individual/Team/Department/Org-wide), status tracking, cascade through hierarchy
-- **Decision** model: type, outcome (Approved, Approved with Modifications, Partially Approved, Deferred, Rejected, Referred), justification, effective date, conditions, linked to originating request (SuggestedAction/ResourceRequest/SupportRequest), audit trail, cascade with acknowledgment tracking
-- Pages: Response forms for each type, linking to source requests
+### Key Models (Phase 6)
+- **Feedback**: management responses to reports with Category (PositiveRecognition/Concern/Observation/Question/General), Visibility (Private/TeamWide/DepartmentWide/OrganizationWide), Status (Active/Resolved/Archived), threading via ParentFeedbackId, acknowledgment tracking (IsAcknowledged/AcknowledgedAt/AcknowledgmentResponse), RequiresAcknowledgment/IsPendingAcknowledgment computed properties
+- **Recommendation**: guidance/directives with Category (ProcessChange/SkillDevelopment/PerformanceImprovement/Compliance/StrategicAlignment/ResourceOptimization/General), Priority (Critical/High/Medium/Low), TargetScope (Individual/Team/Department/OrganizationWide), Status (Draft/Issued/Acknowledged/InProgress/Completed/Cancelled), optional ReportId/TargetOrgUnitId/TargetUserId, DueDate/EffectiveDate, CascadeToSubUnits, IsOverdue/DaysUntilDue computed
+- **Decision**: formal responses to upward flow with RequestType (SuggestedAction/ResourceRequest/SupportRequest), Outcome (Pending/Approved/ApprovedWithMods/PartiallyApproved/Deferred/Rejected/Referred), optional links to SuggestedActionId/ResourceRequestId/SupportRequestId, ApprovedAmount/Currency, Conditions/Modifications, acknowledgment tracking, IsPositive/IsPendingAcknowledgment computed
+- Admin pages at `/Admin/Downward/{Feedback,Recommendations,Decisions}/Index` with filtering, status management, and acknowledgment tracking
+- Report View page displays Feedback (threaded), Recommendations (table), and Decisions (list) sections
+- Navigation updated with Downward Flow dropdown menu
+- SeedData.cs updated with Phase 6 sample data
 
 ### Phase 7: Aggregation & Drill-Down
 - Aggregation engine: configurable rules per field (Sum, Average, Weighted Average, Min, Max, Count, Percentage, Custom Formula)
@@ -175,18 +179,18 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 ## Session Handoff
 
 ### Current Status
-**Phase 5 complete** (of 9 phases) - Workflow & Tagging (Comments, ConfirmationTags) fully implemented.
+**Phase 6 complete** (of 9 phases) - Downward Flow (Feedback, Recommendations, Decisions) fully implemented.
 
 ### Project Statistics
 | Category | Count |
 |----------|-------|
-| Total .cs/.cshtml files | ~110 |
-| Model classes | 17 |
-| Razor Pages (.cshtml) | 46 |
+| Total .cs/.cshtml files | ~120 |
+| Model classes | 20 |
+| Razor Pages (.cshtml) | 52 |
 | Services | 5 |
-| Admin page sections | 10 |
+| Admin page sections | 11 |
 
-### Implemented Models (17)
+### Implemented Models (20)
 | Model | Phase | Purpose |
 |-------|-------|---------|
 | `User` | 1,2 | Users with roles, org unit assignment, MagicLinks |
@@ -206,15 +210,18 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | `SupportRequest` | 4 | Management/technical assistance requests |
 | `Comment` | 5 | Threaded discussions with @mentions |
 | `ConfirmationTag` | 5 | User verification requests on report sections |
+| `Feedback` | 6 | Management responses with categories/visibility |
+| `Recommendation` | 6 | Guidance/directives with target scope |
+| `Decision` | 6 | Formal responses to upward flow requests |
 
-### Implemented Admin Pages (10 sections, 46 pages)
+### Implemented Admin Pages (11 sections, 52 pages)
 | Section | Pages | Purpose |
 |---------|-------|---------|
 | `/Admin/Backup` | 4 | Create, restore, delete, WAL checkpoint |
 | `/Admin/Delegations` | 2 | Index with revoke, Create |
 | `/Admin/OrgUnits` | 5 | CRUD with recursive tree view |
 | `/Admin/Periods` | 3 | Index with Open/Close, Create, Edit |
-| `/Admin/Reports` | 4 | Index, Create, Fill (with upward flow forms), View (with comments & confirmations) |
+| `/Admin/Reports` | 4 | Index, Create, Fill (with upward flow), View (with all flow sections) |
 | `/Admin/Templates` | 5 | CRUD with inline field/assignment management |
 | `/Admin/Users` | 5 | Full CRUD with org unit/role dropdowns |
 | `/Admin/UpwardFlow/SuggestedActions` | 1 | Index with filtering and status management |
@@ -222,7 +229,10 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | `/Admin/UpwardFlow/SupportRequests` | 1 | Index with assignment and status management |
 | `/Admin/Workflow/Comments` | 1 | Index with moderation and status management |
 | `/Admin/Workflow/Confirmations` | 1 | Index with reminder sending and status management |
-| `/Admin/Dashboard` | 1 | Quick-access buttons including Upward Flow and Workflow sections |
+| `/Admin/Downward/Feedback` | 1 | Index with category/visibility filtering |
+| `/Admin/Downward/Recommendations` | 1 | Index with priority/scope filtering |
+| `/Admin/Downward/Decisions` | 1 | Index with outcome/request type filtering |
+| `/Admin/Dashboard` | 1 | Quick-access buttons for all sections |
 
 ### Seed Data (seed.sql)
 | Entity | Count | Notes |
@@ -241,46 +251,45 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | Notifications | 5 | Welcome and delegation notifications |
 
 ### Database State
-- Schema includes all Phase 1-5 entities (18 tables)
+- Schema includes all Phase 1-6 entities (21 tables)
 - Uses SQLite for dev (`db/reporting.db`), SQL Server for prod
 - **Important**: Delete `db/reporting.db` before running if schema changed (EnsureCreatedAsync won't migrate)
-- Run `seed.sql` manually for full test data, or use C# SeedData.cs for minimal seeding (now includes Phase 5 workflow data)
+- Run `seed.sql` manually for full test data, or use C# SeedData.cs for minimal seeding (now includes Phase 5+6 data)
 
-### Remaining Phases (4)
+### Remaining Phases (3)
 | Phase | Name | Key Deliverables |
 |-------|------|------------------|
-| 6 | Downward Flow | Feedback, Recommendation, Decision models + pages |
 | 7 | Aggregation | Aggregation engine, drill-down, AuditLog, data lineage |
 | 8 | Dashboards & Export | Role-based dashboards, charts, PDF/Excel export |
 | 9 | Polish | Enhanced notifications, preferences, responsive design, performance |
 
-### Next Phase: Phase 6 - Downward Flow
-Implement feedback, recommendations, and decisions from management:
+### Next Phase: Phase 7 - Aggregation & Drill-Down
+Implement data aggregation and drill-down capabilities:
 
-1. **Feedback** - Management responses to reports
-   - Category: Positive Recognition, Concern, Observation, Question, General
-   - Visibility: Private, Team-wide, Department-wide
-   - Threading support for follow-up discussions
-   - Acknowledgment tracking
+1. **Aggregation Engine** - Configurable rules per field
+   - Numeric: Sum, Average, Weighted Average, Min, Max, Count, Percentage
+   - Textual: Concatenate, select representative, manual synthesis
+   - Custom formulas for calculated aggregates
 
-2. **Recommendation** - Guidance and directives
-   - Title, description, rationale, timeline, priority
-   - Category: Process Change, Skill Development, Performance Improvement, Compliance, Strategic Alignment
-   - Target scope: Individual/Team/Department/Org-wide
-   - Status tracking, cascade through hierarchy
+2. **Manager Amendment Layer**
+   - Annotate/add context to aggregated data
+   - Distinguish original vs. amended values
+   - Aggregate upward flow items at each hierarchy level
+   - Auto-generate executive summaries with key metrics
 
-3. **Decision** - Formal responses to upward flow requests
-   - Link to SuggestedAction/ResourceRequest/SupportRequest
-   - Outcome: Approved, Approved with Modifications, Partially Approved, Deferred, Rejected, Referred
-   - Justification, effective date, conditions
-   - Cascade with acknowledgment tracking
-   - Audit trail
+3. **Drill-Down Navigation**
+   - Navigate from any summary value to contributing source reports
+   - Data lineage: originator, original value, amendment history, aggregation path
+   - Visual hierarchy navigation (tree view, breadcrumb)
+
+4. **AuditLog Model** - Track all data changes
+   - User, timestamp, before/after values
+   - Full change history for compliance
 
 Admin pages:
-- `/Admin/Downward/Feedback/Index` - View and manage feedback items
-- `/Admin/Downward/Recommendations/Index` - View and manage recommendations
-- `/Admin/Downward/Decisions/Index` - View and manage decisions
-- Response forms linking to source requests
+- `/Admin/Aggregation/Rules` - Configure aggregation rules per field
+- `/Admin/Aggregation/Summary` - View aggregated data with drill-down
+- `/Admin/AuditLog/Index` - View all data changes
 
 ### Key Files to Reference
 | File | Pattern/Purpose |
@@ -291,14 +300,18 @@ Admin pages:
 | `Models/SupportRequest.cs` | Assignment tracking, IsOpen computed property |
 | `Models/Comment.cs` | Threaded comments with ParentCommentId, @mentions |
 | `Models/ConfirmationTag.cs` | User tagging with confirmation workflow |
+| `Models/Feedback.cs` | Management feedback with categories, visibility, threading |
+| `Models/Recommendation.cs` | Directives with target scope, priority, due dates |
+| `Models/Decision.cs` | Responses to upward flow with outcomes, acknowledgment |
 | `Pages/Admin/Reports/Fill.cshtml` | Inline upward flow entry forms |
 | `Pages/Admin/Reports/Fill.cshtml.cs` | Handler methods for add/remove upward flow |
-| `Pages/Admin/Reports/View.cshtml` | Display comments and confirmations with forms |
+| `Pages/Admin/Reports/View.cshtml` | Display all flow sections (upward, workflow, downward) |
 | `Pages/Admin/Reports/View.cshtml.cs` | Handler methods for comments/confirmations |
 | `Pages/Admin/UpwardFlow/*/Index.cshtml` | Status management with dropdown menus |
 | `Pages/Admin/Workflow/*/Index.cshtml` | Comment moderation and confirmation management |
+| `Pages/Admin/Downward/*/Index.cshtml` | Feedback, recommendations, decisions management |
 | `Data/ApplicationDbContext.cs` | Entity config with indexes, relationships |
-| `Data/SeedData.cs` | C# seeding with Phase 5 workflow data |
+| `Data/SeedData.cs` | C# seeding with Phase 5+6 workflow and downward flow data |
 
 ### Build Commands
 ```bash

@@ -609,4 +609,260 @@
             }
         </div>
     </div>
+
+    <!-- Downward Flow Sections (Phase 6) -->
+
+    <!-- Feedback -->
+    @if (Model.Feedbacks.Count > 0)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-chat-square-text"></i> Management Feedback (@Model.Feedbacks.Count)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    @foreach (var feedback in Model.Feedbacks)
+                    {
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="badge @FeedbackCategory.BadgeClass(feedback.Category) me-2">
+                                            <i class="bi @FeedbackCategory.Icon(feedback.Category)"></i>
+                                            @FeedbackCategory.DisplayName(feedback.Category)
+                                        </span>
+                                        <span class="badge @FeedbackVisibility.BadgeClass(feedback.Visibility) me-2">
+                                            @FeedbackVisibility.DisplayName(feedback.Visibility)
+                                        </span>
+                                        <span class="badge @FeedbackStatus.BadgeClass(feedback.Status)">
+                                            @FeedbackStatus.DisplayName(feedback.Status)
+                                        </span>
+                                    </div>
+                                    <h6 class="mb-1">@feedback.Subject</h6>
+                                    <p class="mb-1">@feedback.Content</p>
+                                    @if (!string.IsNullOrEmpty(feedback.SectionReference))
+                                    {
+                                        <small class="text-muted">Section: @feedback.SectionReference</small>
+                                    }
+                                    <div class="mt-1">
+                                        <small class="text-muted">
+                                            By <strong>@feedback.Author.Name</strong> on @feedback.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+                                        </small>
+                                    </div>
+
+                                    @if (feedback.IsAcknowledged)
+                                    {
+                                        <div class="mt-2 p-2 bg-success bg-opacity-10 rounded">
+                                            <small class="text-success">
+                                                <i class="bi bi-check-circle"></i> Acknowledged
+                                                @if (feedback.AcknowledgedAt.HasValue)
+                                                {
+                                                    <text>on @feedback.AcknowledgedAt.Value.ToString("MMM dd, yyyy")</text>
+                                                }
+                                            </small>
+                                            @if (!string.IsNullOrEmpty(feedback.AcknowledgmentResponse))
+                                            {
+                                                <br /><small>@feedback.AcknowledgmentResponse</small>
+                                            }
+                                        </div>
+                                    }
+                                    else if (feedback.RequiresAcknowledgment)
+                                    {
+                                        <div class="mt-2">
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-clock"></i> Pending Acknowledgment
+                                            </span>
+                                        </div>
+                                    }
+
+                                    @if (feedback.Replies.Any())
+                                    {
+                                        <div class="ms-3 mt-2 border-start ps-3">
+                                            @foreach (var reply in feedback.Replies.OrderBy(r => r.CreatedAt))
+                                            {
+                                                <div class="mb-2">
+                                                    <small><strong>@reply.Author.Name</strong> replied:</small>
+                                                    <p class="mb-0 small">@reply.Content</p>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Recommendations -->
+    @if (Model.Recommendations.Count > 0)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-signpost-2"></i> Recommendations (@Model.Recommendations.Count)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Target</th>
+                                <th>Status</th>
+                                <th>Due</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var rec in Model.Recommendations)
+                            {
+                                <tr class="@(rec.IsOverdue ? "table-danger" : "")">
+                                    <td>
+                                        <strong>@rec.Title</strong>
+                                        <br /><small class="text-muted">@(rec.Description.Length > 80 ? rec.Description.Substring(0, 80) + "..." : rec.Description)</small>
+                                        @if (!string.IsNullOrEmpty(rec.Rationale))
+                                        {
+                                            <br /><small><strong>Rationale:</strong> @rec.Rationale</small>
+                                        }
+                                        <br /><small class="text-muted">Issued by @rec.IssuedBy.Name</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge @RecommendationCategory.BadgeClass(rec.Category)">
+                                            @RecommendationCategory.DisplayName(rec.Category)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge @RecommendationPriority.BadgeClass(rec.Priority)">
+                                            @rec.Priority
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge @RecommendationScope.BadgeClass(rec.TargetScope)">
+                                            @RecommendationScope.DisplayName(rec.TargetScope)
+                                        </span>
+                                        @if (rec.TargetOrgUnit != null)
+                                        {
+                                            <br /><small>@rec.TargetOrgUnit.Name</small>
+                                        }
+                                        @if (rec.TargetUser != null)
+                                        {
+                                            <br /><small>@rec.TargetUser.Name</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @RecommendationStatus.BadgeClass(rec.Status)">
+                                            @RecommendationStatus.DisplayName(rec.Status)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (rec.DueDate.HasValue)
+                                        {
+                                            <small>@rec.DueDate.Value.ToString("MMM dd, yyyy")</small>
+                                            @if (rec.IsOverdue)
+                                            {
+                                                <br /><span class="badge bg-danger">Overdue</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Decisions -->
+    @if (Model.Decisions.Count > 0)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Decisions (@Model.Decisions.Count)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    @foreach (var decision in Model.Decisions)
+                    {
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="badge @DecisionRequestType.BadgeClass(decision.RequestType) me-2">
+                                            <i class="bi @DecisionRequestType.Icon(decision.RequestType)"></i>
+                                            @DecisionRequestType.DisplayName(decision.RequestType)
+                                        </span>
+                                        <span class="badge @DecisionOutcome.BadgeClass(decision.Outcome)">
+                                            <i class="bi @DecisionOutcome.Icon(decision.Outcome)"></i>
+                                            @DecisionOutcome.DisplayName(decision.Outcome)
+                                        </span>
+                                    </div>
+                                    <h6 class="mb-1">@decision.Title</h6>
+                                    <p class="mb-1"><strong>Justification:</strong> @decision.Justification</p>
+                                    <small class="text-muted">Related to: @decision.RelatedRequestTitle</small>
+                                    @if (!string.IsNullOrEmpty(decision.Conditions))
+                                    {
+                                        <p class="mb-1 mt-1"><small><strong>Conditions:</strong> @decision.Conditions</small></p>
+                                    }
+                                    @if (!string.IsNullOrEmpty(decision.Modifications))
+                                    {
+                                        <p class="mb-1"><small><strong>Modifications:</strong> @decision.Modifications</small></p>
+                                    }
+                                    @if (decision.ApprovedAmount.HasValue)
+                                    {
+                                        <p class="mb-1">
+                                            <span class="badge bg-success">
+                                                Approved: @decision.Currency @decision.ApprovedAmount.Value.ToString("N2")
+                                            </span>
+                                        </p>
+                                    }
+                                    @if (decision.EffectiveDate.HasValue)
+                                    {
+                                        <small class="text-muted">Effective: @decision.EffectiveDate.Value.ToString("MMM dd, yyyy")</small>
+                                    }
+                                    <div class="mt-1">
+                                        <small class="text-muted">
+                                            Decided by <strong>@decision.DecidedBy.Name</strong> on @decision.CreatedAt.ToString("MMM dd, yyyy")
+                                        </small>
+                                    </div>
+
+                                    @if (decision.IsAcknowledged)
+                                    {
+                                        <div class="mt-2 p-2 bg-success bg-opacity-10 rounded">
+                                            <small class="text-success">
+                                                <i class="bi bi-check-circle"></i> Acknowledged
+                                                @if (decision.AcknowledgedAt.HasValue)
+                                                {
+                                                    <text>on @decision.AcknowledgedAt.Value.ToString("MMM dd, yyyy")</text>
+                                                }
+                                            </small>
+                                            @if (!string.IsNullOrEmpty(decision.AcknowledgmentResponse))
+                                            {
+                                                <br /><small>@decision.AcknowledgmentResponse</small>
+                                            }
+                                        </div>
+                                    }
+                                    else if (decision.Outcome != DecisionOutcome.Pending)
+                                    {
+                                        <div class="mt-2">
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-clock"></i> Pending Acknowledgment
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 </div>

@@ -1,0 +1,213 @@
+@page
+@using ReportingSystem.Models
+@model ReportingSystem.Pages.Admin.Downward.Decisions.IndexModel
+@{
+    ViewData["Title"] = "Decisions";
+}
+
+<div class="container-fluid mt-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-clipboard-check text-success"></i> Decisions</h2>
+            <p class="text-muted mb-0">Formal responses to upward flow requests</p>
+        </div>
+        <div>
+            @if (Model.PendingAcknowledgmentCount > 0)
+            {
+                <span class="badge bg-warning text-dark fs-6 me-2">
+                    <i class="bi bi-clock"></i> @Model.PendingAcknowledgmentCount pending acknowledgment
+                </span>
+            }
+            <a asp-page="/Admin/Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label">Outcome</label>
+                    <select asp-for="OutcomeFilter" class="form-select">
+                        <option value="">All Outcomes</option>
+                        @foreach (var outcome in DecisionOutcome.All)
+                        {
+                            <option value="@outcome">@DecisionOutcome.DisplayName(outcome)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Request Type</label>
+                    <select asp-for="RequestTypeFilter" class="form-select">
+                        <option value="">All Types</option>
+                        @foreach (var type in DecisionRequestType.All)
+                        {
+                            <option value="@type">@DecisionRequestType.DisplayName(type)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Report ID</label>
+                    <input asp-for="ReportId" class="form-control" type="number" placeholder="Filter by report..." />
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-4">
+                        <input asp-for="OnlyPendingAck" class="form-check-input" type="checkbox" />
+                        <label class="form-check-label" asp-for="OnlyPendingAck">Pending Ack Only</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <input asp-for="SearchTerm" class="form-control" placeholder="Search..." />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                    <a asp-page="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Results</h5>
+            <span class="badge bg-success">@Model.TotalCount decisions</span>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Decisions.Count == 0)
+            {
+                <div class="alert alert-info m-3">
+                    <i class="bi bi-info-circle"></i> No decisions found matching your criteria.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Related Request</th>
+                                <th>Report</th>
+                                <th>Decided By</th>
+                                <th>Outcome</th>
+                                <th>Ack</th>
+                                <th>Created</th>
+                                <th style="width:200px">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var decision in Model.Decisions)
+                            {
+                                <tr class="@(decision.IsPendingAcknowledgment ? "table-warning" : "")">
+                                    <td>
+                                        <strong>@decision.Title</strong>
+                                        <br /><small class="text-muted">@(decision.Justification.Length > 60 ? decision.Justification.Substring(0, 60) + "..." : decision.Justification)</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge @DecisionRequestType.BadgeClass(decision.RequestType)">
+                                            <i class="bi @DecisionRequestType.Icon(decision.RequestType)"></i>
+                                            @DecisionRequestType.DisplayName(decision.RequestType)
+                                        </span>
+                                        <br /><small>@decision.RelatedRequestTitle</small>
+                                    </td>
+                                    <td>
+                                        <a asp-page="/Admin/Reports/View" asp-route-id="@decision.ReportId">
+                                            @decision.Report.ReportTemplate.Name
+                                        </a>
+                                        <br /><small class="text-muted">by @decision.Report.SubmittedBy.Name</small>
+                                    </td>
+                                    <td>
+                                        <strong>@decision.DecidedBy.Name</strong>
+                                        <br /><small class="text-muted">@decision.DecidedBy.Email</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge @DecisionOutcome.BadgeClass(decision.Outcome)">
+                                            <i class="bi @DecisionOutcome.Icon(decision.Outcome)"></i>
+                                            @DecisionOutcome.DisplayName(decision.Outcome)
+                                        </span>
+                                        @if (decision.ApprovedAmount.HasValue)
+                                        {
+                                            <br /><small class="text-success">@decision.Currency @decision.ApprovedAmount.Value.ToString("N2")</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (decision.IsAcknowledged)
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-check"></i></span>
+                                            <br /><small>@decision.AcknowledgedAt?.ToString("MMM dd")</small>
+                                        }
+                                        else if (decision.Outcome != DecisionOutcome.Pending)
+                                        {
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i></span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>@decision.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    Outcome
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    @foreach (var outcome in DecisionOutcome.All.Where(o => o != decision.Outcome))
+                                                    {
+                                                        <li>
+                                                            <form method="post" asp-page-handler="UpdateOutcome" class="d-inline">
+                                                                <input type="hidden" name="id" value="@decision.Id" />
+                                                                <input type="hidden" name="newOutcome" value="@outcome" />
+                                                                <button type="submit" class="dropdown-item">
+                                                                    @DecisionOutcome.DisplayName(outcome)
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                            @if (!decision.IsAcknowledged && decision.Outcome != DecisionOutcome.Pending)
+                                            {
+                                                <form method="post" asp-page-handler="MarkAcknowledged" class="d-inline ms-1">
+                                                    <input type="hidden" name="id" value="@decision.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Mark as Acknowledged">
+                                                        <i class="bi bi-check-lg"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            <form method="post" asp-page-handler="Delete" class="d-inline ms-1">
+                                                <input type="hidden" name="id" value="@decision.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        onclick="return confirm('Delete this decision?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

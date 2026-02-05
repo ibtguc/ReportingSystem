@@ -39,6 +39,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<Comment> Comments { get; set; }
     public DbSet<ConfirmationTag> ConfirmationTags { get; set; }
 
+    // Downward Flow DbSets (Phase 6)
+    public DbSet<Feedback> Feedbacks { get; set; }
+    public DbSet<Recommendation> Recommendations { get; set; }
+    public DbSet<Decision> Decisions { get; set; }
+
     // Notification DbSets
     public DbSet<Notification> Notifications { get; set; }
 
@@ -368,6 +373,113 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.ReportField)
                 .WithMany()
                 .HasForeignKey(e => e.ReportFieldId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure Feedback (Phase 6)
+        modelBuilder.Entity<Feedback>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.AuthorId);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.Visibility);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.ParentFeedbackId);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.Feedbacks)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Author)
+                .WithMany()
+                .HasForeignKey(e => e.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ParentFeedback)
+                .WithMany(f => f.Replies)
+                .HasForeignKey(e => e.ParentFeedbackId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ReportField)
+                .WithMany()
+                .HasForeignKey(e => e.ReportFieldId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure Recommendation (Phase 6)
+        modelBuilder.Entity<Recommendation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.IssuedById);
+            entity.HasIndex(e => e.TargetOrgUnitId);
+            entity.HasIndex(e => e.TargetUserId);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.Priority);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.TargetScope);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.Recommendations)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.IssuedBy)
+                .WithMany()
+                .HasForeignKey(e => e.IssuedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.TargetOrgUnit)
+                .WithMany()
+                .HasForeignKey(e => e.TargetOrgUnitId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.TargetUser)
+                .WithMany()
+                .HasForeignKey(e => e.TargetUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure Decision (Phase 6)
+        modelBuilder.Entity<Decision>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.DecidedById);
+            entity.HasIndex(e => e.RequestType);
+            entity.HasIndex(e => e.Outcome);
+            entity.HasIndex(e => e.SuggestedActionId);
+            entity.HasIndex(e => e.ResourceRequestId);
+            entity.HasIndex(e => e.SupportRequestId);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.Decisions)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.DecidedBy)
+                .WithMany()
+                .HasForeignKey(e => e.DecidedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.SuggestedAction)
+                .WithMany()
+                .HasForeignKey(e => e.SuggestedActionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ResourceRequest)
+                .WithMany()
+                .HasForeignKey(e => e.ResourceRequestId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.SupportRequest)
+                .WithMany()
+                .HasForeignKey(e => e.SupportRequestId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
