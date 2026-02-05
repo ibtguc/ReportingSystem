@@ -150,19 +150,19 @@ public static class SeedReportTemplates
         var today = DateTime.UtcNow.Date;
         var periods = new List<ReportPeriod>
         {
-            // Monthly Dept Report periods
-            new() { ReportTemplateId = 1, Name = "January 2026", StartDate = new DateTime(2026, 1, 1), EndDate = new DateTime(2026, 1, 31), SubmissionDeadline = new DateTime(2026, 2, 5), GracePeriodDays = 3, Status = PeriodStatus.Closed, IsActive = true, CreatedAt = now },
-            new() { ReportTemplateId = 1, Name = "February 2026", StartDate = new DateTime(2026, 2, 1), EndDate = new DateTime(2026, 2, 28), SubmissionDeadline = new DateTime(2026, 3, 5), GracePeriodDays = 3, Status = PeriodStatus.Open, IsActive = true, CreatedAt = now },
-            new() { ReportTemplateId = 1, Name = "March 2026", StartDate = new DateTime(2026, 3, 1), EndDate = new DateTime(2026, 3, 31), SubmissionDeadline = new DateTime(2026, 4, 5), GracePeriodDays = 3, Status = PeriodStatus.Upcoming, IsActive = true, CreatedAt = now },
-            // Weekly Team Report periods
-            new() { ReportTemplateId = 2, Name = "Week of Jan 27, 2026", StartDate = new DateTime(2026, 1, 27), EndDate = new DateTime(2026, 2, 2), SubmissionDeadline = new DateTime(2026, 2, 3), GracePeriodDays = 1, Status = PeriodStatus.Closed, IsActive = true, CreatedAt = now },
-            new() { ReportTemplateId = 2, Name = "Week of Feb 03, 2026", StartDate = new DateTime(2026, 2, 3), EndDate = new DateTime(2026, 2, 9), SubmissionDeadline = new DateTime(2026, 2, 10), GracePeriodDays = 1, Status = PeriodStatus.Open, IsActive = true, CreatedAt = now },
-            // Quarterly Academic periods
-            new() { ReportTemplateId = 3, Name = "Q4 2025", StartDate = new DateTime(2025, 10, 1), EndDate = new DateTime(2025, 12, 31), SubmissionDeadline = new DateTime(2026, 1, 15), GracePeriodDays = 5, Status = PeriodStatus.Closed, IsActive = true, CreatedAt = now },
-            new() { ReportTemplateId = 3, Name = "Q1 2026", StartDate = new DateTime(2026, 1, 1), EndDate = new DateTime(2026, 3, 31), SubmissionDeadline = new DateTime(2026, 4, 15), GracePeriodDays = 5, Status = PeriodStatus.Open, IsActive = true, CreatedAt = now },
-            // IT Infrastructure Health Report periods
-            new() { ReportTemplateId = 5, Name = "January 2026", StartDate = new DateTime(2026, 1, 1), EndDate = new DateTime(2026, 1, 31), SubmissionDeadline = new DateTime(2026, 2, 5), GracePeriodDays = 3, Status = PeriodStatus.Closed, IsActive = true, CreatedAt = now },
-            new() { ReportTemplateId = 5, Name = "February 2026", StartDate = new DateTime(2026, 2, 1), EndDate = new DateTime(2026, 2, 28), SubmissionDeadline = new DateTime(2026, 3, 5), GracePeriodDays = 3, Status = PeriodStatus.Open, IsActive = true, CreatedAt = now }
+            // Monthly Dept Report periods (IDs 1-3)
+            new() { Id = 1, ReportTemplateId = 1, Name = "January 2026", StartDate = new DateTime(2026, 1, 1), EndDate = new DateTime(2026, 1, 31), SubmissionDeadline = new DateTime(2026, 2, 5), GracePeriodDays = 3, Status = PeriodStatus.Closed, IsActive = true, CreatedAt = now },
+            new() { Id = 2, ReportTemplateId = 1, Name = "February 2026", StartDate = new DateTime(2026, 2, 1), EndDate = new DateTime(2026, 2, 28), SubmissionDeadline = new DateTime(2026, 3, 5), GracePeriodDays = 3, Status = PeriodStatus.Open, IsActive = true, CreatedAt = now },
+            new() { Id = 3, ReportTemplateId = 1, Name = "March 2026", StartDate = new DateTime(2026, 3, 1), EndDate = new DateTime(2026, 3, 31), SubmissionDeadline = new DateTime(2026, 4, 5), GracePeriodDays = 3, Status = PeriodStatus.Upcoming, IsActive = true, CreatedAt = now },
+            // Weekly Team Report periods (IDs 4-5)
+            new() { Id = 4, ReportTemplateId = 2, Name = "Week of Jan 27, 2026", StartDate = new DateTime(2026, 1, 27), EndDate = new DateTime(2026, 2, 2), SubmissionDeadline = new DateTime(2026, 2, 3), GracePeriodDays = 1, Status = PeriodStatus.Closed, IsActive = true, CreatedAt = now },
+            new() { Id = 5, ReportTemplateId = 2, Name = "Week of Feb 03, 2026", StartDate = new DateTime(2026, 2, 3), EndDate = new DateTime(2026, 2, 9), SubmissionDeadline = new DateTime(2026, 2, 10), GracePeriodDays = 1, Status = PeriodStatus.Open, IsActive = true, CreatedAt = now },
+            // Quarterly Academic periods (IDs 6-7)
+            new() { Id = 6, ReportTemplateId = 3, Name = "Q4 2025", StartDate = new DateTime(2025, 10, 1), EndDate = new DateTime(2025, 12, 31), SubmissionDeadline = new DateTime(2026, 1, 15), GracePeriodDays = 5, Status = PeriodStatus.Closed, IsActive = true, CreatedAt = now },
+            new() { Id = 7, ReportTemplateId = 3, Name = "Q1 2026", StartDate = new DateTime(2026, 1, 1), EndDate = new DateTime(2026, 3, 31), SubmissionDeadline = new DateTime(2026, 4, 15), GracePeriodDays = 5, Status = PeriodStatus.Open, IsActive = true, CreatedAt = now },
+            // IT Infrastructure Health Report periods (IDs 8-9)
+            new() { Id = 8, ReportTemplateId = 5, Name = "January 2026", StartDate = new DateTime(2026, 1, 1), EndDate = new DateTime(2026, 1, 31), SubmissionDeadline = new DateTime(2026, 2, 5), GracePeriodDays = 3, Status = PeriodStatus.Closed, IsActive = true, CreatedAt = now },
+            new() { Id = 9, ReportTemplateId = 5, Name = "February 2026", StartDate = new DateTime(2026, 2, 1), EndDate = new DateTime(2026, 2, 28), SubmissionDeadline = new DateTime(2026, 3, 5), GracePeriodDays = 3, Status = PeriodStatus.Open, IsActive = true, CreatedAt = now }
         };
 
         context.ReportPeriods.AddRange(periods);
