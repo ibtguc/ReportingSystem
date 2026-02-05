@@ -38,10 +38,28 @@ public static class SeedData
         // 5. Report Templates (depends on users for CreatedById)
         if (!await context.ReportTemplates.AnyAsync())
         {
-            await SeedReportTemplates.SeedAsync(context);
+            await SeedReportTemplates.SeedTemplatesAsync(context);
         }
 
-        // 6. Reports and related data (depends on templates, users)
+        // 6. Report Fields (depends on templates)
+        if (!await context.ReportFields.AnyAsync())
+        {
+            await SeedReportTemplates.SeedFieldsAsync(context);
+        }
+
+        // 7. Template Assignments (depends on templates, org units)
+        if (!await context.ReportTemplateAssignments.AnyAsync())
+        {
+            await SeedReportTemplates.SeedAssignmentsAsync(context);
+        }
+
+        // 8. Report Periods (depends on templates)
+        if (!await context.ReportPeriods.AnyAsync())
+        {
+            await SeedReportTemplates.SeedPeriodsAsync(context);
+        }
+
+        // 9. Reports and related data (depends on templates, periods, users)
         if (!await context.Reports.AnyAsync())
         {
             await SeedReportsAndWorkflow.SeedAsync(context);

@@ -7,11 +7,9 @@ namespace ReportingSystem.Data;
 /// </summary>
 public static class SeedReportTemplates
 {
-    public static async Task SeedAsync(ApplicationDbContext context)
+    public static async Task SeedTemplatesAsync(ApplicationDbContext context)
     {
         var now = DateTime.UtcNow;
-
-        // ========== REPORT TEMPLATES ==========
         var templates = new List<ReportTemplate>
         {
             new()
@@ -118,13 +116,19 @@ public static class SeedReportTemplates
 
         context.ReportTemplates.AddRange(templates);
         await context.SaveChangesAsync();
+    }
 
-        // ========== REPORT FIELDS ==========
+    public static async Task SeedFieldsAsync(ApplicationDbContext context)
+    {
+        var now = DateTime.UtcNow;
         var fields = GetReportFields(now);
         context.ReportFields.AddRange(fields);
         await context.SaveChangesAsync();
+    }
 
-        // ========== TEMPLATE ASSIGNMENTS ==========
+    public static async Task SeedAssignmentsAsync(ApplicationDbContext context)
+    {
+        var now = DateTime.UtcNow;
         var assignments = new List<ReportTemplateAssignment>
         {
             // Monthly Dept Report assigned to all department heads
@@ -145,9 +149,11 @@ public static class SeedReportTemplates
 
         context.ReportTemplateAssignments.AddRange(assignments);
         await context.SaveChangesAsync();
+    }
 
-        // ========== REPORT PERIODS ==========
-        var today = DateTime.UtcNow.Date;
+    public static async Task SeedPeriodsAsync(ApplicationDbContext context)
+    {
+        var now = DateTime.UtcNow;
         var periods = new List<ReportPeriod>
         {
             // Monthly Dept Report periods (IDs 1-3)
