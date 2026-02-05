@@ -249,12 +249,18 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | ResourceRequests | 7 | 3 Approved, 1 Fulfilled, 1 Partially Approved, 2 Submitted |
 | SupportRequests | 6 | 2 Resolved, 1 Closed, 1 In Progress, 1 Acknowledged, 1 Submitted |
 | Notifications | 5 | Welcome and delegation notifications |
+| Comments | 8 | Threaded discussions with @mentions and replies |
+| ConfirmationTags | 6 | 3 Confirmed, 1 Pending, 1 RevisionRequested, 1 other |
+| Feedbacks | 6 | 2 PositiveRecognition, 2 Concern, 1 Question, 1 Observation |
+| Recommendations | 5 | 1 InProgress, 2 Acknowledged, 2 Issued |
+| Decisions | 6 | 2 Approved, 1 ApprovedWithMods, 1 PartiallyApproved, 1 Deferred, 1 other |
 
 ### Database State
 - Schema includes all Phase 1-6 entities (21 tables)
 - Uses SQLite for dev (`db/reporting.db`), SQL Server for prod
 - **Important**: Delete `db/reporting.db` before running if schema changed (EnsureCreatedAsync won't migrate)
-- Run `seed.sql` manually for full test data, or use C# SeedData.cs for minimal seeding (now includes Phase 5+6 data)
+- **seed.sql**: Complete SQL seed script with all Phase 1-6 data (org units, users, templates, reports, upward flow, workflow, downward flow)
+- **SeedData.cs**: C# seeding for minimal data (includes Phase 5+6 sample data)
 
 ### Remaining Phases (3)
 | Phase | Name | Key Deliverables |

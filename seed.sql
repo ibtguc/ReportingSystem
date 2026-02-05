@@ -802,4 +802,168 @@ VALUES (6, 4, 'Vendor negotiation support', 'Need management support for contrac
 --     - Categories: Management Intervention, Cross-Dept Coordination, Technical Assistance, Policy Clarification
 --
 -- Notifications: 5 initial system notifications
+--
+-- Workflow & Tagging (Phase 5):
+--   Comments: 8 items (threaded discussions with replies)
+--   ConfirmationTags: 6 items (pending, confirmed, declined, etc.)
+--
+-- Downward Flow (Phase 6):
+--   Feedback: 6 items (management responses with categories)
+--   Recommendations: 5 items (directives with target scope)
+--   Decisions: 6 items (responses to upward flow requests)
 -- =============================================================================
+
+
+-- =============================================================================
+-- 11. WORKFLOW & TAGGING DATA (Phase 5)
+-- =============================================================================
+-- Comments and ConfirmationTags for reports
+-- =============================================================================
+
+DELETE FROM Comments;
+DELETE FROM ConfirmationTags;
+DELETE FROM sqlite_sequence WHERE name IN ('Comments', 'ConfirmationTags');
+
+-- ---- Comments ----
+-- CommentStatus: Active, Edited, Deleted, Hidden
+
+-- Comments on Report 1 (Software Dev Monthly Report - Approved)
+INSERT INTO Comments (Id, ReportId, AuthorId, Content, Status, SectionReference, ParentCommentId, MentionedUserIdsJson, CreatedAt, UpdatedAt)
+VALUES (1, 1, 3, 'Excellent progress on the Student Portal v2. The launch metrics look very promising. @head.sdev@guc.edu.eg can you share the user adoption numbers?', 'Active', 'Key Achievements', NULL, '[18]', datetime('now', '-24 days'), NULL);
+
+INSERT INTO Comments (Id, ReportId, AuthorId, Content, Status, SectionReference, ParentCommentId, MentionedUserIdsJson, CreatedAt, UpdatedAt)
+VALUES (2, 1, 18, 'Thank you! First week shows 85% adoption rate among active students. Full metrics report will be shared next week.', 'Active', NULL, 1, NULL, datetime('now', '-24 days', '+2 hours'), NULL);
+
+INSERT INTO Comments (Id, ReportId, AuthorId, Content, Status, SectionReference, ParentCommentId, MentionedUserIdsJson, CreatedAt, UpdatedAt)
+VALUES (3, 1, 9, 'The automated testing coverage improvement is noteworthy. This aligns with our faculty-wide quality initiative.', 'Active', 'Key Metrics', NULL, NULL, datetime('now', '-23 days'), NULL);
+
+INSERT INTO Comments (Id, ReportId, AuthorId, Content, Status, SectionReference, ParentCommentId, MentionedUserIdsJson, CreatedAt, UpdatedAt)
+VALUES (4, 1, 20, 'Regarding the two senior developer resignations - HR is prioritizing the recruitment. @mgr.backend@guc.edu.eg please coordinate with HR for technical interviews.', 'Active', 'Current Challenges', NULL, '[26]', datetime('now', '-22 days'), NULL);
+
+INSERT INTO Comments (Id, ReportId, AuthorId, Content, Status, SectionReference, ParentCommentId, MentionedUserIdsJson, CreatedAt, UpdatedAt)
+VALUES (5, 1, 26, 'Confirmed. I have already sent the technical requirements to HR and am available for interviews next week.', 'Active', NULL, 4, NULL, datetime('now', '-22 days', '+3 hours'), NULL);
+
+-- Comments on Report 3 (Backend Team Weekly - Submitted)
+INSERT INTO Comments (Id, ReportId, AuthorId, Content, Status, SectionReference, ParentCommentId, MentionedUserIdsJson, CreatedAt, UpdatedAt)
+VALUES (6, 3, 22, 'Good progress on the authentication migration. However, the staging environment blocker needs immediate attention. @mgr.cloud@guc.edu.eg can you prioritize this?', 'Active', 'Blockers', NULL, '[25]', datetime('now', '-12 hours'), NULL);
+
+INSERT INTO Comments (Id, ReportId, AuthorId, Content, Status, SectionReference, ParentCommentId, MentionedUserIdsJson, CreatedAt, UpdatedAt)
+VALUES (7, 3, 25, 'Apologies for the delay. We had capacity issues. Environment will be ready by end of day tomorrow.', 'Active', NULL, 6, NULL, datetime('now', '-10 hours'), NULL);
+
+-- Comments on Report 4 (IT Infrastructure Report - Approved)
+INSERT INTO Comments (Id, ReportId, AuthorId, Content, Status, SectionReference, ParentCommentId, MentionedUserIdsJson, CreatedAt, UpdatedAt)
+VALUES (8, 4, 3, 'The 99.7% uptime is excellent. Please prepare a brief for the next executive meeting on how we achieved this.', 'Active', 'Availability', NULL, NULL, datetime('now', '-17 days'), NULL);
+
+
+-- ---- Confirmation Tags ----
+-- ConfirmationStatus: Pending, Confirmed, RevisionRequested, Declined, Expired, Cancelled
+
+-- Confirmation tags for Report 1
+INSERT INTO ConfirmationTags (Id, ReportId, RequestedById, TaggedUserId, SectionReference, Message, Status, Response, RequestedAt, RespondedAt, ExpiresAt, ReminderSentAt, CreatedAt)
+VALUES (1, 1, 18, 34, 'Key Metrics', 'Please confirm the testing coverage numbers are accurate based on our CI/CD reports.', 'Confirmed', 'Verified. The 85% coverage matches our SonarQube dashboard.', datetime('now', '-26 days'), datetime('now', '-25 days'), datetime('now', '-19 days'), NULL, datetime('now', '-26 days'));
+
+INSERT INTO ConfirmationTags (Id, ReportId, RequestedById, TaggedUserId, SectionReference, Message, Status, Response, RequestedAt, RespondedAt, ExpiresAt, ReminderSentAt, CreatedAt)
+VALUES (2, 1, 18, 26, 'Key Achievements', 'Please confirm the Student Portal launch details are complete.', 'Confirmed', 'Confirmed. Launch date and features list is accurate.', datetime('now', '-26 days'), datetime('now', '-26 days', '+4 hours'), datetime('now', '-19 days'), NULL, datetime('now', '-26 days'));
+
+-- Confirmation tags for Report 3
+INSERT INTO ConfirmationTags (Id, ReportId, RequestedById, TaggedUserId, SectionReference, Message, Status, Response, RequestedAt, RespondedAt, ExpiresAt, ReminderSentAt, CreatedAt)
+VALUES (3, 3, 26, 37, 'Metrics', 'Can you verify the task completion numbers from Jira?', 'Confirmed', 'Numbers match Jira sprint report.', datetime('now', '-2 days'), datetime('now', '-1 day'), datetime('now', '+5 days'), NULL, datetime('now', '-2 days'));
+
+INSERT INTO ConfirmationTags (Id, ReportId, RequestedById, TaggedUserId, SectionReference, Message, Status, Response, RequestedAt, RespondedAt, ExpiresAt, ReminderSentAt, CreatedAt)
+VALUES (4, 3, 26, 38, 'Blockers', 'Please confirm the staging environment issue description is accurate.', 'Pending', NULL, datetime('now', '-1 day'), NULL, datetime('now', '+6 days'), NULL, datetime('now', '-1 day'));
+
+-- Confirmation tags for Report 4
+INSERT INTO ConfirmationTags (Id, ReportId, RequestedById, TaggedUserId, SectionReference, Message, Status, Response, RequestedAt, RespondedAt, ExpiresAt, ReminderSentAt, CreatedAt)
+VALUES (5, 4, 19, 24, 'Incidents', 'Please verify the incident counts match our ITSM records.', 'Confirmed', 'Verified against ServiceNow. Numbers are correct.', datetime('now', '-21 days'), datetime('now', '-20 days'), datetime('now', '-14 days'), NULL, datetime('now', '-21 days'));
+
+INSERT INTO ConfirmationTags (Id, ReportId, RequestedById, TaggedUserId, SectionReference, Message, Status, Response, RequestedAt, RespondedAt, ExpiresAt, ReminderSentAt, CreatedAt)
+VALUES (6, 4, 19, 25, 'Capacity', 'Please confirm server capacity status is current.', 'RevisionRequested', 'The capacity figure needs updating - we added 2 new servers last week. Please update to Green status.', datetime('now', '-21 days'), datetime('now', '-20 days'), datetime('now', '-14 days'), NULL, datetime('now', '-21 days'));
+
+
+-- =============================================================================
+-- 12. DOWNWARD FLOW DATA (Phase 6)
+-- =============================================================================
+-- Feedback, Recommendations, and Decisions from management
+-- =============================================================================
+
+DELETE FROM Feedbacks;
+DELETE FROM Recommendations;
+DELETE FROM Decisions;
+DELETE FROM sqlite_sequence WHERE name IN ('Feedbacks', 'Recommendations', 'Decisions');
+
+-- ---- Feedback ----
+-- FeedbackCategory: PositiveRecognition, Concern, Observation, Question, General
+-- FeedbackVisibility: Private, TeamWide, DepartmentWide, OrganizationWide
+-- FeedbackStatus: Active, Resolved, Archived
+
+-- Feedback on Report 1 (Software Dev Monthly)
+INSERT INTO Feedbacks (Id, ReportId, AuthorId, Subject, Content, Category, Visibility, SectionReference, ReportFieldId, ParentFeedbackId, IsAcknowledged, AcknowledgedAt, AcknowledgmentResponse, Status, CreatedAt, UpdatedAt)
+VALUES (1, 1, 3, 'Excellent team performance', 'The Software Development department has shown exceptional performance this month. The Student Portal v2 launch demonstrates strong execution capabilities.', 'PositiveRecognition', 'DepartmentWide', 'General', NULL, NULL, 1, datetime('now', '-22 days'), 'Thank you for the recognition. The team worked hard and we are proud of the outcome.', 'Active', datetime('now', '-23 days'), datetime('now', '-22 days'));
+
+INSERT INTO Feedbacks (Id, ReportId, AuthorId, Subject, Content, Category, Visibility, SectionReference, ReportFieldId, ParentFeedbackId, IsAcknowledged, AcknowledgedAt, AcknowledgmentResponse, Status, CreatedAt, UpdatedAt)
+VALUES (2, 1, 3, 'Staffing concern noted', 'The loss of two senior developers is concerning. Please ensure knowledge transfer documentation is prioritized and keep me updated on recruitment progress.', 'Concern', 'Private', 'Current Challenges', 8, NULL, 1, datetime('now', '-21 days'), 'Understood. We have initiated knowledge transfer sessions and HR is actively recruiting.', 'Resolved', datetime('now', '-22 days'), datetime('now', '-21 days'));
+
+INSERT INTO Feedbacks (Id, ReportId, AuthorId, Subject, Content, Category, Visibility, SectionReference, ReportFieldId, ParentFeedbackId, IsAcknowledged, AcknowledgedAt, AcknowledgmentResponse, Status, CreatedAt, UpdatedAt)
+VALUES (3, 1, 2, 'Alignment with academic goals', 'The automated testing improvements align well with our academic quality standards. Consider sharing this approach with other technical departments.', 'Observation', 'OrganizationWide', 'Key Metrics', NULL, NULL, 0, NULL, NULL, 'Active', datetime('now', '-20 days'), NULL);
+
+-- Feedback on Report 3 (Backend Team Weekly)
+INSERT INTO Feedbacks (Id, ReportId, AuthorId, Subject, Content, Category, Visibility, SectionReference, ReportFieldId, ParentFeedbackId, IsAcknowledged, AcknowledgedAt, AcknowledgmentResponse, Status, CreatedAt, UpdatedAt)
+VALUES (4, 3, 22, 'Question about API rate limiting', 'What specific rate limits are you proposing? We need to ensure they dont affect legitimate high-volume API users.', 'Question', 'TeamWide', 'Issues', NULL, NULL, 0, NULL, NULL, 'Active', datetime('now', '-6 hours'), NULL);
+
+-- Feedback on Report 4 (IT Infrastructure)
+INSERT INTO Feedbacks (Id, ReportId, AuthorId, Subject, Content, Category, Visibility, SectionReference, ReportFieldId, ParentFeedbackId, IsAcknowledged, AcknowledgedAt, AcknowledgmentResponse, Status, CreatedAt, UpdatedAt)
+VALUES (5, 4, 3, 'Outstanding uptime achievement', 'The 99.7% uptime is among the best in our sector. This sets a benchmark for reliability excellence.', 'PositiveRecognition', 'OrganizationWide', 'Availability', NULL, NULL, 1, datetime('now', '-16 days'), 'Thank you. The team has worked diligently on proactive monitoring and quick incident response.', 'Active', datetime('now', '-17 days'), datetime('now', '-16 days'));
+
+INSERT INTO Feedbacks (Id, ReportId, AuthorId, Subject, Content, Category, Visibility, SectionReference, ReportFieldId, ParentFeedbackId, IsAcknowledged, AcknowledgedAt, AcknowledgmentResponse, Status, CreatedAt, UpdatedAt)
+VALUES (6, 4, 1, 'Capacity planning observation', 'Yellow status on server capacity needs attention before it becomes critical. Please include a capacity expansion plan in next months report.', 'Concern', 'Private', 'Capacity', NULL, NULL, 1, datetime('now', '-15 days'), 'Noted. We have already procured additional server rack (approved in this report). Expansion plan will be detailed next month.', 'Resolved', datetime('now', '-16 days'), datetime('now', '-15 days'));
+
+
+-- ---- Recommendations ----
+-- RecommendationCategory: ProcessChange, SkillDevelopment, PerformanceImprovement, Compliance, StrategicAlignment, ResourceOptimization, General
+-- RecommendationPriority: Critical, High, Medium, Low
+-- RecommendationScope: Individual, Team, Department, OrganizationWide
+-- RecommendationStatus: Draft, Issued, Acknowledged, InProgress, Completed, Cancelled
+
+-- Recommendations linked to reports
+INSERT INTO Recommendations (Id, ReportId, IssuedById, TargetOrgUnitId, TargetUserId, Title, Description, Rationale, Timeline, Category, Priority, TargetScope, Status, EffectiveDate, DueDate, CascadeToSubUnits, AcknowledgmentCount, CreatedAt, UpdatedAt)
+VALUES (1, 1, 3, 22, NULL, 'Implement mandatory code documentation standards', 'All code changes must include documentation updates. Establish documentation review as part of PR process.', 'Recent resignations highlighted knowledge concentration risk. Proper documentation ensures continuity.', 'Implement within 30 days', 'ProcessChange', 'High', 'Department', 'InProgress', datetime('now', '-20 days'), datetime('now', '+10 days'), 1, 3, datetime('now', '-20 days'), datetime('now', '-15 days'));
+
+INSERT INTO Recommendations (Id, ReportId, IssuedById, TargetOrgUnitId, TargetUserId, Title, Description, Rationale, Timeline, Category, Priority, TargetScope, Status, EffectiveDate, DueDate, CascadeToSubUnits, AcknowledgmentCount, CreatedAt, UpdatedAt)
+VALUES (2, 4, 3, 23, NULL, 'Establish disaster recovery drills', 'Conduct quarterly DR drills to ensure backup and recovery procedures are tested and staff are trained.', 'High uptime is excellent but DR readiness ensures business continuity under adverse conditions.', 'First drill by end of Q1 2026', 'Compliance', 'Medium', 'Department', 'Acknowledged', datetime('now', '-15 days'), datetime('now', '+45 days'), 1, 2, datetime('now', '-15 days'), NULL);
+
+-- Organization-wide recommendation (not linked to specific report)
+INSERT INTO Recommendations (Id, ReportId, IssuedById, TargetOrgUnitId, TargetUserId, Title, Description, Rationale, Timeline, Category, Priority, TargetScope, Status, EffectiveDate, DueDate, CascadeToSubUnits, AcknowledgmentCount, CreatedAt, UpdatedAt)
+VALUES (3, NULL, 1, 1, NULL, 'Adopt standardized reporting metrics', 'All departments should align on common KPIs for reporting consistency across the organization.', 'Current reports use inconsistent metrics making cross-department comparison difficult.', 'Complete by Q2 2026', 'StrategicAlignment', 'High', 'OrganizationWide', 'Issued', datetime('now', '-10 days'), datetime('now', '+90 days'), 1, 0, datetime('now', '-10 days'), NULL);
+
+INSERT INTO Recommendations (Id, ReportId, IssuedById, TargetOrgUnitId, TargetUserId, Title, Description, Rationale, Timeline, Category, Priority, TargetScope, Status, EffectiveDate, DueDate, CascadeToSubUnits, AcknowledgmentCount, CreatedAt, UpdatedAt)
+VALUES (4, 3, 22, NULL, 26, 'Complete AWS certification training', 'Backend team lead should complete AWS Solutions Architect certification to support cloud migration efforts.', 'Cloud migration is strategic priority. Team lead needs certification for architecture decisions.', 'Complete by Q2 2026', 'SkillDevelopment', 'Medium', 'Individual', 'Acknowledged', datetime('now', '-5 days'), datetime('now', '+90 days'), 0, 1, datetime('now', '-5 days'), datetime('now', '-3 days'));
+
+INSERT INTO Recommendations (Id, ReportId, IssuedById, TargetOrgUnitId, TargetUserId, Title, Description, Rationale, Timeline, Category, Priority, TargetScope, Status, EffectiveDate, DueDate, CascadeToSubUnits, AcknowledgmentCount, CreatedAt, UpdatedAt)
+VALUES (5, NULL, 2, 4, NULL, 'Increase industry collaboration', 'Engineering faculty should establish at least 3 new industry partnerships for student internships and research collaboration.', 'Industry partnerships improve student employability and research relevance.', 'Establish by end of 2026', 'StrategicAlignment', 'Medium', 'Department', 'Issued', datetime('now', '-7 days'), datetime('now', '+300 days'), 1, 0, datetime('now', '-7 days'), NULL);
+
+
+-- ---- Decisions ----
+-- DecisionRequestType: SuggestedAction, ResourceRequest, SupportRequest
+-- DecisionOutcome: Pending, Approved, ApprovedWithModifications, PartiallyApproved, Deferred, Rejected, Referred
+
+-- Decisions on Suggested Actions
+INSERT INTO Decisions (Id, ReportId, DecidedById, RequestType, SuggestedActionId, ResourceRequestId, SupportRequestId, Title, Outcome, Justification, Conditions, EffectiveDate, ApprovedAmount, Currency, Modifications, ReferredTo, IsAcknowledged, AcknowledgedAt, CreatedAt, UpdatedAt)
+VALUES (1, 1, 3, 'SuggestedAction', 1, NULL, NULL, 'Decision: Automated code review tool', 'Approved', 'Automated code review aligns with quality improvement goals. SonarQube is approved.', 'Must coordinate with IT Infrastructure for licensing and integration.', datetime('now', '-18 days'), NULL, NULL, NULL, NULL, 1, datetime('now', '-17 days'), datetime('now', '-20 days'), datetime('now', '-17 days'));
+
+INSERT INTO Decisions (Id, ReportId, DecidedById, RequestType, SuggestedActionId, ResourceRequestId, SupportRequestId, Title, Outcome, Justification, Conditions, EffectiveDate, ApprovedAmount, Currency, Modifications, ReferredTo, IsAcknowledged, AcknowledgedAt, CreatedAt, UpdatedAt)
+VALUES (2, 4, 3, 'SuggestedAction', 6, NULL, NULL, 'Decision: Predictive monitoring with ML', 'ApprovedWithModifications', 'Predictive monitoring approved but scope reduced to pilot phase first.', 'Pilot with network monitoring only. Full implementation pending pilot results.', datetime('now', '-14 days'), 25000.00, 'EGP', 'Start with network segment only. Expand after 3-month pilot shows positive results.', NULL, 1, datetime('now', '-13 days'), datetime('now', '-15 days'), datetime('now', '-13 days'));
+
+-- Decisions on Resource Requests
+INSERT INTO Decisions (Id, ReportId, DecidedById, RequestType, SuggestedActionId, ResourceRequestId, SupportRequestId, Title, Outcome, Justification, Conditions, EffectiveDate, ApprovedAmount, Currency, Modifications, ReferredTo, IsAcknowledged, AcknowledgedAt, CreatedAt, UpdatedAt)
+VALUES (3, 1, 20, 'ResourceRequest', NULL, 1, NULL, 'Decision: Senior Backend Developer Hire', 'Approved', 'Critical staffing gap must be addressed. Full budget approved for 2 senior developer positions.', 'Recruitment must be completed within 60 days.', datetime('now', '-21 days'), 480000.00, 'EGP', NULL, NULL, 1, datetime('now', '-20 days'), datetime('now', '-22 days'), datetime('now', '-20 days'));
+
+INSERT INTO Decisions (Id, ReportId, DecidedById, RequestType, SuggestedActionId, ResourceRequestId, SupportRequestId, Title, Outcome, Justification, Conditions, EffectiveDate, ApprovedAmount, Currency, Modifications, ReferredTo, IsAcknowledged, AcknowledgedAt, CreatedAt, UpdatedAt)
+VALUES (4, 1, 3, 'ResourceRequest', NULL, 3, NULL, 'Decision: Cloud Infrastructure Budget', 'PartiallyApproved', 'Budget increase approved at 60% of requested amount. Full increase requires Q2 review.', 'Utilization report required monthly. Full increase subject to Q2 budget review.', datetime('now', '-17 days'), 15000.00, 'EGP', 'Approved 15,000 EGP instead of requested 25,000 EGP. Remainder subject to Q2 review.', NULL, 1, datetime('now', '-16 days'), datetime('now', '-18 days'), datetime('now', '-16 days'));
+
+-- Decision on Support Request
+INSERT INTO Decisions (Id, ReportId, DecidedById, RequestType, SuggestedActionId, ResourceRequestId, SupportRequestId, Title, Outcome, Justification, Conditions, EffectiveDate, ApprovedAmount, Currency, Modifications, ReferredTo, IsAcknowledged, AcknowledgedAt, CreatedAt, UpdatedAt)
+VALUES (5, 4, 3, 'SupportRequest', NULL, NULL, 6, 'Decision: Vendor negotiation support', 'Approved', 'Management will support vendor negotiation. Procurement team assigned to assist.', 'Procurement team lead will join negotiation meeting.', datetime('now', '-16 days'), NULL, NULL, NULL, NULL, 1, datetime('now', '-15 days'), datetime('now', '-17 days'), datetime('now', '-15 days'));
+
+-- Pending decision
+INSERT INTO Decisions (Id, ReportId, DecidedById, RequestType, SuggestedActionId, ResourceRequestId, SupportRequestId, Title, Outcome, Justification, Conditions, EffectiveDate, ApprovedAmount, Currency, Modifications, ReferredTo, IsAcknowledged, AcknowledgedAt, CreatedAt, UpdatedAt)
+VALUES (6, 1, 3, 'SuggestedAction', 3, NULL, NULL, 'Decision: Containerized deployments', 'Deferred', 'Good proposal but requires more planning. Defer to Q3 2026 for proper resource allocation.', NULL, NULL, NULL, NULL, NULL, 'IT Architecture Committee for detailed planning', 0, NULL, datetime('now', '-18 days'), NULL)
