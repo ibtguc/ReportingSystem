@@ -105,7 +105,6 @@ using (var scope = app.Services.CreateScope())
         // Seed the database with initial data
         logger.LogInformation("Seeding database with initial data...");
         await SeedData.InitializeAsync(context);
-        await UserSeeder.SeedAdminUsersAsync(context);
         logger.LogInformation("Database seeding completed.");
     }
     catch (Exception ex)
