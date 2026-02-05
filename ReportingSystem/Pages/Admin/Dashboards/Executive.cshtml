@@ -58,39 +58,39 @@
         </div>
     </div>
 
-    <!-- Reports by Status -->
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-8 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Report Activity (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="activityTrendChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Reports by Status</h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="reportStatusChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upward Flow Chart & Organization Overview -->
     <div class="row mb-4">
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Reports by Status</h5>
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Upward Flow Distribution</h5>
                 </div>
                 <div class="card-body">
-                    @if (Model.Data.ReportsByStatus.Any())
-                    {
-                        <div class="row">
-                            @foreach (var status in Model.Data.ReportsByStatus.OrderByDescending(s => s.Count))
-                            {
-                                <div class="col-6 mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge @ReportStatus.BadgeClass(status.Status) me-2" style="min-width: 100px;">
-                                            @ReportStatus.DisplayName(status.Status)
-                                        </span>
-                                        <span class="fw-bold">@status.Count</span>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="text-muted mb-0">No reports yet</p>
-                    }
-                </div>
-                <div class="card-footer">
-                    <a asp-page="/Admin/Reports/Index" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-arrow-right"></i> View All Reports
-                    </a>
+                    <canvas id="upwardFlowChart" height="200"></canvas>
                 </div>
             </div>
         </div>
@@ -330,3 +330,147 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Report Activity Trend Chart (Line Chart)
+            const activityCtx = document.getElementById('activityTrendChart').getContext('2d');
+            new Chart(activityCtx, {
+                type: 'line',
+                data: {
+                    labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ActivityTrend.Labels)),
+                    datasets: [
+                        {
+                            label: 'Created',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ActivityTrend.Created)),
+                            borderColor: 'rgb(108, 117, 125)',
+                            backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: 'Submitted',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ActivityTrend.Submitted)),
+                            borderColor: 'rgb(13, 110, 253)',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: 'Approved',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ActivityTrend.Approved)),
+                            borderColor: 'rgb(25, 135, 84)',
+                            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: 'Rejected',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ActivityTrend.Rejected)),
+                            borderColor: 'rgb(220, 53, 69)',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            tension: 0.3,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Reports by Status Chart (Doughnut Chart)
+            const statusCtx = document.getElementById('reportStatusChart').getContext('2d');
+            const statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Data.ReportsByStatus));
+            const statusColors = {
+                'draft': '#6c757d',
+                'submitted': '#0d6efd',
+                'under_review': '#0dcaf0',
+                'approved': '#198754',
+                'rejected': '#dc3545',
+                'revision_requested': '#fd7e14'
+            };
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: statusData.map(s => s.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())),
+                    datasets: [{
+                        data: statusData.map(s => s.count),
+                        backgroundColor: statusData.map(s => statusColors[s.status] || '#6c757d'),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 8
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Upward Flow Distribution Chart (Bar Chart)
+            const upwardCtx = document.getElementById('upwardFlowChart').getContext('2d');
+            new Chart(upwardCtx, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UpwardFlowData.Labels)),
+                    datasets: [{
+                        label: 'Total Items',
+                        data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UpwardFlowData.Totals)),
+                        backgroundColor: [
+                            'rgba(13, 202, 240, 0.7)',   // Suggested Actions - Info
+                            'rgba(255, 193, 7, 0.7)',    // Resource Requests - Warning
+                            'rgba(220, 53, 69, 0.7)'     // Support Requests - Danger
+                        ],
+                        borderColor: [
+                            'rgb(13, 202, 240)',
+                            'rgb(255, 193, 7)',
+                            'rgb(220, 53, 69)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

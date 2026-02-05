@@ -16,6 +16,7 @@ public class ReviewerModel : PageModel
 
     public ReviewerDashboardData Data { get; set; } = new();
     public User? CurrentUser { get; set; }
+    public ReviewerPerformanceData PerformanceData { get; set; } = new();
 
     public async Task OnGetAsync()
     {
@@ -24,6 +25,7 @@ public class ReviewerModel : PageModel
         {
             CurrentUser = await _dashboardService.GetUserWithOrgUnitAsync(userId);
             Data = await _dashboardService.GetReviewerDashboardAsync(userId);
+            PerformanceData = await _dashboardService.GetReviewerPerformanceAsync(userId, 28); // 4 weeks
         }
     }
 }

@@ -13,9 +13,13 @@ public class ExecutiveModel : PageModel
     }
 
     public ExecutiveDashboardData Data { get; set; } = new();
+    public ReportActivityTrend ActivityTrend { get; set; } = new();
+    public UpwardFlowDistribution UpwardFlowData { get; set; } = new();
 
     public async Task OnGetAsync()
     {
         Data = await _dashboardService.GetExecutiveDashboardAsync();
+        ActivityTrend = await _dashboardService.GetReportActivityTrendAsync(30);
+        UpwardFlowData = await _dashboardService.GetUpwardFlowDistributionAsync();
     }
 }

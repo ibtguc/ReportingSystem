@@ -554,6 +554,142 @@ public class DashboardService
     }
 
     #endregion
+
+    #region Chart Data Methods
+
+    /// <summary>
+    /// Get report activity trend for the last N days.
+    /// </summary>
+    public async Task<ReportActivityTrend> GetReportActivityTrendAsync(int days = 30)
+    {
+        var trend = new ReportActivityTrend();
+        var startDate = DateTime.UtcNow.Date.AddDays(-days + 1);
+
+        // Get all reports created/submitted/reviewed in the period
+        var reports = await _context.Reports
+            .Where(r => r.CreatedAt >= startDate ||
+                        r.SubmittedAt >= startDate ||
+                        r.ReviewedAt >= startDate)
+            .Select(r => new
+            {
+                r.CreatedAt,
+                r.SubmittedAt,
+                r.ReviewedAt,
+                r.Status
+            })
+            .ToListAsync();
+
+        // Build daily data
+        for (int i = 0; i < days; i++)
+        {
+            var date = startDate.AddDays(i);
+            var nextDate = date.AddDays(1);
+
+            trend.Labels.Add(date.ToString("MMM dd"));
+
+            trend.Created.Add(reports.Count(r =>
+                r.CreatedAt >= date && r.CreatedAt < nextDate));
+
+            trend.Submitted.Add(reports.Count(r =>
+                r.SubmittedAt.HasValue && r.SubmittedAt >= date && r.SubmittedAt < nextDate));
+
+            trend.Approved.Add(reports.Count(r =>
+                r.ReviewedAt.HasValue && r.ReviewedAt >= date && r.ReviewedAt < nextDate &&
+                r.Status == ReportStatus.Approved));
+
+            trend.Rejected.Add(reports.Count(r =>
+                r.ReviewedAt.HasValue && r.ReviewedAt >= date && r.ReviewedAt < nextDate &&
+                r.Status == ReportStatus.Rejected));
+        }
+
+        return trend;
+    }
+
+    /// <summary>
+    /// Get upward flow distribution by type.
+    /// </summary>
+    public async Task<UpwardFlowDistribution> GetUpwardFlowDistributionAsync()
+    {
+        var distribution = new UpwardFlowDistribution();
+
+        // Suggested Actions by status
+        var actions = await _context.SuggestedActions
+            .GroupBy(a => a.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        distribution.SuggestedActionsByStatus = actions.ToDictionary(a => a.Status, a => a.Count);
+        distribution.TotalSuggestedActions = actions.Sum(a => a.Count);
+
+        // Resource Requests by status
+        var resources = await _context.ResourceRequests
+            .GroupBy(r => r.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        distribution.ResourceRequestsByStatus = resources.ToDictionary(r => r.Status, r => r.Count);
+        distribution.TotalResourceRequests = resources.Sum(r => r.Count);
+
+        // Support Requests by status
+        var support = await _context.SupportRequests
+            .GroupBy(s => s.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        distribution.SupportRequestsByStatus = support.ToDictionary(s => s.Status, s => s.Count);
+        distribution.TotalSupportRequests = support.Sum(s => s.Count);
+
+        // Summary totals
+        distribution.Labels = new List<string> { "Suggested Actions", "Resource Requests", "Support Requests" };
+        distribution.Totals = new List<int>
+        {
+            distribution.TotalSuggestedActions,
+            distribution.TotalResourceRequests,
+            distribution.TotalSupportRequests
+        };
+
+        return distribution;
+    }
+
+    /// <summary>
+    /// Get reviewer performance data for charts.
+    /// </summary>
+    public async Task<ReviewerPerformanceData> GetReviewerPerformanceAsync(int userId, int days = 30)
+    {
+        var data = new ReviewerPerformanceData();
+        var startDate = DateTime.UtcNow.Date.AddDays(-days + 1);
+
+        // Get reviews in period
+        var reviews = await _context.Reports
+            .Where(r => r.AssignedReviewerId == userId && r.ReviewedAt >= startDate)
+            .Select(r => new
+            {
+                r.ReviewedAt,
+                r.Status
+            })
+            .ToListAsync();
+
+        // Weekly breakdown
+        var weeks = (days + 6) / 7;
+        for (int i = 0; i < weeks; i++)
+        {
+            var weekStart = startDate.AddDays(i * 7);
+            var weekEnd = weekStart.AddDays(7);
+
+            data.WeekLabels.Add($"Week {i + 1}");
+
+            var weekReviews = reviews.Where(r =>
+                r.ReviewedAt >= weekStart && r.ReviewedAt < weekEnd).ToList();
+
+            data.ReviewsPerWeek.Add(weekReviews.Count);
+            data.ApprovalsPerWeek.Add(weekReviews.Count(r => r.Status == ReportStatus.Approved));
+            data.RejectionsPerWeek.Add(weekReviews.Count(r => r.Status == ReportStatus.Rejected));
+        }
+
+        return data;
+    }
+
+    #endregion
 }
 
 #region Dashboard Data Classes
@@ -742,6 +878,47 @@ public class MyReportInfo
     public DateTime? SubmittedAt { get; set; }
     public DateTime? ReviewedAt { get; set; }
     public bool IsEditable { get; set; }
+}
+
+/// <summary>
+/// Report activity trend data for line charts.
+/// </summary>
+public class ReportActivityTrend
+{
+    public List<string> Labels { get; set; } = new();
+    public List<int> Created { get; set; } = new();
+    public List<int> Submitted { get; set; } = new();
+    public List<int> Approved { get; set; } = new();
+    public List<int> Rejected { get; set; } = new();
+}
+
+/// <summary>
+/// Upward flow distribution data for pie/bar charts.
+/// </summary>
+public class UpwardFlowDistribution
+{
+    public List<string> Labels { get; set; } = new();
+    public List<int> Totals { get; set; } = new();
+
+    public Dictionary<string, int> SuggestedActionsByStatus { get; set; } = new();
+    public int TotalSuggestedActions { get; set; }
+
+    public Dictionary<string, int> ResourceRequestsByStatus { get; set; } = new();
+    public int TotalResourceRequests { get; set; }
+
+    public Dictionary<string, int> SupportRequestsByStatus { get; set; } = new();
+    public int TotalSupportRequests { get; set; }
+}
+
+/// <summary>
+/// Reviewer performance data for weekly charts.
+/// </summary>
+public class ReviewerPerformanceData
+{
+    public List<string> WeekLabels { get; set; } = new();
+    public List<int> ReviewsPerWeek { get; set; } = new();
+    public List<int> ApprovalsPerWeek { get; set; } = new();
+    public List<int> RejectionsPerWeek { get; set; } = new();
 }
 
 #endregion

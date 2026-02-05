@@ -143,119 +143,100 @@
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Reports by Status</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body d-flex align-items-center justify-content-center">
                     @if (Model.Data.MyReportsByStatus.Any())
                     {
-                        @foreach (var status in Model.Data.MyReportsByStatus.OrderByDescending(s => s.Count))
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge @ReportStatus.BadgeClass(status.Status)" style="min-width: 100px;">
-                                    @ReportStatus.DisplayName(status.Status)
-                                </span>
-                                <span class="fw-bold">@status.Count</span>
-                            </div>
-                        }
+                        <canvas id="myReportsStatusChart" height="200"></canvas>
                     }
                     else
                     {
-                        <p class="text-muted text-center mb-0">No data</p>
+                        <div class="text-center py-3">
+                            <i class="bi bi-inbox display-4 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">No data</p>
+                        </div>
                     }
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Upward Flow Status -->
+    <!-- Upward Flow Status with Chart -->
     <div class="row mb-4">
-        <div class="col-md-4 mb-3">
+        <div class="col-md-6 mb-3">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-lightbulb"></i> My Suggested Actions</h5>
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> My Upward Flow Items</h5>
                 </div>
                 <div class="card-body">
-                    @if (Model.Data.MySuggestedActionsByStatus.Any())
-                    {
-                        @foreach (var status in Model.Data.MySuggestedActionsByStatus)
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge @ActionStatus.BadgeClass(status.Status)">
-                                    @ActionStatus.DisplayName(status.Status)
-                                </span>
-                                <span class="fw-bold">@status.Count</span>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <p class="text-muted text-center mb-0">No suggested actions</p>
-                    }
+                    <canvas id="upwardFlowChart" height="180"></canvas>
                 </div>
                 <div class="card-footer">
-                    <a asp-page="/Admin/UpwardFlow/SuggestedActions/Index" class="btn btn-sm btn-outline-info">
-                        View All
+                    <a asp-page="/Admin/UpwardFlow/SuggestedActions/Index" class="btn btn-sm btn-outline-info me-1">
+                        Actions
                     </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="bi bi-box-seam"></i> My Resource Requests</h5>
-                </div>
-                <div class="card-body">
-                    @if (Model.Data.MyResourceRequestsByStatus.Any())
-                    {
-                        @foreach (var status in Model.Data.MyResourceRequestsByStatus)
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge @ResourceStatus.BadgeClass(status.Status)">
-                                    @ResourceStatus.DisplayName(status.Status)
-                                </span>
-                                <span class="fw-bold">@status.Count</span>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <p class="text-muted text-center mb-0">No resource requests</p>
-                    }
-                </div>
-                <div class="card-footer">
-                    <a asp-page="/Admin/UpwardFlow/ResourceRequests/Index" class="btn btn-sm btn-outline-warning">
-                        View All
+                    <a asp-page="/Admin/UpwardFlow/ResourceRequests/Index" class="btn btn-sm btn-outline-warning me-1">
+                        Resources
                     </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0"><i class="bi bi-life-preserver"></i> My Support Requests</h5>
-                </div>
-                <div class="card-body">
-                    @if (Model.Data.MySupportRequestsByStatus.Any())
-                    {
-                        @foreach (var status in Model.Data.MySupportRequestsByStatus)
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge @SupportStatus.BadgeClass(status.Status)">
-                                    @SupportStatus.DisplayName(status.Status)
-                                </span>
-                                <span class="fw-bold">@status.Count</span>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <p class="text-muted text-center mb-0">No support requests</p>
-                    }
-                </div>
-                <div class="card-footer">
                     <a asp-page="/Admin/UpwardFlow/SupportRequests/Index" class="btn btn-sm btn-outline-danger">
-                        View All
+                        Support
                     </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> Upward Flow Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4 text-center mb-3">
+                            <i class="bi bi-lightbulb text-info" style="font-size: 2rem;"></i>
+                            <div class="h4 mb-0">@Model.Data.MySuggestedActionsByStatus.Sum(s => s.Count)</div>
+                            <small class="text-muted">Suggested Actions</small>
+                        </div>
+                        <div class="col-4 text-center mb-3">
+                            <i class="bi bi-box-seam text-warning" style="font-size: 2rem;"></i>
+                            <div class="h4 mb-0">@Model.Data.MyResourceRequestsByStatus.Sum(s => s.Count)</div>
+                            <small class="text-muted">Resources</small>
+                        </div>
+                        <div class="col-4 text-center mb-3">
+                            <i class="bi bi-life-preserver text-danger" style="font-size: 2rem;"></i>
+                            <div class="h4 mb-0">@Model.Data.MySupportRequestsByStatus.Sum(s => s.Count)</div>
+                            <small class="text-muted">Support</small>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="row small">
+                        <div class="col-4">
+                            @foreach (var status in Model.Data.MySuggestedActionsByStatus.Take(3))
+                            {
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>@ActionStatus.DisplayName(status.Status)</span>
+                                    <span class="badge bg-secondary">@status.Count</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="col-4">
+                            @foreach (var status in Model.Data.MyResourceRequestsByStatus.Take(3))
+                            {
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>@ResourceStatus.DisplayName(status.Status)</span>
+                                    <span class="badge bg-secondary">@status.Count</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="col-4">
+                            @foreach (var status in Model.Data.MySupportRequestsByStatus.Take(3))
+                            {
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>@SupportStatus.DisplayName(status.Status)</span>
+                                    <span class="badge bg-secondary">@status.Count</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -439,3 +420,93 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // My Reports by Status Chart (Doughnut)
+            const reportsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Data.MyReportsByStatus));
+            if (reportsData && reportsData.length > 0) {
+                const reportsCtx = document.getElementById('myReportsStatusChart').getContext('2d');
+                const statusColors = {
+                    'draft': '#6c757d',
+                    'submitted': '#0d6efd',
+                    'under_review': '#0dcaf0',
+                    'approved': '#198754',
+                    'rejected': '#dc3545',
+                    'revision_requested': '#fd7e14'
+                };
+                new Chart(reportsCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: reportsData.map(s => s.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())),
+                        datasets: [{
+                            data: reportsData.map(s => s.count),
+                            backgroundColor: reportsData.map(s => statusColors[s.status] || '#6c757d'),
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 8
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Upward Flow Items Chart (Bar)
+            const upwardFlowCtx = document.getElementById('upwardFlowChart').getContext('2d');
+            const actionsTotal = @Model.Data.MySuggestedActionsByStatus.Sum(s => s.Count);
+            const resourcesTotal = @Model.Data.MyResourceRequestsByStatus.Sum(s => s.Count);
+            const supportTotal = @Model.Data.MySupportRequestsByStatus.Sum(s => s.Count);
+
+            new Chart(upwardFlowCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Suggested Actions', 'Resource Requests', 'Support Requests'],
+                    datasets: [{
+                        label: 'Total Items',
+                        data: [actionsTotal, resourcesTotal, supportTotal],
+                        backgroundColor: [
+                            'rgba(13, 202, 240, 0.7)',
+                            'rgba(255, 193, 7, 0.7)',
+                            'rgba(220, 53, 69, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(13, 202, 240)',
+                            'rgb(255, 193, 7)',
+                            'rgb(220, 53, 69)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

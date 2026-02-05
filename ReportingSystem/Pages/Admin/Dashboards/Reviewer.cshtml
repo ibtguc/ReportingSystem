@@ -152,67 +152,51 @@
         </div>
     </div>
 
-    <!-- Review Statistics & Workload Distribution -->
+    <!-- Charts Row -->
     <div class="row mb-4">
-        <div class="col-md-6 mb-3">
+        <div class="col-md-8 mb-3">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> My Review Outcomes</h5>
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Weekly Review Performance</h5>
                 </div>
                 <div class="card-body">
+                    <canvas id="weeklyPerformanceChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Review Outcomes</h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
                     @if (Model.Data.ReviewsByOutcome.Any())
                     {
-                        @foreach (var outcome in Model.Data.ReviewsByOutcome.OrderByDescending(o => o.Count))
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge @ReportStatus.BadgeClass(outcome.Status)" style="min-width: 120px;">
-                                    @ReportStatus.DisplayName(outcome.Status)
-                                </span>
-                                <div class="progress flex-grow-1 mx-3" style="height: 20px;">
-                                    @{
-                                        var percentage = Model.Data.TotalReviewsCompleted > 0
-                                            ? (int)((double)outcome.Count / Model.Data.TotalReviewsCompleted * 100)
-                                            : 0;
-                                    }
-                                    <div class="progress-bar @ReportStatus.BadgeClass(outcome.Status).Replace("bg-", "bg-")"
-                                         style="width: @percentage%">
-                                        @outcome.Count
-                                    </div>
-                                </div>
-                            </div>
-                        }
-
-                        <hr />
-                        <div class="d-flex justify-content-between">
-                            <span class="text-muted">Total Reviews:</span>
-                            <strong>@Model.Data.TotalReviewsCompleted</strong>
-                        </div>
+                        <canvas id="reviewOutcomesChart" height="200"></canvas>
                     }
                     else
                     {
                         <div class="text-center py-3">
-                            <p class="text-muted mb-0">No completed reviews yet</p>
+                            <i class="bi bi-inbox display-4 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">No completed reviews yet</p>
                         </div>
                     }
                 </div>
             </div>
         </div>
+    </div>
 
+    <!-- Workload Distribution -->
+    <div class="row mb-4">
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Workload by Org Unit</h5>
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Workload by Org Unit</h5>
                 </div>
                 <div class="card-body">
                     @if (Model.Data.WorkloadByOrgUnit.Any())
                     {
-                        @foreach (var unit in Model.Data.WorkloadByOrgUnit.OrderByDescending(u => u.Count))
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                                <span>@unit.Status</span>
-                                <span class="badge bg-warning text-dark">@unit.Count pending</span>
-                            </div>
-                        }
+                        <canvas id="workloadChart" height="200"></canvas>
                     }
                     else
                     {
@@ -221,6 +205,44 @@
                             <p class="text-muted mt-2 mb-0">No pending reviews</p>
                         </div>
                     }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-award"></i> Review Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 text-center mb-3">
+                            <div class="border rounded p-3">
+                                <div class="h2 mb-0 text-success">@Model.Data.TotalReviewsCompleted</div>
+                                <small class="text-muted">Total Completed</small>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center mb-3">
+                            <div class="border rounded p-3">
+                                <div class="h2 mb-0 text-primary">@Model.Data.MyApprovalRate%</div>
+                                <small class="text-muted">Approval Rate</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <div class="border rounded p-3">
+                                <div class="h2 mb-0 text-info">@Model.Data.ReviewsLast30Days</div>
+                                <small class="text-muted">Last 30 Days</small>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="border rounded p-3">
+                                <div class="h2 mb-0 text-warning">@Model.Data.PendingReviewCount</div>
+                                <small class="text-muted">Pending</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -336,3 +358,134 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Weekly Performance Chart (Line)
+            const weeklyCtx = document.getElementById('weeklyPerformanceChart').getContext('2d');
+            new Chart(weeklyCtx, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PerformanceData.WeekLabels)),
+                    datasets: [
+                        {
+                            label: 'Total Reviews',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PerformanceData.ReviewsPerWeek)),
+                            backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                            borderColor: 'rgb(13, 110, 253)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Approved',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PerformanceData.ApprovalsPerWeek)),
+                            backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                            borderColor: 'rgb(25, 135, 84)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Rejected',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PerformanceData.RejectionsPerWeek)),
+                            backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                            borderColor: 'rgb(220, 53, 69)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Review Outcomes Chart (Doughnut)
+            const outcomesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Data.ReviewsByOutcome));
+            if (outcomesData && outcomesData.length > 0) {
+                const outcomesCtx = document.getElementById('reviewOutcomesChart').getContext('2d');
+                const statusColors = {
+                    'draft': '#6c757d',
+                    'submitted': '#0d6efd',
+                    'under_review': '#0dcaf0',
+                    'approved': '#198754',
+                    'rejected': '#dc3545',
+                    'revision_requested': '#fd7e14'
+                };
+                new Chart(outcomesCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: outcomesData.map(s => s.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())),
+                        datasets: [{
+                            data: outcomesData.map(s => s.count),
+                            backgroundColor: outcomesData.map(s => statusColors[s.status] || '#6c757d'),
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 8
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Workload by Org Unit Chart (Horizontal Bar)
+            const workloadData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Data.WorkloadByOrgUnit));
+            if (workloadData && workloadData.length > 0) {
+                const workloadCtx = document.getElementById('workloadChart').getContext('2d');
+                new Chart(workloadCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: workloadData.map(w => w.status),
+                        datasets: [{
+                            label: 'Pending Reviews',
+                            data: workloadData.map(w => w.count),
+                            backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                            borderColor: 'rgb(255, 193, 7)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

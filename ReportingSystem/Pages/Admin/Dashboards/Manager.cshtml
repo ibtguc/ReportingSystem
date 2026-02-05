@@ -145,39 +145,26 @@
         </div>
     </div>
 
-    <!-- Team Reports & Upward Flow -->
+    <!-- Team Reports & Upward Flow Charts -->
     <div class="row mb-4">
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Team Reports by Status</h5>
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Team Reports by Status</h5>
                 </div>
                 <div class="card-body">
                     @if (Model.Data.TeamReportsByStatus.Any())
                     {
-                        @foreach (var status in Model.Data.TeamReportsByStatus.OrderByDescending(s => s.Count))
-                        {
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge @ReportStatus.BadgeClass(status.Status)" style="min-width: 120px;">
-                                    @ReportStatus.DisplayName(status.Status)
-                                </span>
-                                <div class="progress flex-grow-1 mx-3" style="height: 20px;">
-                                    @{
-                                        var percentage = Model.Data.TeamReportsThisPeriod > 0
-                                            ? (int)((double)status.Count / Model.Data.TeamReportsThisPeriod * 100)
-                                            : 0;
-                                    }
-                                    <div class="progress-bar @ReportStatus.BadgeClass(status.Status).Replace("bg-", "bg-")"
-                                         style="width: @percentage%">
-                                        @status.Count
-                                    </div>
-                                </div>
-                            </div>
-                        }
+                        <div class="d-flex justify-content-center" style="height: 220px;">
+                            <canvas id="teamReportsChart"></canvas>
+                        </div>
                     }
                     else
                     {
-                        <p class="text-muted text-center mb-0">No team reports this period</p>
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox display-4 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">No team reports this period</p>
+                        </div>
                     }
                 </div>
                 <div class="card-footer">
@@ -191,38 +178,16 @@
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-arrow-up-circle"></i> Team Upward Flow</h5>
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Team Upward Flow</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <div class="border rounded p-3 text-center">
-                                <i class="bi bi-lightbulb text-info" style="font-size: 1.5rem;"></i>
-                                <div class="h4 mb-0">@Model.Data.TeamSuggestedActions</div>
-                                <small class="text-muted">Suggested Actions</small>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="border rounded p-3 text-center">
-                                <i class="bi bi-box-seam text-warning" style="font-size: 1.5rem;"></i>
-                                <div class="h4 mb-0">@Model.Data.TeamResourceRequests</div>
-                                <small class="text-muted">Resource Requests</small>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="border rounded p-3 text-center">
-                                <i class="bi bi-life-preserver text-danger" style="font-size: 1.5rem;"></i>
-                                <div class="h4 mb-0">@Model.Data.TeamSupportRequests</div>
-                                <small class="text-muted">Support Requests</small>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="border rounded p-3 text-center">
-                                <i class="bi bi-currency-dollar text-success" style="font-size: 1.5rem;"></i>
-                                <div class="h5 mb-0">@Model.Data.TeamPendingResourceCost.ToString("N0")</div>
-                                <small class="text-muted">Est. Cost (EGP)</small>
-                            </div>
-                        </div>
+                    <div class="d-flex justify-content-center" style="height: 180px;">
+                        <canvas id="teamUpwardFlowChart"></canvas>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <span class="badge bg-success fs-6">
+                            <i class="bi bi-currency-dollar"></i> Est. Cost: @Model.Data.TeamPendingResourceCost.ToString("N0") EGP
+                        </span>
                     </div>
                 </div>
                 <div class="card-footer">
@@ -357,3 +322,89 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Team Reports by Status Chart (Doughnut)
+            const teamReportsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Data.TeamReportsByStatus));
+            if (teamReportsData && teamReportsData.length > 0) {
+                const reportsCtx = document.getElementById('teamReportsChart').getContext('2d');
+                const statusColors = {
+                    'draft': '#6c757d',
+                    'submitted': '#0d6efd',
+                    'under_review': '#0dcaf0',
+                    'approved': '#198754',
+                    'rejected': '#dc3545',
+                    'revision_requested': '#fd7e14'
+                };
+                new Chart(reportsCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: teamReportsData.map(s => s.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())),
+                        datasets: [{
+                            data: teamReportsData.map(s => s.count),
+                            backgroundColor: teamReportsData.map(s => statusColors[s.status] || '#6c757d'),
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 8
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Team Upward Flow Chart (Bar)
+            const upwardFlowCtx = document.getElementById('teamUpwardFlowChart').getContext('2d');
+            new Chart(upwardFlowCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Suggested Actions', 'Resource Requests', 'Support Requests'],
+                    datasets: [{
+                        label: 'Open Items',
+                        data: [@Model.Data.TeamSuggestedActions, @Model.Data.TeamResourceRequests, @Model.Data.TeamSupportRequests],
+                        backgroundColor: [
+                            'rgba(13, 202, 240, 0.7)',
+                            'rgba(255, 193, 7, 0.7)',
+                            'rgba(220, 53, 69, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(13, 202, 240)',
+                            'rgb(255, 193, 7)',
+                            'rgb(220, 53, 69)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

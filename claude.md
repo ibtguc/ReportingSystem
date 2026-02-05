@@ -180,7 +180,7 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 ## Session Handoff
 
 ### Current Status
-**Phase 8a complete** (Phase 8 in progress, 9 phases total) - Dashboard Infrastructure & KPIs implemented with role-based dashboards.
+**Phase 8b complete** (Phase 8 in progress, 9 phases total) - Dashboard Infrastructure, KPIs, and Chart Visualizations implemented with role-based dashboards.
 
 ### Project Statistics
 | Category | Count |
@@ -274,8 +274,8 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 ### Remaining Phases
 | Phase | Name | Status | Key Deliverables |
 |-------|------|--------|------------------|
-| 8a | Dashboard Infrastructure | **Complete** | Role-based dashboards with KPIs (no charts yet) |
-| 8b | Chart Visualizations | Pending | Chart.js integration, bar/line/pie/gauge charts |
+| 8a | Dashboard Infrastructure | **Complete** | Role-based dashboards with KPIs |
+| 8b | Chart Visualizations | **Complete** | Chart.js integration, bar/line/doughnut charts |
 | 8c | Export Capabilities | Pending | PDF/Excel/Word export, batch export |
 | 8d | Ad-hoc Report Builder | Pending | Custom queries, filtering, saved reports |
 | 9 | Polish | Pending | Enhanced notifications, responsive design, performance |
@@ -306,23 +306,67 @@ Implemented role-based dashboards with comprehensive KPIs:
    - Updated main Dashboard page with role-based dashboard section
    - Updated "Analytics" button to link to Executive dashboard
 
-### Next Phase: Phase 8b - Chart Visualizations
-Add interactive charts to the dashboards:
+### Phase 8b Complete: Chart Visualizations
+Added interactive charts to all role-based dashboards using Chart.js:
 
 1. **Chart.js Integration**
-   - Add Chart.js via CDN or bundle
-   - Create reusable chart partial views
+   - Added Chart.js 4.4.1 via CDN in `_Layout.cshtml`
+   - Inline chart initialization using `@section Scripts`
 
-2. **Charts to Implement**
-   - Bar chart: Reports by status, users by role
-   - Line chart: Report submissions over time
-   - Pie/Doughnut: Distribution of upward flow types
-   - Gauge: Approval rate, org coverage percentage
+2. **Chart Data Methods** (in DashboardService.cs)
+   - `GetReportActivityTrendAsync(days)` - Daily report activity for trend charts (created, submitted, approved, rejected)
+   - `GetUpwardFlowDistributionAsync()` - Breakdown by type with status details
+   - `GetReviewerPerformanceAsync(userId, days)` - Weekly review performance data
 
-Admin pages to update:
-- `/Admin/Dashboards/Executive` - Add trend charts
-- `/Admin/Dashboards/Manager` - Add team performance charts
-- `/Admin/Dashboards/Reviewer` - Add workload distribution charts
+3. **Chart Data DTOs** (in DashboardService.cs)
+   - `ReportActivityTrend` - Labels + Created/Submitted/Approved/Rejected lists for line charts
+   - `UpwardFlowDistribution` - Labels + Totals + status breakdowns per type
+   - `ReviewerPerformanceData` - WeekLabels + ReviewsPerWeek/ApprovalsPerWeek/RejectionsPerWeek
+
+4. **Charts by Dashboard**
+
+   **Executive Dashboard** (`/Admin/Dashboards/Executive`):
+   - Line Chart: Report Activity Trend (30 days) - created, submitted, approved, rejected
+   - Doughnut Chart: Reports by Status distribution
+   - Bar Chart: Upward Flow Distribution (suggested actions, resources, support)
+
+   **Manager Dashboard** (`/Admin/Dashboards/Manager`):
+   - Doughnut Chart: Team Reports by Status
+   - Bar Chart: Team Upward Flow Items (actions, resources, support)
+
+   **Reviewer Dashboard** (`/Admin/Dashboards/Reviewer`):
+   - Grouped Bar Chart: Weekly Review Performance (reviews, approvals, rejections per week)
+   - Doughnut Chart: Review Outcomes distribution
+   - Horizontal Bar Chart: Workload by Org Unit
+
+   **Originator Dashboard** (`/Admin/Dashboards/Originator`):
+   - Doughnut Chart: My Reports by Status
+   - Bar Chart: My Upward Flow Items (actions, resources, support)
+
+5. **Color Scheme**
+   - Status-based colors matching Bootstrap badge classes
+   - Consistent coloring across all dashboards:
+     - Draft: `#6c757d` (gray)
+     - Submitted: `#0d6efd` (blue)
+     - Under Review: `#0dcaf0` (cyan)
+     - Approved: `#198754` (green)
+     - Rejected: `#dc3545` (red)
+     - Revision Requested: `#fd7e14` (orange)
+
+### Next Phase: Phase 8c - Export Capabilities
+Add export functionality:
+
+1. **PDF Export**
+   - Report detail export with all sections
+   - Dashboard summary export
+
+2. **Excel Export**
+   - Tabular data export
+   - Multi-sheet workbooks for complex reports
+
+3. **Word Export**
+   - Formatted report documents
+   - Template-based generation
 
 ### Key Files to Reference
 | File | Pattern/Purpose |
@@ -381,43 +425,46 @@ dotnet restore --source /home/user/ReportingSystem/local-packages/ /home/user/Re
 ### Session Handoff Notes (Latest)
 **Date**: February 5, 2026
 
-**Completed This Session (Phase 8a - Dashboard Infrastructure)**:
-1. Created `DashboardService` with comprehensive KPI query methods for 4 role perspectives
-2. Implemented 4 role-based dashboard pages:
-   - **Executive Dashboard** (`/Admin/Dashboards/Executive`) - Org-wide KPIs, approval rates, coverage, upward/downward flow stats
-   - **Manager Dashboard** (`/Admin/Dashboards/Manager`) - Team reports, pending approvals table, team upward flow items
-   - **Originator Dashboard** (`/Admin/Dashboards/Originator`) - My reports, feedback received, confirmations, decisions
-   - **Reviewer Dashboard** (`/Admin/Dashboards/Reviewer`) - Review queue, workload distribution, completion stats
-3. Updated navigation with "Dashboards" dropdown menu
-4. Updated main Dashboard page with role-based dashboard section
-5. Registered DashboardService in Program.cs
+**Completed This Session (Phase 8b - Chart Visualizations)**:
+1. Added Chart.js 4.4.1 CDN reference to `_Layout.cshtml`
+2. Added 3 chart data methods to DashboardService:
+   - `GetReportActivityTrendAsync()` - Daily activity for line charts
+   - `GetUpwardFlowDistributionAsync()` - Type breakdown for bar charts
+   - `GetReviewerPerformanceAsync()` - Weekly performance for grouped bar charts
+3. Added 3 chart DTO classes: `ReportActivityTrend`, `UpwardFlowDistribution`, `ReviewerPerformanceData`
+4. Updated all 4 dashboard pages with Chart.js visualizations:
+   - **Executive**: Line chart (activity trend), Doughnut (status), Bar (upward flow)
+   - **Manager**: Doughnut (team reports), Bar (team upward flow)
+   - **Reviewer**: Grouped Bar (weekly performance), Doughnut (outcomes), Horizontal Bar (workload)
+   - **Originator**: Doughnut (my reports), Bar (my upward flow)
+5. Consistent color scheme matching Bootstrap badge classes
 
-**New Files Created**:
-- `Services/DashboardService.cs` - KPI queries + DTO classes (ExecutiveDashboardData, ManagerDashboardData, etc.)
-- `Pages/Admin/Dashboards/Executive.cshtml` + `.cshtml.cs`
-- `Pages/Admin/Dashboards/Manager.cshtml` + `.cshtml.cs`
-- `Pages/Admin/Dashboards/Originator.cshtml` + `.cshtml.cs`
-- `Pages/Admin/Dashboards/Reviewer.cshtml` + `.cshtml.cs`
+**Files Modified**:
+- `Pages/Shared/_Layout.cshtml` - Added Chart.js CDN
+- `Services/DashboardService.cs` - Added chart data methods and DTOs
+- `Pages/Admin/Dashboards/Executive.cshtml` + `.cshtml.cs` - Added chart data + visualizations
+- `Pages/Admin/Dashboards/Manager.cshtml` - Added chart visualizations
+- `Pages/Admin/Dashboards/Reviewer.cshtml` + `.cshtml.cs` - Added chart data + visualizations
+- `Pages/Admin/Dashboards/Originator.cshtml` - Added chart visualizations
 
 **System Status**:
-- Phase 8a complete, Phase 8b-8d pending
+- Phase 8a+8b complete, Phase 8c-8d pending
 - All Phase 1-7 features remain functional
 - Seed data includes realistic sample data across all entities
 - 60 users across 7 roles, 36 org units, 4 sample reports with full workflow data
 
-**Dashboard KPIs Implemented**:
-| Dashboard | Key Metrics |
-|-----------|-------------|
-| Executive | Total reports, approval rate (30d), org coverage %, pending reviews, upward/downward flow counts, upcoming deadlines |
-| Manager | Team member count, team reports by status, pending approval queue, team upward flow items, pending cost |
-| Originator | My reports by status, feedback pending ack, confirmations (sent/received), decisions received |
-| Reviewer | Pending review count, reviews completed, approval rate, workload by org unit, comments/feedback given |
+**Charts Implemented**:
+| Dashboard | Chart Types | Data Displayed |
+|-----------|-------------|----------------|
+| Executive | Line, Doughnut, Bar | 30-day activity trend, report status distribution, upward flow by type |
+| Manager | Doughnut, Bar | Team reports by status, team upward flow items |
+| Reviewer | Grouped Bar, Doughnut, H-Bar | Weekly performance, review outcomes, workload by org unit |
+| Originator | Doughnut, Bar | My reports by status, my upward flow items |
 
 **Next Steps**:
-1. Phase 8b: Chart Visualizations (Chart.js integration, trend charts)
-2. Phase 8c: Export Capabilities (PDF/Excel/Word export)
-3. Phase 8d: Ad-hoc Report Builder
-4. Phase 9: Polish (enhanced notifications, responsive design, performance)
+1. Phase 8c: Export Capabilities (PDF/Excel/Word export)
+2. Phase 8d: Ad-hoc Report Builder
+3. Phase 9: Polish (enhanced notifications, responsive design, performance)
 
-**Git Branch**: `claude/analyze-reporting-system-HhdJs` - Phase 8a work ready for commit
+**Git Branch**: `claude/analyze-reporting-system-HhdJs` - Phase 8b work ready for commit
 
