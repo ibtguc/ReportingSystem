@@ -373,11 +373,11 @@ public class DashboardService
 
         // Decisions on my requests
         data.DecisionsReceived = await _context.Decisions
-            .Where(d => myReportIds.Contains(d.ReportId ?? 0))
+            .Where(d => myReportIds.Contains(d.ReportId))
             .CountAsync();
 
         data.DecisionsPendingAcknowledgment = await _context.Decisions
-            .Where(d => myReportIds.Contains(d.ReportId ?? 0) && !d.IsAcknowledged)
+            .Where(d => myReportIds.Contains(d.ReportId) && !d.IsAcknowledged)
             .CountAsync();
 
         // Upcoming deadlines

@@ -99,7 +99,7 @@ public class ExportService
         sb.AppendLine();
         sb.AppendLine("Field,Section,Value");
 
-        foreach (var fv in report.FieldValues.OrderBy(f => f.ReportField.Section).ThenBy(f => f.ReportField.OrderIndex))
+        foreach (var fv in report.FieldValues.OrderBy(f => f.ReportField.Section).ThenBy(f => f.ReportField.FieldOrder))
         {
             sb.AppendLine($"\"{EscapeCsv(fv.ReportField.Label)}\"," +
                 $"\"{EscapeCsv(fv.ReportField.Section)}\"," +
@@ -215,7 +215,7 @@ public class ExportService
                 $"\"{EscapeCsv(log.User?.Name ?? "System")}\"," +
                 $"\"{log.Action}\"," +
                 $"\"{log.EntityType}\"," +
-                $"{log.EntityId ?? 0}," +
+                $"{log.EntityId}," +
                 $"\"{EscapeCsv(TruncateValue(log.OldValue, 100))}\"," +
                 $"\"{EscapeCsv(TruncateValue(log.NewValue, 100))}\"," +
                 $"\"{log.IpAddress ?? ""}\"");
@@ -334,7 +334,7 @@ public class ExportService
         sb.AppendLine("<h3>Report Data</h3>");
         sb.AppendLine("<table><tr><th>Section</th><th>Field</th><th>Value</th></tr>");
 
-        foreach (var fv in report.FieldValues.OrderBy(f => f.ReportField.Section).ThenBy(f => f.ReportField.OrderIndex))
+        foreach (var fv in report.FieldValues.OrderBy(f => f.ReportField.Section).ThenBy(f => f.ReportField.FieldOrder))
         {
             sb.AppendLine($"<tr><td>{HtmlEncode(fv.ReportField.Section)}</td>" +
                 $"<td>{HtmlEncode(fv.ReportField.Label)}</td>" +
@@ -381,7 +381,7 @@ public class ExportService
                 $"<td>{HtmlEncode(av.AggregationRule?.ReportField?.Label ?? "N/A")}</td>" +
                 $"<td>{av.DisplayValue}</td>" +
                 $"<td>{av.Status}</td>" +
-                $"<td>{av.SourceReportCount}</td></tr>");
+                $"<td>{GetSourceReportCount(av.SourceReportIdsJson)}</td></tr>");
         }
 
         sb.AppendLine("</table></body></html>");
@@ -463,14 +463,14 @@ public class ExportService
         // Field Values by Section
         var sections = report.FieldValues
             .GroupBy(fv => fv.ReportField.Section)
-            .OrderBy(g => g.First().ReportField.OrderIndex);
+            .OrderBy(g => g.First().ReportField.FieldOrder);
 
         foreach (var section in sections)
         {
             sb.AppendLine($"<h2>{HtmlEncode(section.Key)}</h2>");
             sb.AppendLine("<table>");
             sb.AppendLine("<tr><th>Field</th><th>Value</th></tr>");
-            foreach (var fv in section.OrderBy(f => f.ReportField.OrderIndex))
+            foreach (var fv in section.OrderBy(f => f.ReportField.FieldOrder))
             {
                 sb.AppendLine($"<tr><td>{HtmlEncode(fv.ReportField.Label)}</td><td>{HtmlEncode(fv.Value ?? "-")}</td></tr>");
             }
@@ -544,6 +544,21 @@ public class ExportService
         if (string.IsNullOrEmpty(value))
             return "";
         return value.Length <= maxLength ? value : value.Substring(0, maxLength) + "...";
+    }
+
+    private static int GetSourceReportCount(string? sourceReportIdsJson)
+    {
+        if (string.IsNullOrEmpty(sourceReportIdsJson))
+            return 0;
+        try
+        {
+            var ids = System.Text.Json.JsonSerializer.Deserialize<int[]>(sourceReportIdsJson);
+            return ids?.Length ?? 0;
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     #endregion

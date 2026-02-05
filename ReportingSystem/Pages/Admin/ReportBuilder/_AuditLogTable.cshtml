@@ -21,7 +21,7 @@
                 <td>@(log.User?.Name ?? "System")</td>
                 <td><span class="badge bg-info">@log.Action</span></td>
                 <td>@log.EntityType</td>
-                <td>@(log.EntityId?.ToString() ?? "-")</td>
+                <td>@(log.EntityId > 0 ? log.EntityId.ToString() : "-")</td>
                 <td>
                     @if (!string.IsNullOrEmpty(log.NewValue))
                     {
