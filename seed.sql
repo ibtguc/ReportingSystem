@@ -147,6 +147,110 @@ VALUES (35, 'iOS Team', 'MOB-IOS', 'iOS Mobile Development Team', 5, 27, 1, 1, d
 INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
 VALUES (36, 'Android Team', 'MOB-AND', 'Android Mobile Development Team', 5, 27, 2, 1, datetime('now'), NULL);
 
+-- ---- Administrative Services Division (Level 2) ----
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (37, 'Administrative Services Division', 'ADMIN', 'Central Administrative Services', 2, 2, 7, 1, datetime('now'), NULL);
+
+-- ---- Administrative Departments (Level 3) ----
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (38, 'Finance Office', 'CFO', 'Central Finance and Budget Office', 3, 37, 1, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (39, 'Legal & Compliance', 'LEGAL', 'Legal Affairs and Regulatory Compliance', 3, 37, 2, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (40, 'Procurement & Contracts', 'PROC', 'Procurement and Contract Management', 3, 37, 3, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (41, 'Student Affairs', 'STUD', 'Student Services and Support', 3, 37, 4, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (42, 'Facilities Management', 'FAC', 'Campus Facilities and Maintenance', 3, 37, 5, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (43, 'Marketing & Communications', 'MKTG', 'Marketing, PR, and External Communications', 3, 37, 6, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (44, 'Research & Innovation', 'RIO', 'Research Support and Innovation Office', 3, 37, 7, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (45, 'International Relations', 'INTL', 'International Partnerships and Exchange Programs', 3, 37, 8, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (46, 'Library & Information Services', 'LIB', 'University Library and Digital Resources', 3, 37, 9, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (47, 'Security & Safety', 'SEC', 'Campus Security and Safety Management', 3, 37, 10, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (48, 'Registrar Office', 'REG', 'Student Registration and Academic Records', 3, 37, 11, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (49, 'Career Services', 'CAREER', 'Career Development and Alumni Relations', 3, 37, 12, 1, datetime('now'), NULL);
+
+-- ---- Student Affairs Sections (Level 4) ----
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (50, 'Admissions Office', 'STUD-ADM', 'Student Admissions and Enrollment', 4, 41, 1, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (51, 'Student Counseling', 'STUD-COUNS', 'Student Counseling and Wellness', 4, 41, 2, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (52, 'Student Activities', 'STUD-ACT', 'Clubs, Events, and Student Life', 4, 41, 3, 1, datetime('now'), NULL);
+
+-- ---- Facilities Management Sections (Level 4) ----
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (53, 'Building Maintenance', 'FAC-MAINT', 'Building and Infrastructure Maintenance', 4, 42, 1, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (54, 'Grounds & Landscaping', 'FAC-GRND', 'Grounds and Landscaping Services', 4, 42, 2, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (55, 'Transportation Services', 'FAC-TRANS', 'Campus Transportation and Fleet', 4, 42, 3, 1, datetime('now'), NULL);
+
+-- ---- Finance Office Sections (Level 4) ----
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (56, 'Accounts Payable', 'CFO-AP', 'Accounts Payable and Vendor Payments', 4, 38, 1, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (57, 'Accounts Receivable', 'CFO-AR', 'Accounts Receivable and Collections', 4, 38, 2, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (58, 'Budget & Planning', 'CFO-BUD', 'Budget Planning and Analysis', 4, 38, 3, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (59, 'Payroll', 'CFO-PAY', 'Payroll Administration', 4, 38, 4, 1, datetime('now'), NULL);
+
+-- ---- HR Sections (Level 4) ----
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (60, 'Recruitment & Hiring', 'HR-REC', 'Talent Acquisition and Recruitment', 4, 24, 1, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (61, 'Training & Development', 'HR-TRN', 'Employee Training and Development', 4, 24, 2, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (62, 'Compensation & Benefits', 'HR-COMP', 'Compensation and Benefits Administration', 4, 24, 3, 1, datetime('now'), NULL);
+
+-- ---- Library Sections (Level 4) ----
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (63, 'Circulation Services', 'LIB-CIRC', 'Library Circulation and Lending', 4, 46, 1, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (64, 'Digital Resources', 'LIB-DIG', 'Digital Library and E-Resources', 4, 46, 2, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (65, 'Archives & Special Collections', 'LIB-ARCH', 'Archives and Special Collections', 4, 46, 3, 1, datetime('now'), NULL);
+
+-- ---- Marketing Sections (Level 4) ----
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (66, 'Digital Marketing', 'MKTG-DIG', 'Digital Marketing and Social Media', 4, 43, 1, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (67, 'Public Relations', 'MKTG-PR', 'Public Relations and Media', 4, 43, 2, 1, datetime('now'), NULL);
+
+INSERT INTO OrganizationalUnits (Id, Name, Code, Description, Level, ParentId, SortOrder, IsActive, CreatedAt, UpdatedAt)
+VALUES (68, 'Events Management', 'MKTG-EVT', 'University Events and Conferences', 4, 43, 3, 1, datetime('now'), NULL);
+
 
 -- =============================================================================
 -- 2. USERS (Employees with Roles across the Organization)
@@ -349,7 +453,491 @@ VALUES (59, 'auditor3@guc.edu.eg', 'Dr. Tarek Mansour', 'Auditor', 1, 'External 
 
 -- ---- Inactive user (for testing) ----
 INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
-VALUES (60, 'former.staff@guc.edu.eg', 'Retired Professor', 'ReportOriginator', NULL, 'Former Faculty Member', 0, datetime('now', '-365 days'), datetime('now', '-180 days'));
+VALUES (60, 'former.staff@guc.edu.eg', 'Dr. Hamed Farouk', 'ReportOriginator', NULL, 'Former Faculty Member', 0, datetime('now', '-365 days'), datetime('now', '-180 days'));
+
+-- ===========================================================================
+-- ADDITIONAL ADMINISTRATIVE DEPARTMENT HEADS (New departments)
+-- ===========================================================================
+
+-- Administrative Services Division heads
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (61, 'head.admin@guc.edu.eg', 'Dr. Nadia Abdel-Rahman', 'Executive', 37, 'Director of Administrative Services', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (62, 'head.cfo@guc.edu.eg', 'Mr. Karim Mansour', 'DepartmentHead', 38, 'Chief Financial Officer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (63, 'head.legal@guc.edu.eg', 'Dr. Laila Ghanem', 'DepartmentHead', 39, 'Head of Legal & Compliance', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (64, 'head.proc@guc.edu.eg', 'Mr. Ashraf El-Deeb', 'DepartmentHead', 40, 'Head of Procurement', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (65, 'head.student@guc.edu.eg', 'Dr. Rania Fouad', 'DepartmentHead', 41, 'Dean of Students', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (66, 'head.facilities@guc.edu.eg', 'Eng. Mohsen Abdallah', 'DepartmentHead', 42, 'Head of Facilities Management', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (67, 'head.marketing@guc.edu.eg', 'Ms. Dina El-Sayed', 'DepartmentHead', 43, 'Head of Marketing & Communications', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (68, 'head.research@guc.edu.eg', 'Prof. Tarek Zaki', 'DepartmentHead', 44, 'Director of Research & Innovation', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (69, 'head.intl@guc.edu.eg', 'Dr. Yasmin Rashid', 'DepartmentHead', 45, 'Director of International Relations', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (70, 'head.library@guc.edu.eg', 'Dr. Mahmoud Salem', 'DepartmentHead', 46, 'University Librarian', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (71, 'head.security@guc.edu.eg', 'Col. Ahmed El-Mahdy', 'DepartmentHead', 47, 'Chief Security Officer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (72, 'head.registrar@guc.edu.eg', 'Ms. Fatma Nour', 'DepartmentHead', 48, 'University Registrar', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (73, 'head.career@guc.edu.eg', 'Mr. Hany Ibrahim', 'DepartmentHead', 49, 'Director of Career Services', 1, datetime('now'), NULL);
+
+-- ===========================================================================
+-- SECTION MANAGERS / TEAM MANAGERS (New sections)
+-- ===========================================================================
+
+-- Student Affairs section managers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (74, 'mgr.admissions@guc.edu.eg', 'Ms. Reem Abdel-Aziz', 'TeamManager', 50, 'Admissions Manager', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (75, 'mgr.counseling@guc.edu.eg', 'Dr. Noha Fathy', 'TeamManager', 51, 'Head Counselor', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (76, 'mgr.activities@guc.edu.eg', 'Mr. Omar Tawfik', 'TeamManager', 52, 'Student Activities Coordinator', 1, datetime('now'), NULL);
+
+-- Facilities section managers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (77, 'mgr.maintenance@guc.edu.eg', 'Eng. Saeed Mostafa', 'TeamManager', 53, 'Maintenance Supervisor', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (78, 'mgr.grounds@guc.edu.eg', 'Mr. Ibrahim Khalil', 'TeamManager', 54, 'Grounds Supervisor', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (79, 'mgr.transport@guc.edu.eg', 'Mr. Mahmoud Ramzy', 'TeamManager', 55, 'Transportation Manager', 1, datetime('now'), NULL);
+
+-- Finance section managers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (80, 'mgr.ap@guc.edu.eg', 'Ms. Heba Kamel', 'TeamManager', 56, 'Accounts Payable Manager', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (81, 'mgr.ar@guc.edu.eg', 'Mr. Wael Hassan', 'TeamManager', 57, 'Accounts Receivable Manager', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (82, 'mgr.budget@guc.edu.eg', 'Ms. Amira Yousry', 'TeamManager', 58, 'Budget & Planning Manager', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (83, 'mgr.payroll@guc.edu.eg', 'Ms. Nevine Adel', 'TeamManager', 59, 'Payroll Manager', 1, datetime('now'), NULL);
+
+-- HR section managers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (84, 'mgr.recruitment@guc.edu.eg', 'Ms. Sara Farid', 'TeamManager', 60, 'Recruitment Manager', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (85, 'mgr.training@guc.edu.eg', 'Mr. Khaled El-Masry', 'TeamManager', 61, 'Training Manager', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (86, 'mgr.benefits@guc.edu.eg', 'Ms. Mona Sayed', 'TeamManager', 62, 'Benefits Administrator', 1, datetime('now'), NULL);
+
+-- Library section managers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (87, 'mgr.circulation@guc.edu.eg', 'Ms. Hanan Mostafa', 'TeamManager', 63, 'Circulation Manager', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (88, 'mgr.digital@guc.edu.eg', 'Mr. Tamer El-Naggar', 'TeamManager', 64, 'Digital Resources Manager', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (89, 'mgr.archives@guc.edu.eg', 'Ms. Azza Soliman', 'TeamManager', 65, 'Archives Manager', 1, datetime('now'), NULL);
+
+-- Marketing section managers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (90, 'mgr.digmktg@guc.edu.eg', 'Mr. Yasser Reda', 'TeamManager', 66, 'Digital Marketing Manager', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (91, 'mgr.pr@guc.edu.eg', 'Ms. Eman Gamal', 'TeamManager', 67, 'Public Relations Manager', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (92, 'mgr.events@guc.edu.eg', 'Ms. Layla Hamdy', 'TeamManager', 68, 'Events Manager', 1, datetime('now'), NULL);
+
+-- ===========================================================================
+-- REPORT REVIEWERS (Additional senior staff)
+-- ===========================================================================
+
+-- Finance reviewers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (93, 'reviewer.finance@guc.edu.eg', 'Mr. Samir Abdel-Wahab', 'ReportReviewer', 38, 'Senior Financial Analyst', 1, datetime('now'), NULL);
+
+-- Legal reviewers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (94, 'reviewer.legal@guc.edu.eg', 'Ms. Mariam Shehata', 'ReportReviewer', 39, 'Senior Legal Counsel', 1, datetime('now'), NULL);
+
+-- Student Affairs reviewers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (95, 'reviewer.student@guc.edu.eg', 'Dr. Ahmed Fouad', 'ReportReviewer', 41, 'Senior Student Advisor', 1, datetime('now'), NULL);
+
+-- Facilities reviewers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (96, 'reviewer.facilities@guc.edu.eg', 'Eng. Hossam El-Din', 'ReportReviewer', 42, 'Senior Facilities Engineer', 1, datetime('now'), NULL);
+
+-- Marketing reviewers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (97, 'reviewer.mktg@guc.edu.eg', 'Ms. Nadia Kamal', 'ReportReviewer', 43, 'Senior Marketing Specialist', 1, datetime('now'), NULL);
+
+-- Research reviewers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (98, 'reviewer.research@guc.edu.eg', 'Dr. Adel El-Sayed', 'ReportReviewer', 44, 'Senior Research Coordinator', 1, datetime('now'), NULL);
+
+-- Library reviewers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (99, 'reviewer.library@guc.edu.eg', 'Ms. Dalia Ibrahim', 'ReportReviewer', 46, 'Senior Librarian', 1, datetime('now'), NULL);
+
+-- Engineering faculty additional reviewers
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (100, 'reviewer.eng1@guc.edu.eg', 'Dr. Hossam Shalaby', 'ReportReviewer', 4, 'Associate Professor - Engineering', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (101, 'reviewer.eng2@guc.edu.eg', 'Dr. Iman Rasheed', 'ReportReviewer', 4, 'Assistant Professor - Engineering', 1, datetime('now'), NULL);
+
+-- Management faculty reviewer
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (102, 'reviewer.mgt2@guc.edu.eg', 'Dr. Yehia Abdel-Fattah', 'ReportReviewer', 6, 'Associate Professor - Management', 1, datetime('now'), NULL);
+
+-- ===========================================================================
+-- REPORT ORIGINATORS (Staff across all departments)
+-- ===========================================================================
+
+-- ---- Finance Office staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (103, 'fin.ap1@guc.edu.eg', 'Ms. Sherine Mahmoud', 'ReportOriginator', 56, 'Accounts Payable Specialist', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (104, 'fin.ap2@guc.edu.eg', 'Mr. Ahmed Wagdy', 'ReportOriginator', 56, 'Accounts Payable Clerk', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (105, 'fin.ar1@guc.edu.eg', 'Ms. Manal Fawzy', 'ReportOriginator', 57, 'Accounts Receivable Specialist', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (106, 'fin.ar2@guc.edu.eg', 'Mr. Hesham Nabil', 'ReportOriginator', 57, 'Collections Officer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (107, 'fin.budget1@guc.edu.eg', 'Ms. Salwa Ahmed', 'ReportOriginator', 58, 'Budget Analyst', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (108, 'fin.payroll1@guc.edu.eg', 'Ms. Nagwa Farouk', 'ReportOriginator', 59, 'Payroll Specialist', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (109, 'fin.payroll2@guc.edu.eg', 'Mr. Mohamed Fathy', 'ReportOriginator', 59, 'Payroll Clerk', 1, datetime('now'), NULL);
+
+-- ---- Legal & Compliance staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (110, 'legal.counsel1@guc.edu.eg', 'Mr. Sherif El-Ghandour', 'ReportOriginator', 39, 'Legal Counsel', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (111, 'legal.compliance@guc.edu.eg', 'Ms. Noura Hafez', 'ReportOriginator', 39, 'Compliance Officer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (112, 'legal.contracts@guc.edu.eg', 'Mr. Hazem Barakat', 'ReportOriginator', 39, 'Contracts Specialist', 1, datetime('now'), NULL);
+
+-- ---- Procurement staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (113, 'proc.buyer1@guc.edu.eg', 'Mr. Adel Shokry', 'ReportOriginator', 40, 'Senior Buyer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (114, 'proc.buyer2@guc.edu.eg', 'Ms. Ghada Lotfy', 'ReportOriginator', 40, 'Procurement Specialist', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (115, 'proc.vendor@guc.edu.eg', 'Mr. Tariq El-Shafiey', 'ReportOriginator', 40, 'Vendor Manager', 1, datetime('now'), NULL);
+
+-- ---- Student Affairs staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (116, 'student.adm1@guc.edu.eg', 'Ms. Asmaa Ragab', 'ReportOriginator', 50, 'Admissions Officer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (117, 'student.adm2@guc.edu.eg', 'Mr. Ahmed El-Bakry', 'ReportOriginator', 50, 'Admissions Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (118, 'student.adm3@guc.edu.eg', 'Ms. Fatma Hassan', 'ReportOriginator', 50, 'Admissions Assistant', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (119, 'student.couns1@guc.edu.eg', 'Dr. Ramy Shawky', 'ReportOriginator', 51, 'Student Counselor', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (120, 'student.couns2@guc.edu.eg', 'Ms. Maha El-Sherif', 'ReportOriginator', 51, 'Wellness Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (121, 'student.act1@guc.edu.eg', 'Mr. Mostafa Gamal', 'ReportOriginator', 52, 'Activities Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (122, 'student.act2@guc.edu.eg', 'Ms. Yasmine Nour', 'ReportOriginator', 52, 'Clubs Administrator', 1, datetime('now'), NULL);
+
+-- ---- Facilities staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (123, 'fac.maint1@guc.edu.eg', 'Mr. Sobhy Mohamed', 'ReportOriginator', 53, 'Maintenance Technician', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (124, 'fac.maint2@guc.edu.eg', 'Mr. Essam Abdel-Aziz', 'ReportOriginator', 53, 'HVAC Technician', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (125, 'fac.maint3@guc.edu.eg', 'Mr. Ramadan Sayed', 'ReportOriginator', 53, 'Electrician', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (126, 'fac.grounds1@guc.edu.eg', 'Mr. Abdel-Hakim Fathy', 'ReportOriginator', 54, 'Groundskeeper', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (127, 'fac.trans1@guc.edu.eg', 'Mr. Saber Hassan', 'ReportOriginator', 55, 'Fleet Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (128, 'fac.trans2@guc.edu.eg', 'Mr. Gamal Abdel-Nasser', 'ReportOriginator', 55, 'Transport Scheduler', 1, datetime('now'), NULL);
+
+-- ---- Marketing staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (129, 'mktg.digital1@guc.edu.eg', 'Ms. Rania El-Khouly', 'ReportOriginator', 66, 'Social Media Specialist', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (130, 'mktg.digital2@guc.edu.eg', 'Mr. Amr Shawky', 'ReportOriginator', 66, 'Content Creator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (131, 'mktg.pr1@guc.edu.eg', 'Ms. Sahar Mohamed', 'ReportOriginator', 67, 'PR Specialist', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (132, 'mktg.pr2@guc.edu.eg', 'Mr. Kareem Helal', 'ReportOriginator', 67, 'Media Relations Officer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (133, 'mktg.events1@guc.edu.eg', 'Ms. Marwa Tawfik', 'ReportOriginator', 68, 'Events Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (134, 'mktg.events2@guc.edu.eg', 'Mr. Tarek El-Guindy', 'ReportOriginator', 68, 'Conference Planner', 1, datetime('now'), NULL);
+
+-- ---- Research & Innovation staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (135, 'research.coord@guc.edu.eg', 'Dr. Samia El-Banna', 'ReportOriginator', 44, 'Research Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (136, 'research.grants@guc.edu.eg', 'Ms. Ola Abdel-Hamid', 'ReportOriginator', 44, 'Grants Administrator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (137, 'research.ip@guc.edu.eg', 'Mr. Hesham Khairy', 'ReportOriginator', 44, 'IP & Technology Transfer Officer', 1, datetime('now'), NULL);
+
+-- ---- International Relations staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (138, 'intl.exchange@guc.edu.eg', 'Ms. Nermeen Samir', 'ReportOriginator', 45, 'Exchange Program Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (139, 'intl.partner@guc.edu.eg', 'Mr. Walid Helmy', 'ReportOriginator', 45, 'Partnership Development Officer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (140, 'intl.visa@guc.edu.eg', 'Ms. Lobna Abdel-Azim', 'ReportOriginator', 45, 'International Student Advisor', 1, datetime('now'), NULL);
+
+-- ---- Library staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (141, 'lib.circ1@guc.edu.eg', 'Ms. Hala Mostafa', 'ReportOriginator', 63, 'Circulation Librarian', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (142, 'lib.circ2@guc.edu.eg', 'Mr. Ramy El-Fiky', 'ReportOriginator', 63, 'Library Assistant', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (143, 'lib.digital1@guc.edu.eg', 'Mr. Emad Khalifa', 'ReportOriginator', 64, 'Digital Resources Specialist', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (144, 'lib.digital2@guc.edu.eg', 'Ms. Aya Mohamed', 'ReportOriginator', 64, 'E-Resources Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (145, 'lib.archives@guc.edu.eg', 'Ms. Dina Abdel-Moneim', 'ReportOriginator', 65, 'Archivist', 1, datetime('now'), NULL);
+
+-- ---- Security staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (146, 'sec.ops1@guc.edu.eg', 'Mr. Mohamed El-Sharkawy', 'ReportOriginator', 47, 'Security Operations Officer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (147, 'sec.safety@guc.edu.eg', 'Mr. Abdel-Rahman Youssef', 'ReportOriginator', 47, 'Safety Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (148, 'sec.emergency@guc.edu.eg', 'Mr. Hazem El-Badry', 'ReportOriginator', 47, 'Emergency Response Coordinator', 1, datetime('now'), NULL);
+
+-- ---- Registrar staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (149, 'reg.records@guc.edu.eg', 'Ms. Nadia Hassan', 'ReportOriginator', 48, 'Records Specialist', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (150, 'reg.schedule@guc.edu.eg', 'Mr. Ali Abdel-Ghani', 'ReportOriginator', 48, 'Academic Scheduler', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (151, 'reg.transcript@guc.edu.eg', 'Ms. Soha Ramadan', 'ReportOriginator', 48, 'Transcripts Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (152, 'reg.graduation@guc.edu.eg', 'Ms. Heba El-Sawaf', 'ReportOriginator', 48, 'Graduation Coordinator', 1, datetime('now'), NULL);
+
+-- ---- Career Services staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (153, 'career.advisor1@guc.edu.eg', 'Ms. Rasha Abdel-Salam', 'ReportOriginator', 49, 'Career Advisor', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (154, 'career.intern@guc.edu.eg', 'Mr. Hazem Taha', 'ReportOriginator', 49, 'Internship Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (155, 'career.alumni@guc.edu.eg', 'Ms. Mai El-Sherbiny', 'ReportOriginator', 49, 'Alumni Relations Officer', 1, datetime('now'), NULL);
+
+-- ---- HR additional staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (156, 'hr.rec1@guc.edu.eg', 'Ms. Dalia Fawzy', 'ReportOriginator', 60, 'Talent Acquisition Specialist', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (157, 'hr.rec2@guc.edu.eg', 'Mr. Karim Essam', 'ReportOriginator', 60, 'Recruitment Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (158, 'hr.training1@guc.edu.eg', 'Ms. Lamia Abdel-Fattah', 'ReportOriginator', 61, 'L&D Specialist', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (159, 'hr.training2@guc.edu.eg', 'Mr. Bassem Shokry', 'ReportOriginator', 61, 'Training Coordinator', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (160, 'hr.comp1@guc.edu.eg', 'Ms. Enas Mohamed', 'ReportOriginator', 62, 'Compensation Analyst', 1, datetime('now'), NULL);
+
+-- ---- Additional academic faculty staff ----
+-- CSE additional faculty
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (161, 'faculty.cse3@guc.edu.eg', 'Dr. Mohamed El-Menshawy', 'ReportOriginator', 12, 'Senior Lecturer - CSE', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (162, 'faculty.cse4@guc.edu.eg', 'Dr. Heba Abdel-Aal', 'ReportOriginator', 12, 'Assistant Professor - CSE', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (163, 'faculty.cse5@guc.edu.eg', 'Eng. Tarek Fathy', 'ReportOriginator', 12, 'Teaching Assistant - CSE', 1, datetime('now'), NULL);
+
+-- Mechanical Engineering additional faculty
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (164, 'faculty.me2@guc.edu.eg', 'Dr. Sherif El-Gohary', 'ReportOriginator', 13, 'Associate Professor - ME', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (165, 'faculty.me3@guc.edu.eg', 'Dr. Amira Khairy', 'ReportOriginator', 13, 'Assistant Professor - ME', 1, datetime('now'), NULL);
+
+-- ECE additional faculty
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (166, 'faculty.ece1@guc.edu.eg', 'Dr. Nabil El-Fishawy', 'ReportOriginator', 14, 'Senior Lecturer - ECE', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (167, 'faculty.ece2@guc.edu.eg', 'Dr. Reem Bahgat', 'ReportOriginator', 14, 'Assistant Professor - ECE', 1, datetime('now'), NULL);
+
+-- Architecture additional faculty
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (168, 'faculty.arch1@guc.edu.eg', 'Dr. Mona El-Tayeb', 'ReportOriginator', 15, 'Senior Lecturer - Architecture', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (169, 'faculty.arch2@guc.edu.eg', 'Dr. Yasser Wahba', 'ReportOriginator', 15, 'Assistant Professor - Architecture', 1, datetime('now'), NULL);
+
+-- MET CS additional faculty
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (170, 'faculty.cs2@guc.edu.eg', 'Dr. Eman Helal', 'ReportOriginator', 16, 'Associate Professor - CS', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (171, 'faculty.cs3@guc.edu.eg', 'Dr. Ahmed Fathy', 'ReportOriginator', 16, 'Assistant Professor - CS', 1, datetime('now'), NULL);
+
+-- Digital Media additional faculty
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (172, 'faculty.dm2@guc.edu.eg', 'Dr. Sherine Fouad', 'ReportOriginator', 17, 'Senior Lecturer - Digital Media', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (173, 'faculty.dm3@guc.edu.eg', 'Dr. Wessam Abdel-Wahab', 'ReportOriginator', 17, 'Assistant Professor - Digital Media', 1, datetime('now'), NULL);
+
+-- Networks additional faculty
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (174, 'faculty.nis1@guc.edu.eg', 'Dr. Karim El-Shabrawy', 'ReportOriginator', 18, 'Senior Lecturer - Networks', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (175, 'faculty.nis2@guc.edu.eg', 'Dr. Hoda Khalifa', 'ReportOriginator', 18, 'Assistant Professor - Networks', 1, datetime('now'), NULL);
+
+-- Economics additional faculty
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (176, 'faculty.econ2@guc.edu.eg', 'Dr. Amr El-Shafei', 'ReportOriginator', 19, 'Associate Professor - Economics', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (177, 'faculty.econ3@guc.edu.eg', 'Dr. Nevine Salem', 'ReportOriginator', 19, 'Assistant Professor - Economics', 1, datetime('now'), NULL);
+
+-- Finance & Accounting (academic) additional faculty
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (178, 'faculty.fin2@guc.edu.eg', 'Dr. Hazem El-Nahas', 'ReportOriginator', 20, 'Associate Professor - Finance', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (179, 'faculty.fin3@guc.edu.eg', 'Dr. Salma Mostafa', 'ReportOriginator', 20, 'Assistant Professor - Accounting', 1, datetime('now'), NULL);
+
+-- Management (academic) additional faculty
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (180, 'faculty.mgmt1@guc.edu.eg', 'Dr. Tamer Abdel-Ghaffar', 'ReportOriginator', 21, 'Senior Lecturer - Management', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (181, 'faculty.mgmt2@guc.edu.eg', 'Dr. Nihal Fathy', 'ReportOriginator', 21, 'Assistant Professor - Management', 1, datetime('now'), NULL);
+
+-- ---- Additional IT staff ----
+-- Software Development additional
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (182, 'dev.backend3@guc.edu.eg', 'Eng. Hany Abdel-Malak', 'ReportOriginator', 32, 'Senior Backend Developer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (183, 'dev.backend4@guc.edu.eg', 'Eng. Marwa Sobhy', 'ReportOriginator', 32, 'Backend Developer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (184, 'dev.frontend3@guc.edu.eg', 'Eng. Maged El-Deeb', 'ReportOriginator', 33, 'Senior Frontend Developer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (185, 'dev.frontend4@guc.edu.eg', 'Eng. Nora Samy', 'ReportOriginator', 33, 'UI Developer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (186, 'qa.tester2@guc.edu.eg', 'Eng. Ahmed El-Gammal', 'ReportOriginator', 34, 'Senior QA Engineer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (187, 'qa.tester3@guc.edu.eg', 'Eng. Heba Saad', 'ReportOriginator', 34, 'Automation Engineer', 1, datetime('now'), NULL);
+
+-- Mobile additional
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (188, 'dev.mobile3@guc.edu.eg', 'Eng. Youssef Abdel-Rahim', 'ReportOriginator', 35, 'Senior iOS Developer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (189, 'dev.mobile4@guc.edu.eg', 'Eng. Sara El-Kady', 'ReportOriginator', 36, 'Senior Android Developer', 1, datetime('now'), NULL);
+
+-- Infrastructure additional
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (190, 'netops3@guc.edu.eg', 'Eng. Ahmed Lotfy', 'ReportOriginator', 28, 'Senior Network Engineer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (191, 'cloud2@guc.edu.eg', 'Eng. Hazem Shawky', 'ReportOriginator', 29, 'Senior Cloud Engineer', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (192, 'sysadmin2@guc.edu.eg', 'Eng. Ola Magdy', 'ReportOriginator', 29, 'Systems Administrator', 1, datetime('now'), NULL);
+
+-- ---- AI & ML Section staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (193, 'ai.researcher1@guc.edu.eg', 'Dr. Khaled El-Ayat', 'ReportOriginator', 30, 'AI Researcher', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (194, 'ai.researcher2@guc.edu.eg', 'Dr. Noha Ghanem', 'ReportOriginator', 30, 'ML Engineer', 1, datetime('now'), NULL);
+
+-- ---- Software Engineering Section staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (195, 'se.researcher1@guc.edu.eg', 'Dr. Amr Abdel-Hamid', 'ReportOriginator', 31, 'SE Researcher', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (196, 'se.researcher2@guc.edu.eg', 'Dr. Hana El-Sherif', 'ReportOriginator', 31, 'DevOps Researcher', 1, datetime('now'), NULL);
+
+-- ---- Additional QA & Audit staff ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (197, 'qa.analyst1@guc.edu.eg', 'Ms. Samar Raafat', 'ReportOriginator', 25, 'Quality Analyst', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (198, 'qa.analyst2@guc.edu.eg', 'Mr. Mohamed Abdel-Aziz', 'ReportOriginator', 25, 'Compliance Analyst', 1, datetime('now'), NULL);
+
+-- ---- Additional Auditors ----
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (199, 'auditor4@guc.edu.eg', 'Mr. Wael El-Shaarawy', 'Auditor', 25, 'Senior Internal Auditor', 1, datetime('now'), NULL);
+
+INSERT INTO Users (Id, Email, Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt, LastLoginAt)
+VALUES (200, 'auditor5@guc.edu.eg', 'Ms. Yasmine Fouad', 'Auditor', 38, 'Financial Auditor', 1, datetime('now'), NULL);
 
 
 -- =============================================================================
@@ -754,22 +1342,22 @@ VALUES (6, 4, 'Vendor negotiation support', 'Need management support for contrac
 -- =============================================================================
 -- SUMMARY
 -- =============================================================================
--- Organizational Units: 36 units across 6 levels
+-- Organizational Units: 68 units across 6 levels
 --   - 1 Root (GUC)
 --   - 2 Campuses (Main, New Capital)
---   - 8 Faculties/Divisions
---   - 14 Departments
---   - 6 Sectors/Sections
+--   - 9 Faculties/Divisions (incl. Administrative Services Division)
+--   - 26 Departments (14 original + 12 new admin departments)
+--   - 25 Sectors/Sections (6 original + 19 new admin sections)
 --   - 5 Teams
 --
--- Users: 60 accounts across all roles
---   - 5 Executives (President, VPs, Deans)
+-- Users: 200 accounts across all roles
+--   - 6 Executives (President, VPs, Deans, Admin Services Director)
 --   - 3 Administrators (System admins)
---   - 13 Department Heads
---   - 9 Team Managers
---   - 6 Report Reviewers
---   - 20 Report Originators (developers, faculty, HR staff)
---   - 3 Auditors
+--   - 25 Department Heads (13 original + 12 new)
+--   - 28 Team Managers (9 original + 19 new section managers)
+--   - 16 Report Reviewers (6 original + 10 new)
+--   - 116 Report Originators (developers, faculty, admin staff)
+--   - 5 Auditors (3 original + 2 new)
 --   - 1 Inactive user (for testing)
 --
 -- Delegations: 6 samples
