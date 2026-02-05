@@ -2,482 +2,680 @@
 
 ## Project Overview
 
-ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows (upward reports/suggestions/resources/support and downward feedback/recommendations/decisions).
+**Purpose**: ASP.NET Core 8.0 Razor Pages enterprise web application for hierarchical organizational reporting with bi-directional communication flows:
+- **Upward Flow**: Reports, suggested actions, resource requests, support requests from subordinates to management
+- **Downward Flow**: Feedback, recommendations, decisions from management to subordinates
+- **Workflow**: Comments, confirmation tags, threaded discussions for collaboration
+- **Analytics**: Aggregation, dashboards, charts, export, ad-hoc reporting
+
+**Target Users**: Higher education institutions (GUC - German University in Cairo used as reference) with organizational hierarchy from Root → Campuses → Faculties → Departments → Sectors → Teams.
+
+---
 
 ## Tech Stack
 
-- **Framework**: ASP.NET Core 8.0, Razor Pages
-- **Database**: EF Core 8.0 with SQLite (dev) / SQL Server (prod)
-- **Auth**: Cookie-based with magic link passwordless login (15-min token expiry, 30-day sliding cookie)
-- **Email**: Microsoft Graph API (disabled in dev mode)
-- **Frontend**: Bootstrap 5.3.3, Bootstrap Icons (CDN), jQuery + jQuery Validation (bundled)
-- **Data Protection**: Keys persisted to `/keys` folder
+| Layer | Technology | Notes |
+|-------|------------|-------|
+| Framework | ASP.NET Core 8.0 | Razor Pages (not MVC) |
+| Database | EF Core 8.0 | SQLite (dev) / SQL Server (prod) |
+| Auth | Cookie-based | Magic link passwordless login (15-min token, 30-day sliding cookie) |
+| Email | Microsoft Graph API | Disabled in dev mode (emails logged to console) |
+| Frontend | Bootstrap 5.3.3 | CDN for CSS, bundled JS + Bootstrap Icons |
+| Charts | Chart.js 4.4.1 | CDN, line/bar/doughnut charts |
+| Validation | jQuery Validation | Bundled with jQuery |
+| Data Protection | ASP.NET Core DP | Keys persisted to `/keys` folder |
+
+---
 
 ## Build & Run
 
 ```bash
-# Restore (uses local NuGet feed due to environment proxy)
+# Working directory
+cd /home/user/ReportingSystem
+
+# Restore (local NuGet feed - NuGet.org blocked by proxy)
 dotnet restore --source /home/user/ReportingSystem/local-packages/ \
-  --source /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
+  /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
 
-# Build
-dotnet build --no-restore /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
-
-# Run (dev mode)
-dotnet run --project /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
-```
-
-Dev URL: http://localhost:5296 / https://localhost:7155
-
-## Project Structure
-
-```
-ReportingSystem/
-├── Data/                  # EF Core DbContext, seed data, user seeder
-├── Filters/               # AutomaticBackupFilter (pre-POST/PUT/DELETE backups)
-├── Models/                # Domain entities (User, MagicLink, OrganizationalUnit, Delegation, Report*, Attachment, Notification, DatabaseBackup)
-├── Pages/
-│   ├── Admin/             # Requires authentication
-│   │   ├── Backup/        # Database backup management (create/restore/delete/WAL)
-│   │   ├── Delegations/   # Delegation CRUD (Index, Create) with revoke
-│   │   ├── OrgUnits/      # Org unit CRUD (Index, Create, Edit, Delete) with tree view
-│   │   ├── Periods/       # Report period management (Index, Create, Edit)
-│   │   ├── Reports/       # Report lifecycle (Index, Create, Fill, View) with review
-│   │   ├── Templates/     # Template management (Index, Create, Edit, Details, Delete)
-│   │   ├── Users/         # User CRUD (Index, Create, Edit, Details, Delete)
-│   │   └── Dashboard.cshtml
-│   ├── Auth/              # Anonymous access (Login, Verify, Logout)
-│   └── Shared/            # _Layout, _ValidationScriptsPartial
-├── Services/              # MagicLink, Email, Notification, Backup, DailyBackupHostedService
-├── wwwroot/
-│   ├── css/site.css
-│   ├── js/                # site.js, filter-state.js (URL + sessionStorage persistence)
-│   └── lib/               # Bootstrap, jQuery, jQuery Validation (bundled)
-├── Program.cs             # DI setup, auth config, database init
-├── appsettings.json       # Production config template
-└── appsettings.Development.json  # SQLite config
-```
-
-## Architecture Patterns
-
-- **Razor Pages with `[BindProperty]`**: All form-bound properties use `[BindProperty]` attribute
-- **EF Core with eager loading**: Use `.Include()` for navigation properties
-- **Policy-based authorization**: `"AdministratorOnly"` policy, folder-level auth (`/Admin` requires auth, `/Auth` is anonymous)
-- **Modal dialogs**: Bootstrap modals for confirmations and AJAX operations
-- **TempData flash messages**: Success/error messages via `TempData["SuccessMessage"]` / `TempData["ErrorMessage"]`
-- **Filter state**: `filter-state.js` persists filters in URL query params + sessionStorage
-- **Async/await**: All database operations are async
-- **Nullable reference types**: Enabled project-wide
-- **File-scoped namespaces**: Use `namespace X;` syntax (not `namespace X { }`)
-
-## Database
-
-- **Dev**: SQLite at `db/reporting.db` (auto-created via `EnsureCreatedAsync`)
-- **Prod**: SQL Server (configure in appsettings.json)
-- **Seeded users**: admin@reporting.com, admin1@reporting.com, admin2@reporting.com (all Administrators)
-- **SQL seed script**: `seed.sql` at project root - seeds full org hierarchy, 60 users, delegations, templates, fields, periods, sample reports, notifications
-- **Org hierarchy**: GUC > Campuses > Faculties > Departments > Sectors > Teams (6 levels via OrgUnitLevel enum)
-- **Known limitation**: `TimeSpan` properties cannot be used in `ORDER BY` with SQLite provider
-
-## Key Services
-
-| Service | Purpose |
-|---------|---------|
-| `MagicLinkService` | Generate/validate magic link tokens |
-| `EmailService` | Send emails via Microsoft Graph API |
-| `NotificationService` | In-app notifications CRUD |
-| `DatabaseBackupService` | Create/restore/delete backups, WAL checkpoint |
-| `DailyBackupHostedService` | Automatic backups at 2:00 and 14:00 UTC |
-| `AutomaticBackupFilter` | Trigger backup before POST/PUT/DELETE requests |
-
-## Domain Implementation Phases (SRS-based)
-
-Phase 1 (complete): Infrastructure - Auth, backup, notifications, admin pages, layout
-Phase 2 (complete): Organization & User Hierarchy - Org units, user roles, delegations, SQL seed script
-Phase 3 (complete): Report Templates & Report Entry - Templates, fields, periods, reports, review workflow
-Phase 4 (complete): Upward Flow - Suggested actions, resource requests, support requests with status tracking
-Phase 5 (complete): Workflow & Tagging - Comments, confirmation tags, threaded discussions, workflow admin pages
-Phase 6 (complete): Downward Flow - Feedback, recommendations, decisions with acknowledgment tracking
-Phase 7 (complete): Aggregation & Drill-Down - Aggregation rules, aggregated values, manager amendments, audit log
-
-### Key Models (Phase 2)
-- **OrganizationalUnit**: self-referential hierarchy with OrgUnitLevel enum (Root=0 → Team=5), Parent/Children nav props, DeleteBehavior.Restrict
-- **User** (extended): OrganizationalUnitId FK (SetNull on delete), JobTitle, Role using SystemRoles string constants
-- **SystemRoles**: Administrator, ReportOriginator, ReportReviewer, TeamManager, DepartmentHead, Executive, Auditor (string constants with DisplayName helper)
-- **Delegation**: DelegatorId/DelegateId FKs (Restrict), StartDate/EndDate, Scope (Full/ReportingOnly/ApprovalOnly), IsCurrentlyEffective computed property
-- **DelegationScope**: Full, ReportingOnly, ApprovalOnly (string constants with DisplayName helper)
-
-### Key Models (Phase 3)
-- **ReportTemplate**: name, description, schedule (ReportSchedule constants), version, standard sections (SuggestedActions/NeededResources/NeededSupport), auto-save interval, attachment settings
-- **ReportTemplateAssignment**: assigns template to OrgUnit/Role/Individual (TemplateAssignmentType constants), IncludeSubUnits flag
-- **ReportField**: FieldType enum (Text=0→TableGrid=7), section/order, validation (min/max/regex), OptionsJson for dropdowns, Formula for calculated fields, VisibilityConditionJson, PrePopulateFromPrevious
-- **ReportPeriod**: StartDate/EndDate, SubmissionDeadline, GracePeriodDays, PeriodStatus enum (Upcoming/Open/Closed/Archived), IsOpen/IsOverdue/IsFullyClosed computed
-- **Report**: ReportTemplateId+ReportPeriodId+SubmittedById (unique composite), ReportStatus constants (Draft→Submitted→UnderReview→Approved/Rejected/Amended), IsLocked, review workflow
-- **ReportFieldValue**: ReportId+ReportFieldId (unique), Value as string, NumericValue for aggregation, WasPrePopulated
-- **Attachment**: file storage with FileName/OriginalFileName/ContentType/StoragePath, linked to Report and optionally ReportField
-
-### Key Models (Phase 4)
-- **SuggestedAction**: title, description, justification, expected outcome, timeline, category (ActionCategory constants), priority (ActionPriority constants), status (ActionStatus: Submitted→UnderReview→Approved/Rejected/Implemented/Deferred), ReviewedById FK
-- **ResourceRequest**: title, description, quantity (string), justification, category (ResourceCategory constants), urgency (ResourceUrgency constants), EstimatedCost/ApprovedAmount/Currency, status (ResourceStatus constants), ReviewedById FK, FulfilledAt
-- **SupportRequest**: title, description, current situation, desired outcome, category (SupportCategory constants), urgency (SupportUrgency constants), status (SupportStatus: Submitted→Acknowledged→InProgress→Resolved/Closed), AssignedToId/AcknowledgedById/ResolvedById FKs, Resolution field, IsOpen computed
-- All three models link to Report via ReportId FK with cascade delete
-- Admin pages at `/Admin/UpwardFlow/{SuggestedActions,ResourceRequests,SupportRequests}/Index`
-- Report Fill page includes inline entry forms when template has IncludeSuggestedActions/IncludeNeededResources/IncludeNeededSupport enabled
-- Report View page displays submitted upward flow items with status badges
-
-### Key Models (Phase 5)
-- **Comment**: threaded discussions on reports with @mentions support, Status (Active/Edited/Deleted/Hidden), ParentCommentId for replies, AuthorId FK, SectionReference optional, MentionedUserIdsJson for @mention tracking, IsReply/IsDeleted computed properties
-- **ConfirmationTag**: originator tags another user to confirm/verify report section, Status (Pending/Confirmed/RevisionRequested/Declined/Expired/Cancelled), RequestedById/TaggedUserId FKs, SectionReference optional, Message/Response fields, ReminderSentAt for reminder tracking, IsPending/IsConfirmed/DaysSinceRequested computed properties
-- Admin pages at `/Admin/Workflow/{Comments,Confirmations}/Index` with filtering, status management, and reminder functionality
-- Report View page includes Comments section (threaded with replies) and Confirmation Tags section (request/respond workflow)
-- Navigation updated with Workflow dropdown menu
-- SeedData.cs updated with Phase 5 sample data (comments and confirmation tags)
-
-### Key Models (Phase 6)
-- **Feedback**: management responses to reports with Category (PositiveRecognition/Concern/Observation/Question/General), Visibility (Private/TeamWide/DepartmentWide/OrganizationWide), Status (Active/Resolved/Archived), threading via ParentFeedbackId, acknowledgment tracking (IsAcknowledged/AcknowledgedAt/AcknowledgmentResponse), RequiresAcknowledgment/IsPendingAcknowledgment computed properties
-- **Recommendation**: guidance/directives with Category (ProcessChange/SkillDevelopment/PerformanceImprovement/Compliance/StrategicAlignment/ResourceOptimization/General), Priority (Critical/High/Medium/Low), TargetScope (Individual/Team/Department/OrganizationWide), Status (Draft/Issued/Acknowledged/InProgress/Completed/Cancelled), optional ReportId/TargetOrgUnitId/TargetUserId, DueDate/EffectiveDate, CascadeToSubUnits, IsOverdue/DaysUntilDue computed
-- **Decision**: formal responses to upward flow with RequestType (SuggestedAction/ResourceRequest/SupportRequest), Outcome (Pending/Approved/ApprovedWithMods/PartiallyApproved/Deferred/Rejected/Referred), optional links to SuggestedActionId/ResourceRequestId/SupportRequestId, ApprovedAmount/Currency, Conditions/Modifications, acknowledgment tracking, IsPositive/IsPendingAcknowledgment computed
-- Admin pages at `/Admin/Downward/{Feedback,Recommendations,Decisions}/Index` with filtering, status management, and acknowledgment tracking
-- Report View page displays Feedback (threaded), Recommendations (table), and Decisions (list) sections
-- Navigation updated with Downward Flow dropdown menu
-- SeedData.cs updated with Phase 6 sample data
-
-### Key Models (Phase 7)
-- **AggregationRule**: configurable rules per ReportField, Method (Sum/Average/WeightedAverage/Min/Max/Count/Percentage/Custom for numeric; Concatenate/SelectFirst/SelectLast/SelectMostCommon/ManualSynthesis for text), Priority, WeightFieldKey for weighted avg, CustomFormula, TextAggregationMode, DecimalPrecision, AutoAggregate flag
-- **AggregatedValue**: stores computed aggregates at OrganizationalUnit level per ReportPeriod, Status (Pending/Current/Stale/Error/ManualOverride), SourceReportIdsJson for drill-down, MissingSourcesJson for incomplete tracking, HasAmendment flag, DisplayValue computed property
-- **ManagerAmendment**: allows managers to annotate/correct aggregated values, AmendmentType (Annotation/Correction/ExecutiveSummary/ContextualNote/Highlight/Warning), Visibility levels, ApprovalStatus for corrections, AmendedValue/Annotation/Justification/ExecutiveSummary fields
-- **AuditLog**: comprehensive change tracking with Action (Create/Update/Delete/View/Export/Login/Logout/Submit/Approve/Reject/Aggregate/Amend), EntityType, OldValue/NewValue, OldEntityJson/NewEntityJson for full snapshots, CorrelationId for grouping, IpAddress/UserAgent, ChangeSummary computed
-- Admin pages at `/Admin/Aggregation/{Rules,Summary}/Index` and `/Admin/AuditLog/Index`
-- Aggregation Rules page: create/configure rules, filter by template/method, toggle active status
-- Aggregation Summary page: view aggregated data with drill-down to source reports, filter by template/period/orgunit/status
-- AuditLog page: comprehensive filtering by action/entity/user/date, statistics, CSV export with pagination
-- Navigation updated with Aggregation dropdown menu (Summary Data, Aggregation Rules, Audit Log)
-
-### Phase 8: Dashboards & Export (complete)
-Phase 8a (complete): Dashboard Infrastructure & KPIs - Role-based dashboards (Executive, Manager, Reviewer, Originator) with KPI cards, quick actions, deadline tracking
-Phase 8b (complete): Chart Visualizations - Chart.js 4.4.1 integration with line, doughnut, and bar charts across all dashboards
-Phase 8c (complete): Export Capabilities - ExportService for CSV/Excel/PDF, export buttons on Reports/View, Reports/Index, and Dashboards
-Phase 8d (complete): Ad-hoc Report Builder - SavedReport model, ReportBuilder page with filter UI, save/load/share report configurations
-
-**Key Components (Phase 8c)**:
-- **ExportService**: CSV export (StringBuilder), Excel export (HTML-based for .xls compatibility), Print-friendly HTML for PDF (browser print)
-- **Export endpoints**: `/Admin/Export/Download` (CSV/Excel download), `/Admin/Export/Print/{reportId}` (printable HTML view)
-- **Export filters**: ReportExportFilter, AuditLogExportFilter with template/period/status/date range filtering
-- **Export types**: reports, report-detail, suggested-actions, resource-requests, audit-log, aggregation
-
-**Key Components (Phase 8d)**:
-- **SavedReport model**: stores ad-hoc report configurations with name, type, FilterConfiguration (JSON), IsPublic/IsPinnedToDashboard, run statistics
-- **SavedReportType**: Reports, SuggestedActions, ResourceRequests, SupportRequests, AuditLog, Aggregation, Users, Feedback, Recommendations
-- **ReportBuilder pages**: `/Admin/ReportBuilder/Index` (build/run/export/save), `/Admin/ReportBuilder/SavedReports` (manage saved reports)
-- **Features**: Filter by template/period/status/date/role/action, preview results (100 rows), export filtered data, save/share configurations
-
-### Phase 9: Notifications & Polish
-- Enhanced notification system: deadline reminders, approval notifications, tag/mention alerts, feedback/decision notifications
-- Notification preferences per user (by type and channel)
-- Notification digest (daily/weekly summary)
-- Responsive design polish for mobile/tablet
-- Contextual help and tooltips
-- Performance optimization
-
-## Reference Project
-
-Infrastructure was replicated from `/ref-only-example/SchedulingSystem/` with namespace/branding changes. Domain-specific scheduling code was NOT replicated.
-
-## NuGet Environment Note
-
-NuGet.org is blocked by the environment proxy. Packages are downloaded via Python script to `/home/user/ReportingSystem/local-packages/` and restored from that local source. Use `--source /home/user/ReportingSystem/local-packages/` flag with `dotnet restore`.
-
-## Session Handoff
-
-### Current Status
-**Phase 8 complete** (8 of 9 phases, Phase 9 remaining) - All dashboard, export, and ad-hoc report builder features implemented.
-
-### Project Statistics
-| Category | Count |
-|----------|-------|
-| Total .cs/.cshtml files | ~155 |
-| Model classes | 25 |
-| Razor Pages (.cshtml) | 75 |
-| Services | 7 |
-| Admin page sections | 17 |
-
-### Implemented Models (25)
-| Model | Phase | Purpose |
-|-------|-------|---------|
-| `User` | 1,2 | Users with roles, org unit assignment, MagicLinks |
-| `MagicLink` | 1 | Passwordless authentication tokens |
-| `Notification` | 1 | In-app notifications with types/priorities |
-| `DatabaseBackup` | 1 | Backup records with file paths |
-| `OrganizationalUnit` | 2 | Self-referential hierarchy (6 levels) |
-| `Delegation` | 2 | Temporary authority transfer |
-| `ReportTemplate` | 3 | Template definitions with versioning |
-| `ReportField` | 3 | Field definitions (8 types) with validation |
-| `ReportPeriod` | 3 | Time periods with deadlines |
-| `Report` | 3 | Report instances with status workflow |
-| `ReportFieldValue` | 3 | Actual data entries per field |
-| `Attachment` | 3 | File uploads linked to reports |
-| `SuggestedAction` | 4 | Process improvements attached to reports |
-| `ResourceRequest` | 4 | Budget/equipment/personnel requests |
-| `SupportRequest` | 4 | Management/technical assistance requests |
-| `Comment` | 5 | Threaded discussions with @mentions |
-| `ConfirmationTag` | 5 | User verification requests on report sections |
-| `Feedback` | 6 | Management responses with categories/visibility |
-| `Recommendation` | 6 | Guidance/directives with target scope |
-| `Decision` | 6 | Formal responses to upward flow requests |
-| `AggregationRule` | 7 | Configurable aggregation methods per field |
-| `AggregatedValue` | 7 | Computed aggregates with drill-down support |
-| `ManagerAmendment` | 7 | Manager annotations/corrections to aggregates |
-| `AuditLog` | 7 | Comprehensive change tracking for compliance |
-| `SavedReport` | 8 | Ad-hoc report configurations with filters |
-
-### Implemented Admin Pages (17 sections, 75 pages)
-| Section | Pages | Purpose |
-|---------|-------|---------|
-| `/Admin/Backup` | 4 | Create, restore, delete, WAL checkpoint |
-| `/Admin/Delegations` | 2 | Index with revoke, Create |
-| `/Admin/OrgUnits` | 5 | CRUD with recursive tree view |
-| `/Admin/Periods` | 3 | Index with Open/Close, Create, Edit |
-| `/Admin/Reports` | 4 | Index, Create, Fill (with upward flow), View (with all flow sections) |
-| `/Admin/Templates` | 5 | CRUD with inline field/assignment management |
-| `/Admin/Users` | 5 | Full CRUD with org unit/role dropdowns |
-| `/Admin/UpwardFlow/SuggestedActions` | 1 | Index with filtering and status management |
-| `/Admin/UpwardFlow/ResourceRequests` | 1 | Index with cost tracking and status management |
-| `/Admin/UpwardFlow/SupportRequests` | 1 | Index with assignment and status management |
-| `/Admin/Workflow/Comments` | 1 | Index with moderation and status management |
-| `/Admin/Workflow/Confirmations` | 1 | Index with reminder sending and status management |
-| `/Admin/Downward/Feedback` | 1 | Index with category/visibility filtering |
-| `/Admin/Downward/Recommendations` | 1 | Index with priority/scope filtering |
-| `/Admin/Downward/Decisions` | 1 | Index with outcome/request type filtering |
-| `/Admin/Aggregation/Rules` | 1 | Create/manage aggregation rules per field |
-| `/Admin/Aggregation/Summary` | 1 | View aggregates with drill-down to sources |
-| `/Admin/AuditLog` | 1 | View all changes with filtering and CSV export |
-| `/Admin/Dashboard` | 1 | Quick-access buttons for all sections |
-| `/Admin/Dashboards` | 4 | Executive, Manager, Reviewer, Originator role-based dashboards |
-| `/Admin/Export` | 2 | Download (CSV/Excel files), Print (PDF-ready HTML view) |
-| `/Admin/ReportBuilder` | 2 | Index (build/run/export/save), SavedReports (manage saved configs) |
-
-### Seed Data (seed.sql)
-| Entity | Count | Notes |
-|--------|-------|-------|
-| OrganizationalUnits | 36 | GUC hierarchy: 1 Root, 2 Campuses, 8 Faculties, 14 Depts, 6 Sectors, 5 Teams |
-| Users | 60 | 5 Executives, 3 Admins, 13 Dept Heads, 9 Team Mgrs, 6 Reviewers, 20 Originators, 3 Auditors, 1 Inactive |
-| Delegations | 6 | 3 Active, 1 Upcoming, 1 Past, 1 Revoked |
-| ReportTemplates | 5 | Monthly Dept, Weekly Team, Quarterly Academic, Annual Executive, IT Infrastructure |
-| ReportFields | 22 | Across 3 templates with various field types |
-| ReportPeriods | 9 | Mix of Upcoming, Open, Closed statuses |
-| Reports | 4 | 2 Approved, 1 Draft, 1 Submitted |
-| ReportFieldValues | 18 | Sample data entries |
-| SuggestedActions | 6 | 3 Approved, 1 Implemented, 1 Under Review, 1 Submitted |
-| ResourceRequests | 7 | 3 Approved, 1 Fulfilled, 1 Partially Approved, 2 Submitted |
-| SupportRequests | 6 | 2 Resolved, 1 Closed, 1 In Progress, 1 Acknowledged, 1 Submitted |
-| Notifications | 5 | Welcome and delegation notifications |
-| Comments | 8 | Threaded discussions with @mentions and replies |
-| ConfirmationTags | 6 | 3 Confirmed, 1 Pending, 1 RevisionRequested, 1 other |
-| Feedbacks | 6 | 2 PositiveRecognition, 2 Concern, 1 Question, 1 Observation |
-| Recommendations | 5 | 1 InProgress, 2 Acknowledged, 2 Issued |
-| Decisions | 6 | 2 Approved, 1 ApprovedWithMods, 1 PartiallyApproved, 1 Deferred, 1 other |
-
-### Database State
-- Schema includes all Phase 1-7 entities (25 tables)
-- Uses SQLite for dev (`db/reporting.db`), SQL Server for prod
-- **Important**: Delete `db/reporting.db` before running if schema changed (EnsureCreatedAsync won't migrate)
-- **seed.sql**: Complete SQL seed script with all Phase 1-6 data (org units, users, templates, reports, upward flow, workflow, downward flow)
-- **SeedData.cs**: C# seeding for minimal data (includes Phase 5+6 sample data)
-
-### Remaining Phases
-| Phase | Name | Status | Key Deliverables |
-|-------|------|--------|------------------|
-| 8a | Dashboard Infrastructure | **Complete** | Role-based dashboards with KPIs |
-| 8b | Chart Visualizations | **Complete** | Chart.js integration, bar/line/doughnut charts |
-| 8c | Export Capabilities | Pending | PDF/Excel/Word export, batch export |
-| 8d | Ad-hoc Report Builder | Pending | Custom queries, filtering, saved reports |
-| 9 | Polish | Pending | Enhanced notifications, responsive design, performance |
-
-### Phase 8a Complete: Dashboard Infrastructure & KPIs
-Implemented role-based dashboards with comprehensive KPIs:
-
-1. **DashboardService** (`Services/DashboardService.cs`)
-   - `GetExecutiveDashboardAsync()` - Org-wide KPIs, approval rates, coverage
-   - `GetManagerDashboardAsync()` - Team stats, pending approvals, upward flow
-   - `GetOriginatorDashboardAsync()` - My reports, feedback, decisions
-   - `GetReviewerDashboardAsync()` - Review workload, completion stats
-
-2. **Dashboard Data Classes** (in DashboardService.cs)
-   - `ExecutiveDashboardData` - Total reports, approval rate, org coverage, upward/downward flow stats
-   - `ManagerDashboardData` - Team reports, pending approvals, upward flow items
-   - `OriginatorDashboardData` - My reports by status, feedback received, confirmations
-   - `ReviewerDashboardData` - Pending reviews, workload by org unit, my approval rate
-
-3. **Dashboard Pages** (`/Admin/Dashboards/`)
-   - `Executive.cshtml` - Org-wide KPIs with Bootstrap cards
-   - `Manager.cshtml` - Team statistics with pending approval table
-   - `Originator.cshtml` - Personal reports with upward flow status
-   - `Reviewer.cshtml` - Review queue with workload distribution
-
-4. **Navigation Updates**
-   - Added "Dashboards" dropdown in navbar with 4 role-based options
-   - Updated main Dashboard page with role-based dashboard section
-   - Updated "Analytics" button to link to Executive dashboard
-
-### Phase 8b Complete: Chart Visualizations
-Added interactive charts to all role-based dashboards using Chart.js:
-
-1. **Chart.js Integration**
-   - Added Chart.js 4.4.1 via CDN in `_Layout.cshtml`
-   - Inline chart initialization using `@section Scripts`
-
-2. **Chart Data Methods** (in DashboardService.cs)
-   - `GetReportActivityTrendAsync(days)` - Daily report activity for trend charts (created, submitted, approved, rejected)
-   - `GetUpwardFlowDistributionAsync()` - Breakdown by type with status details
-   - `GetReviewerPerformanceAsync(userId, days)` - Weekly review performance data
-
-3. **Chart Data DTOs** (in DashboardService.cs)
-   - `ReportActivityTrend` - Labels + Created/Submitted/Approved/Rejected lists for line charts
-   - `UpwardFlowDistribution` - Labels + Totals + status breakdowns per type
-   - `ReviewerPerformanceData` - WeekLabels + ReviewsPerWeek/ApprovalsPerWeek/RejectionsPerWeek
-
-4. **Charts by Dashboard**
-
-   **Executive Dashboard** (`/Admin/Dashboards/Executive`):
-   - Line Chart: Report Activity Trend (30 days) - created, submitted, approved, rejected
-   - Doughnut Chart: Reports by Status distribution
-   - Bar Chart: Upward Flow Distribution (suggested actions, resources, support)
-
-   **Manager Dashboard** (`/Admin/Dashboards/Manager`):
-   - Doughnut Chart: Team Reports by Status
-   - Bar Chart: Team Upward Flow Items (actions, resources, support)
-
-   **Reviewer Dashboard** (`/Admin/Dashboards/Reviewer`):
-   - Grouped Bar Chart: Weekly Review Performance (reviews, approvals, rejections per week)
-   - Doughnut Chart: Review Outcomes distribution
-   - Horizontal Bar Chart: Workload by Org Unit
-
-   **Originator Dashboard** (`/Admin/Dashboards/Originator`):
-   - Doughnut Chart: My Reports by Status
-   - Bar Chart: My Upward Flow Items (actions, resources, support)
-
-5. **Color Scheme**
-   - Status-based colors matching Bootstrap badge classes
-   - Consistent coloring across all dashboards:
-     - Draft: `#6c757d` (gray)
-     - Submitted: `#0d6efd` (blue)
-     - Under Review: `#0dcaf0` (cyan)
-     - Approved: `#198754` (green)
-     - Rejected: `#dc3545` (red)
-     - Revision Requested: `#fd7e14` (orange)
-
-### Next Phase: Phase 8c - Export Capabilities
-Add export functionality:
-
-1. **PDF Export**
-   - Report detail export with all sections
-   - Dashboard summary export
-
-2. **Excel Export**
-   - Tabular data export
-   - Multi-sheet workbooks for complex reports
-
-3. **Word Export**
-   - Formatted report documents
-   - Template-based generation
-
-### Key Files to Reference
-| File | Pattern/Purpose |
-|------|-----------------|
-| `Services/DashboardService.cs` | KPI queries with DTO classes for each role dashboard |
-| `Pages/Admin/Dashboards/Executive.cshtml` | Org-wide KPIs with Bootstrap cards layout |
-| `Pages/Admin/Dashboards/Manager.cshtml` | Team stats with pending approval tables |
-| `Pages/Admin/Dashboards/Originator.cshtml` | Personal reports with upward flow status |
-| `Pages/Admin/Dashboards/Reviewer.cshtml` | Review queue with workload distribution |
-| `Models/Report.cs` | Status workflow with constants, computed properties |
-| `Models/SuggestedAction.cs` | Category/Priority/Status constants pattern |
-| `Models/ResourceRequest.cs` | Cost tracking, status workflow |
-| `Models/SupportRequest.cs` | Assignment tracking, IsOpen computed property |
-| `Models/Comment.cs` | Threaded comments with ParentCommentId, @mentions |
-| `Models/ConfirmationTag.cs` | User tagging with confirmation workflow |
-| `Models/Feedback.cs` | Management feedback with categories, visibility, threading |
-| `Models/Recommendation.cs` | Directives with target scope, priority, due dates |
-| `Models/Decision.cs` | Responses to upward flow with outcomes, acknowledgment |
-| `Models/AggregationRule.cs` | Configurable aggregation methods with numeric/text modes |
-| `Models/AggregatedValue.cs` | Computed aggregates with source tracking and amendments |
-| `Models/ManagerAmendment.cs` | Annotations/corrections with approval workflow |
-| `Models/AuditLog.cs` | Comprehensive change tracking with entity snapshots |
-| `Pages/Admin/Reports/Fill.cshtml` | Inline upward flow entry forms |
-| `Pages/Admin/Reports/View.cshtml` | Display all flow sections (upward, workflow, downward) |
-| `Pages/Admin/UpwardFlow/*/Index.cshtml` | Status management with dropdown menus |
-| `Pages/Admin/Workflow/*/Index.cshtml` | Comment moderation and confirmation management |
-| `Pages/Admin/Downward/*/Index.cshtml` | Feedback, recommendations, decisions management |
-| `Pages/Admin/Aggregation/*/Index.cshtml` | Aggregation rules and summary with drill-down |
-| `Pages/Admin/AuditLog/Index.cshtml` | Audit log with filtering, stats, CSV export |
-| `Data/ApplicationDbContext.cs` | Entity config with indexes, relationships (Phase 7 entities) |
-| `Data/SeedData.cs` | C# seeding with Phase 5+6 workflow and downward flow data |
-
-### Build Commands
-```bash
 # Build
 dotnet build --no-restore /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
 
 # Run
 dotnet run --project /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
 
-# If packages missing, restore from local cache
-dotnet restore --source /home/user/ReportingSystem/local-packages/ /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
+# Dev URLs: http://localhost:5296 / https://localhost:7155
 ```
 
-### Demo Guide
-**`DEMO_GUIDE.md`** at project root - comprehensive demonstration walkthrough including:
-- Authentication flow (magic link login)
-- 6 demo scenarios by user role (Admin, Originator, TeamManager, DeptHead, Executive, Auditor)
-- Key users for demo with emails and roles
-- Step-by-step navigation through all system features
-- Summary of information flow (upward, downward, workflow, aggregation)
+**Important**: Delete `db/reporting.db` before running if schema changed (EnsureCreatedAsync doesn't migrate).
+
+---
+
+## Project Structure
+
+```
+ReportingSystem/
+├── Data/
+│   ├── ApplicationDbContext.cs    # EF Core DbContext (25 DbSets, all relationships)
+│   ├── SeedData.cs                # C# seeding for minimal dev data
+│   └── UserSeeder.cs              # Admin user creation on startup
+├── Filters/
+│   └── AutomaticBackupFilter.cs   # Pre-POST/PUT/DELETE backup trigger
+├── Models/                        # 25 domain entities
+│   ├── User.cs, MagicLink.cs      # Auth (Phase 1)
+│   ├── OrganizationalUnit.cs, Delegation.cs  # Org hierarchy (Phase 2)
+│   ├── ReportTemplate.cs, ReportField.cs, ReportPeriod.cs  # Templates (Phase 3)
+│   ├── Report.cs, ReportFieldValue.cs, Attachment.cs       # Reports (Phase 3)
+│   ├── SuggestedAction.cs, ResourceRequest.cs, SupportRequest.cs  # Upward (Phase 4)
+│   ├── Comment.cs, ConfirmationTag.cs                      # Workflow (Phase 5)
+│   ├── Feedback.cs, Recommendation.cs, Decision.cs         # Downward (Phase 6)
+│   ├── AggregationRule.cs, AggregatedValue.cs, ManagerAmendment.cs  # Aggregation (Phase 7)
+│   ├── AuditLog.cs, Notification.cs, DatabaseBackup.cs     # Infrastructure
+│   └── SavedReport.cs             # Ad-hoc reports (Phase 8)
+├── Pages/
+│   ├── Admin/                     # Requires authentication
+│   │   ├── Aggregation/           # Rules/, Summary/
+│   │   ├── AuditLog/              # Index
+│   │   ├── Backup/                # Index, Create, Restore, Delete
+│   │   ├── Dashboards/            # Executive, Manager, Reviewer, Originator
+│   │   ├── Delegations/           # Index, Create
+│   │   ├── Downward/              # Feedback/, Recommendations/, Decisions/
+│   │   ├── Export/                # Download, Print
+│   │   ├── OrgUnits/              # Index, Create, Edit, Delete, Details
+│   │   ├── Periods/               # Index, Create, Edit
+│   │   ├── ReportBuilder/         # Index, SavedReports
+│   │   ├── Reports/               # Index, Create, Fill, View
+│   │   ├── Templates/             # Index, Create, Edit, Delete, Details
+│   │   ├── UpwardFlow/            # SuggestedActions/, ResourceRequests/, SupportRequests/
+│   │   ├── Users/                 # Index, Create, Edit, Delete, Details
+│   │   ├── Workflow/              # Comments/, Confirmations/
+│   │   └── Dashboard.cshtml       # Main dashboard with quick actions
+│   ├── Auth/                      # Anonymous access
+│   │   ├── Login.cshtml           # Email entry
+│   │   ├── Verify.cshtml          # Magic link validation
+│   │   └── Logout.cshtml          # Sign out
+│   └── Shared/
+│       ├── _Layout.cshtml         # Main layout with nav, Bootstrap, Chart.js
+│       └── _ValidationScriptsPartial.cshtml
+├── Services/
+│   ├── MagicLinkService.cs        # Token generation/validation
+│   ├── EmailService.cs            # Microsoft Graph API emails
+│   ├── NotificationService.cs     # In-app notifications CRUD
+│   ├── DatabaseBackupService.cs   # Create/restore/delete backups
+│   ├── DailyBackupHostedService.cs  # Automatic backups at 2:00/14:00 UTC
+│   ├── DashboardService.cs        # KPI queries, chart data
+│   └── ExportService.cs           # CSV/Excel/PDF export
+├── wwwroot/
+│   ├── css/site.css               # Custom styles
+│   ├── js/site.js, filter-state.js  # Filter persistence
+│   └── lib/                       # Bootstrap, jQuery (bundled)
+├── Program.cs                     # DI setup, auth config, database init
+├── appsettings.json               # Production config template
+├── appsettings.Development.json   # SQLite connection string
+├── seed.sql                       # SQL seed script (full sample data)
+└── DEMO_GUIDE.md                  # Comprehensive demo walkthrough
+```
+
+---
+
+## Architecture Patterns
+
+| Pattern | Implementation |
+|---------|----------------|
+| **Razor Pages** | All pages use `[BindProperty]` for form binding, PageModel pattern |
+| **EF Core** | Eager loading with `.Include()`, async operations, nullable refs |
+| **Auth** | Cookie auth with folder-level policies (`/Admin` requires auth) |
+| **Flash Messages** | `TempData["SuccessMessage"]` / `TempData["ErrorMessage"]` |
+| **Modals** | Bootstrap modals for confirmations and inline forms |
+| **Filter Persistence** | `filter-state.js` saves to URL query params + sessionStorage |
+| **Status Constants** | String constants with `DisplayName()` and `BadgeClass()` helpers |
+| **File-scoped namespaces** | `namespace X;` syntax (not `namespace X { }`) |
+| **Computed Properties** | `[NotMapped]` for IsOpen, IsOverdue, DisplayValue, etc. |
+
+---
+
+## Database Schema
+
+### Connection Strings
+- **Dev**: `Data Source=db/reporting.db` (SQLite)
+- **Prod**: SQL Server (configure in appsettings.json)
+
+### Tables (25 total)
+
+| Table | Phase | Key Fields |
+|-------|-------|------------|
+| `Users` | 1 | Email (unique), Role, OrganizationalUnitId, IsActive |
+| `MagicLinks` | 1 | Token (unique), UserId, ExpiresAt, IsUsed |
+| `Notifications` | 1 | UserId, Type, Priority, IsRead, Link |
+| `DatabaseBackups` | 1 | Name, FileName, FilePath, FileSizeBytes, Type |
+| `OrganizationalUnits` | 2 | Name, Code (unique), ParentId (self-ref), Level, IsActive |
+| `Delegations` | 2 | DelegatorId, DelegateId, Scope, StartDate, EndDate, IsRevoked |
+| `ReportTemplates` | 3 | Name, Schedule, Version, IncludeSuggestedActions/Resources/Support |
+| `ReportTemplateAssignments` | 3 | ReportTemplateId, AssignmentType, TargetId, IncludeSubUnits |
+| `ReportFields` | 3 | ReportTemplateId, Type, Section, Label, OptionsJson, Formula |
+| `ReportPeriods` | 3 | ReportTemplateId, StartDate, EndDate, SubmissionDeadline, Status |
+| `Reports` | 3 | TemplateId+PeriodId+SubmittedById (unique), Status, ReviewComments |
+| `ReportFieldValues` | 3 | ReportId+FieldId (unique), Value, NumericValue |
+| `Attachments` | 3 | ReportId, FileName, ContentType, StoragePath |
+| `SuggestedActions` | 4 | ReportId, Title, Category, Priority, Status, ReviewedById |
+| `ResourceRequests` | 4 | ReportId, Title, Category, Urgency, EstimatedCost, Status |
+| `SupportRequests` | 4 | ReportId, Title, Category, Urgency, AssignedToId, Status |
+| `Comments` | 5 | ReportId, ParentCommentId, AuthorId, Content, Status |
+| `ConfirmationTags` | 5 | ReportId, RequestedById, TaggedUserId, Status, Response |
+| `Feedbacks` | 6 | ReportId, AuthorId, Category, Visibility, Status, ParentFeedbackId |
+| `Recommendations` | 6 | ReportId, IssuedById, TargetScope, Category, Priority, Status |
+| `Decisions` | 6 | ReportId, DecidedById, RequestType, Outcome, ApprovedAmount |
+| `AggregationRules` | 7 | ReportFieldId, Method, Priority, CustomFormula, IsActive |
+| `AggregatedValues` | 7 | RuleId+PeriodId+OrgUnitId (unique), Value, Status |
+| `ManagerAmendments` | 7 | AggregatedValueId, AmendedById, AmendmentType, AmendedValue |
+| `AuditLogs` | 7 | UserId, Action, EntityType, EntityId, OldValue, NewValue, Timestamp |
+| `SavedReports` | 8 | CreatedById+Name (unique), ReportType, FilterConfiguration |
+
+---
+
+## Services (7)
+
+| Service | File | Purpose |
+|---------|------|---------|
+| `MagicLinkService` | Services/MagicLinkService.cs | Generate tokens, validate links, cleanup expired |
+| `EmailService` | Services/EmailService.cs | Send via Microsoft Graph (disabled in dev) |
+| `NotificationService` | Services/NotificationService.cs | Create, mark read, get unread count |
+| `DatabaseBackupService` | Services/DatabaseBackupService.cs | Create/restore/delete backups, WAL checkpoint |
+| `DailyBackupHostedService` | Services/DailyBackupHostedService.cs | Background service for 2:00/14:00 UTC backups |
+| `DashboardService` | Services/DashboardService.cs | KPI queries, chart data for all 4 role dashboards |
+| `ExportService` | Services/ExportService.cs | CSV/Excel/print-HTML export for reports, upward flow, audit |
+
+---
+
+## Models Reference (25)
+
+### Phase 1: Infrastructure
+
+**User** (`Models/User.cs`)
+```csharp
+Id, Email (unique), Name, Role, OrganizationalUnitId, JobTitle, IsActive, CreatedAt
+// Nav: OrganizationalUnit, MagicLinks, SubmittedReports, ReviewedReports
+```
+
+**MagicLink** (`Models/MagicLink.cs`)
+```csharp
+Id, UserId, Token (unique), ExpiresAt, IsUsed, CreatedAt
+```
+
+**Notification** (`Models/Notification.cs`)
+```csharp
+Id, UserId, Type, Title, Message, Priority, Link, IsRead, CreatedAt, ReadAt
+```
+
+**DatabaseBackup** (`Models/DatabaseBackup.cs`)
+```csharp
+Id, Name, Description, FileName, FilePath, FileSizeBytes, Type, CreatedAt, CreatedBy
+```
+
+### Phase 2: Organization
+
+**OrganizationalUnit** (`Models/OrganizationalUnit.cs`)
+```csharp
+Id, Name, Code (unique), Description, ParentId (self-ref), Level (enum 0-5), IsActive
+// Nav: Parent, Children, Users
+// Computed: FullPath, Depth, IsLeaf
+```
+
+**Delegation** (`Models/Delegation.cs`)
+```csharp
+Id, DelegatorId, DelegateId, Scope, StartDate, EndDate, IsRevoked, Reason, RevokedAt
+// Scope: Full, ReportingOnly, ApprovalOnly
+// Computed: IsCurrentlyEffective
+```
+
+### Phase 3: Reporting
+
+**ReportTemplate** (`Models/ReportTemplate.cs`)
+```csharp
+Id, Name, Description, Schedule, Version, IsActive, CreatedById, CreatedAt
+IncludeSuggestedActions, IncludeNeededResources, IncludeNeededSupport
+AutoSaveIntervalMinutes, MaxAttachments, MaxAttachmentSizeMb
+// Nav: Fields, Periods, Reports, Assignments, CreatedBy
+```
+
+**ReportField** (`Models/ReportField.cs`)
+```csharp
+Id, ReportTemplateId, FieldKey, Label, Description, Type (enum 0-7), Section
+SectionOrder, FieldOrder, IsRequired, MinValue, MaxValue, ValidationRegex
+OptionsJson, DefaultValue, Placeholder, Formula, VisibilityConditionJson
+PrePopulateFromPrevious, HelpText
+// Types: Text, TextArea, Numeric, Date, Dropdown, Checkbox, RichText, TableGrid
+```
+
+**ReportPeriod** (`Models/ReportPeriod.cs`)
+```csharp
+Id, ReportTemplateId, Name, StartDate, EndDate, SubmissionDeadline, GracePeriodDays
+Status (enum: Upcoming/Open/Closed/Archived), Notes
+// Computed: IsOpen, IsOverdue, IsFullyClosed, DaysUntilDeadline
+```
+
+**Report** (`Models/Report.cs`)
+```csharp
+Id, ReportTemplateId, ReportPeriodId, SubmittedById, Status, AssignedReviewerId
+CreatedAt, SubmittedAt, ReviewedAt, ReviewComments, AmendmentCount, IsLocked
+// Status: Draft, Submitted, UnderReview, Approved, Rejected, RevisionRequested
+// Computed: IsEditable, IsPendingReview, StatusDisplayName
+// Nav: FieldValues, Attachments, SuggestedActions, ResourceRequests, SupportRequests
+//      Comments, ConfirmationTags, Feedbacks, Recommendations, Decisions
+```
+
+**ReportFieldValue** (`Models/ReportFieldValue.cs`)
+```csharp
+Id, ReportId, ReportFieldId, Value, NumericValue, WasPrePopulated, ModifiedAt
+```
+
+**Attachment** (`Models/Attachment.cs`)
+```csharp
+Id, ReportId, ReportFieldId, FileName, OriginalFileName, ContentType
+StoragePath, FileSizeBytes, UploadedById, UploadedAt
+// Computed: FileSizeDisplay
+```
+
+### Phase 4: Upward Flow
+
+**SuggestedAction** (`Models/SuggestedAction.cs`)
+```csharp
+Id, ReportId, Title, Description, Justification, ExpectedOutcome, Timeline
+Category, Priority, Status, ReviewedById, ReviewComments, CreatedAt, UpdatedAt
+// Category: Process, Policy, Training, Technology, Communication, Resource, Other
+// Priority: Critical, High, Medium, Low
+// Status: Submitted, UnderReview, Approved, Rejected, Implemented, Deferred
+```
+
+**ResourceRequest** (`Models/ResourceRequest.cs`)
+```csharp
+Id, ReportId, Title, Description, Quantity, Justification, Category, Urgency
+EstimatedCost, ApprovedAmount, Currency, Status, ReviewedById, FulfilledAt
+// Category: Budget, Equipment, Personnel, Space, Software, Materials, Other
+// Urgency: Critical, High, Medium, Low
+// Status: Submitted, UnderReview, Approved, PartiallyApproved, Rejected, Fulfilled
+```
+
+**SupportRequest** (`Models/SupportRequest.cs`)
+```csharp
+Id, ReportId, Title, Description, CurrentSituation, DesiredOutcome
+Category, Urgency, Status, AssignedToId, AcknowledgedById, ResolvedById
+AcknowledgedAt, ResolvedAt, Resolution
+// Category: Management, Technical, Administrative, Training, Policy, Other
+// Urgency: Critical, High, Medium, Low
+// Status: Submitted, Acknowledged, InProgress, Resolved, Closed
+// Computed: IsOpen
+```
+
+### Phase 5: Workflow
+
+**Comment** (`Models/Comment.cs`)
+```csharp
+Id, ReportId, ParentCommentId, AuthorId, Content, SectionReference, ReportFieldId
+MentionedUserIdsJson, Status, CreatedAt, EditedAt
+// Status: Active, Edited, Deleted, Hidden
+// Computed: IsReply, IsDeleted
+// Nav: Replies
+```
+
+**ConfirmationTag** (`Models/ConfirmationTag.cs`)
+```csharp
+Id, ReportId, RequestedById, TaggedUserId, ReportFieldId, SectionReference
+Message, Status, Response, CreatedAt, RespondedAt, ReminderSentAt
+// Status: Pending, Confirmed, RevisionRequested, Declined, Expired, Cancelled
+// Computed: IsPending, IsConfirmed, DaysSinceRequested
+```
+
+### Phase 6: Downward Flow
+
+**Feedback** (`Models/Feedback.cs`)
+```csharp
+Id, ReportId, AuthorId, ParentFeedbackId, ReportFieldId, SectionReference
+Category, Visibility, Status, Subject, Content
+RequiresAcknowledgment, IsAcknowledged, AcknowledgedAt, AcknowledgmentResponse
+// Category: PositiveRecognition, Concern, Observation, Question, General
+// Visibility: Private, TeamWide, DepartmentWide, OrganizationWide
+// Status: Active, Resolved, Archived
+// Computed: IsPendingAcknowledgment
+// Nav: Replies
+```
+
+**Recommendation** (`Models/Recommendation.cs`)
+```csharp
+Id, ReportId, IssuedById, TargetOrgUnitId, TargetUserId, TargetScope
+Category, Priority, Status, Title, Description, Rationale, ActionItems
+DueDate, EffectiveDate, CascadeToSubUnits
+IsAcknowledged, AcknowledgedAt, AcknowledgmentResponse
+// TargetScope: Individual, Team, Department, OrganizationWide
+// Category: ProcessChange, SkillDevelopment, PerformanceImprovement, etc.
+// Status: Draft, Issued, Acknowledged, InProgress, Completed, Cancelled
+// Computed: IsOverdue, DaysUntilDue
+```
+
+**Decision** (`Models/Decision.cs`)
+```csharp
+Id, ReportId, DecidedById, RequestType, SuggestedActionId, ResourceRequestId
+SupportRequestId, Outcome, Title, Justification, Conditions, Modifications
+ApprovedAmount, Currency, EffectiveDate
+IsAcknowledged, AcknowledgedAt, AcknowledgmentResponse
+// RequestType: SuggestedAction, ResourceRequest, SupportRequest
+// Outcome: Pending, Approved, ApprovedWithMods, PartiallyApproved, Deferred, Rejected, Referred
+// Computed: IsPositive, IsPendingAcknowledgment, RelatedRequestTitle
+```
+
+### Phase 7: Aggregation & Audit
+
+**AggregationRule** (`Models/AggregationRule.cs`)
+```csharp
+Id, ReportFieldId, Method, Priority, WeightFieldKey, CustomFormula
+TextAggregationMode, DecimalPrecision, AutoAggregate, IsActive, Description
+// Method: Sum, Average, WeightedAverage, Min, Max, Count, Percentage, Custom
+//         Concatenate, SelectFirst, SelectLast, SelectMostCommon, ManualSynthesis
+```
+
+**AggregatedValue** (`Models/AggregatedValue.cs`)
+```csharp
+Id, AggregationRuleId, ReportPeriodId, OrganizationalUnitId
+NumericValue, TextValue, Status, SourceReportIdsJson, MissingSourcesJson
+SourceReportCount, ComputedAt, ComputedById, HasAmendment
+// Status: Pending, Current, Stale, Error, ManualOverride
+// Computed: DisplayValue
+// Nav: Amendments
+```
+
+**ManagerAmendment** (`Models/ManagerAmendment.cs`)
+```csharp
+Id, AggregatedValueId, AmendedById, AmendmentType, AmendedValue
+Annotation, Justification, ExecutiveSummary, Visibility
+ApprovalStatus, ApprovedById, ApprovedAt, IsActive
+// AmendmentType: Annotation, Correction, ExecutiveSummary, ContextualNote, Highlight, Warning
+// ApprovalStatus: Pending, Approved, Rejected
+```
+
+**AuditLog** (`Models/AuditLog.cs`)
+```csharp
+Id, UserId, Action, EntityType, EntityId, ReportId, OrganizationalUnitId
+OldValue, NewValue, OldEntityJson, NewEntityJson
+Timestamp, IpAddress, UserAgent, CorrelationId
+// Action: Create, Update, Delete, View, Export, Login, Logout, Submit, Approve, Reject, etc.
+// Computed: ChangeSummary
+```
+
+### Phase 8: Export & Reports
+
+**SavedReport** (`Models/SavedReport.cs`)
+```csharp
+Id, Name, Description, ReportType, FilterConfiguration (JSON)
+SelectedColumns, SortConfiguration, GroupingConfiguration
+IsPublic, IsPinnedToDashboard, CreatedById, CreatedAt, ModifiedAt
+LastRunAt, RunCount, DefaultExportFormat
+// ReportType: reports, suggested_actions, resource_requests, support_requests,
+//             audit_log, aggregation, users, feedback, recommendations
+```
+
+---
+
+## Admin Pages Reference (17 sections, ~75 pages)
+
+### Authentication (`/Auth`)
+- `Login.cshtml` - Email entry form, magic link request
+- `Verify.cshtml` - Token validation, cookie creation
+- `Logout.cshtml` - Sign out with redirect
+
+### Dashboard (`/Admin`)
+- `Dashboard.cshtml` - Quick action buttons for all sections
+
+### Role-Based Dashboards (`/Admin/Dashboards`)
+- `Executive.cshtml` - Org-wide KPIs, charts, upward/downward flow summary
+- `Manager.cshtml` - Team stats, pending approvals, team upward flow
+- `Reviewer.cshtml` - Review queue, workload distribution, performance
+- `Originator.cshtml` - My reports, upward flow status, feedback received
+
+### User & Organization
+- `/Admin/Users/` - Index, Create, Edit, Delete, Details (5 pages)
+- `/Admin/OrgUnits/` - Index (tree view), Create, Edit, Delete, Details (5 pages)
+- `/Admin/Delegations/` - Index (with revoke), Create (2 pages)
+
+### Reporting
+- `/Admin/Templates/` - Index, Create, Edit, Delete, Details (5 pages)
+- `/Admin/Periods/` - Index (with Open/Close), Create, Edit (3 pages)
+- `/Admin/Reports/` - Index, Create, Fill (with upward flow), View (4 pages)
+
+### Upward Flow (`/Admin/UpwardFlow`)
+- `SuggestedActions/Index.cshtml` - Status management, filtering
+- `ResourceRequests/Index.cshtml` - Cost tracking, status management
+- `SupportRequests/Index.cshtml` - Assignment, status management
+
+### Workflow (`/Admin/Workflow`)
+- `Comments/Index.cshtml` - Moderation, status management
+- `Confirmations/Index.cshtml` - Reminder sending, status management
+
+### Downward Flow (`/Admin/Downward`)
+- `Feedback/Index.cshtml` - Category/visibility filtering
+- `Recommendations/Index.cshtml` - Priority/scope filtering
+- `Decisions/Index.cshtml` - Outcome/request type filtering
+
+### Aggregation (`/Admin/Aggregation`)
+- `Rules/Index.cshtml` - Create/configure rules per field
+- `Summary/Index.cshtml` - View aggregates with drill-down
+
+### Audit & Export
+- `/Admin/AuditLog/Index.cshtml` - Filtering, statistics, CSV export
+- `/Admin/Export/Download.cshtml` - CSV/Excel file downloads
+- `/Admin/Export/Print.cshtml` - Print-friendly HTML for PDF
+
+### Report Builder (`/Admin/ReportBuilder`)
+- `Index.cshtml` - Build, run, export, save ad-hoc reports
+- `SavedReports.cshtml` - Manage saved report configurations
+
+### Backup (`/Admin/Backup`)
+- Index, Create, Restore, Delete (4 pages)
+
+---
+
+## Seed Data Summary
+
+| Entity | Count | Notes |
+|--------|-------|-------|
+| OrganizationalUnits | 36 | GUC → 2 Campuses → 8 Faculties → 14 Depts → 6 Sectors → 5 Teams |
+| Users | 60 | 5 Execs, 3 Admins, 13 DeptHeads, 9 TeamMgrs, 6 Reviewers, 20 Originators, 3 Auditors |
+| Delegations | 6 | 3 Active, 1 Upcoming, 1 Past, 1 Revoked |
+| ReportTemplates | 5 | Monthly Dept, Weekly Team, Quarterly Academic, Annual Executive, IT Infra |
+| ReportFields | 22 | Various types across templates |
+| ReportPeriods | 9 | Mix of Upcoming, Open, Closed |
+| Reports | 4 | 2 Approved, 1 Draft, 1 Submitted |
+| SuggestedActions | 6 | Various statuses |
+| ResourceRequests | 7 | With cost tracking |
+| SupportRequests | 6 | Various statuses |
+| Comments | 8 | Threaded with replies |
+| ConfirmationTags | 6 | Various statuses |
+| Feedbacks | 6 | Different categories |
+| Recommendations | 5 | Different statuses |
+| Decisions | 6 | Different outcomes |
+
+---
+
+## Status Constants Reference
+
+All status classes use string constants with `DisplayName()` and `BadgeClass()` static methods:
+
+| Class | Values |
+|-------|--------|
+| `SystemRoles` | Administrator, ReportOriginator, ReportReviewer, TeamManager, DepartmentHead, Executive, Auditor |
+| `ReportStatus` | Draft, Submitted, UnderReview, Approved, Rejected, RevisionRequested |
+| `ActionStatus` | Submitted, UnderReview, Approved, Rejected, Implemented, Deferred |
+| `ActionCategory` | Process, Policy, Training, Technology, Communication, Resource, Other |
+| `ActionPriority` | Critical, High, Medium, Low |
+| `ResourceStatus` | Submitted, UnderReview, Approved, PartiallyApproved, Rejected, Fulfilled |
+| `ResourceCategory` | Budget, Equipment, Personnel, Space, Software, Materials, Other |
+| `ResourceUrgency` | Critical, High, Medium, Low |
+| `SupportStatus` | Submitted, Acknowledged, InProgress, Resolved, Closed |
+| `SupportCategory` | Management, Technical, Administrative, Training, Policy, Other |
+| `SupportUrgency` | Critical, High, Medium, Low |
+| `ConfirmationStatus` | Pending, Confirmed, RevisionRequested, Declined, Expired, Cancelled |
+| `FeedbackCategory` | PositiveRecognition, Concern, Observation, Question, General |
+| `FeedbackVisibility` | Private, TeamWide, DepartmentWide, OrganizationWide |
+| `FeedbackStatus` | Active, Resolved, Archived |
+| `RecommendationCategory` | ProcessChange, SkillDevelopment, PerformanceImprovement, Compliance, etc. |
+| `RecommendationPriority` | Critical, High, Medium, Low |
+| `RecommendationScope` | Individual, Team, Department, OrganizationWide |
+| `RecommendationStatus` | Draft, Issued, Acknowledged, InProgress, Completed, Cancelled |
+| `DecisionRequestType` | SuggestedAction, ResourceRequest, SupportRequest |
+| `DecisionOutcome` | Pending, Approved, ApprovedWithMods, PartiallyApproved, Deferred, Rejected, Referred |
+| `AggregationMethod` | Sum, Average, WeightedAverage, Min, Max, Count, Percentage, Custom, Concatenate, etc. |
+| `AggregationStatus` | Pending, Current, Stale, Error, ManualOverride |
+| `AmendmentType` | Annotation, Correction, ExecutiveSummary, ContextualNote, Highlight, Warning |
+
+---
+
+## Implementation Status
+
+| Phase | Name | Status | Key Features |
+|-------|------|--------|--------------|
+| 1 | Infrastructure | **Complete** | Auth, backup, notifications, layout |
+| 2 | Organization | **Complete** | Org units, roles, delegations |
+| 3 | Reporting | **Complete** | Templates, fields, periods, reports, review |
+| 4 | Upward Flow | **Complete** | Suggested actions, resources, support |
+| 5 | Workflow | **Complete** | Comments, confirmation tags |
+| 6 | Downward Flow | **Complete** | Feedback, recommendations, decisions |
+| 7 | Aggregation | **Complete** | Rules, values, amendments, audit log |
+| 8a | Dashboard KPIs | **Complete** | Role-based dashboards with KPI cards |
+| 8b | Charts | **Complete** | Chart.js line/bar/doughnut charts |
+| 8c | Export | **Complete** | CSV/Excel/PDF export service |
+| 8d | Report Builder | **Complete** | Ad-hoc reports with save/share |
+| 9 | Polish | **Pending** | Enhanced notifications, responsive, performance |
+
+---
+
+## Session Handoff
+
+### Current Status
+**Phase 8 complete** (8 of 9 phases) - All core features implemented including dashboards, charts, export, and ad-hoc report builder.
 
 ### Git Branch
-`claude/create-reporting-system-2FPWa` - all work committed and pushed
+`claude/analyze-reporting-system-HhdJs` - All work committed and pushed
 
-### Session Handoff Notes (Latest)
-**Date**: February 5, 2026
+### Latest Commit
+`e748e27` - Add Phase 8c/8d: Export Capabilities & Ad-hoc Report Builder
 
-**Completed This Session (Phase 8b - Chart Visualizations)**:
-1. Added Chart.js 4.4.1 CDN reference to `_Layout.cshtml`
-2. Added 3 chart data methods to DashboardService:
-   - `GetReportActivityTrendAsync()` - Daily activity for line charts
-   - `GetUpwardFlowDistributionAsync()` - Type breakdown for bar charts
-   - `GetReviewerPerformanceAsync()` - Weekly performance for grouped bar charts
-3. Added 3 chart DTO classes: `ReportActivityTrend`, `UpwardFlowDistribution`, `ReviewerPerformanceData`
-4. Updated all 4 dashboard pages with Chart.js visualizations:
-   - **Executive**: Line chart (activity trend), Doughnut (status), Bar (upward flow)
-   - **Manager**: Doughnut (team reports), Bar (team upward flow)
-   - **Reviewer**: Grouped Bar (weekly performance), Doughnut (outcomes), Horizontal Bar (workload)
-   - **Originator**: Doughnut (my reports), Bar (my upward flow)
-5. Consistent color scheme matching Bootstrap badge classes
+### What's Working
+- Full authentication flow with magic link login
+- Complete organizational hierarchy management
+- Report template creation with 8 field types
+- Full report lifecycle (draft → submit → review → approve/reject)
+- Upward flow (suggested actions, resources, support) with status tracking
+- Workflow features (comments, confirmation tags)
+- Downward flow (feedback, recommendations, decisions)
+- Aggregation engine with manager amendments
+- Comprehensive audit logging
+- Role-based dashboards with Chart.js visualizations
+- Export to CSV/Excel/PDF for reports, upward flow, audit log
+- Ad-hoc report builder with save/share configurations
 
-**Files Modified**:
-- `Pages/Shared/_Layout.cshtml` - Added Chart.js CDN
-- `Services/DashboardService.cs` - Added chart data methods and DTOs
-- `Pages/Admin/Dashboards/Executive.cshtml` + `.cshtml.cs` - Added chart data + visualizations
-- `Pages/Admin/Dashboards/Manager.cshtml` - Added chart visualizations
-- `Pages/Admin/Dashboards/Reviewer.cshtml` + `.cshtml.cs` - Added chart data + visualizations
-- `Pages/Admin/Dashboards/Originator.cshtml` - Added chart visualizations
+### Key Test Users
+| Email | Role | Purpose |
+|-------|------|---------|
+| admin@reporting.com | Administrator | Full system access |
+| exec1@guc.edu.eg | Executive | Executive dashboard |
+| depthead_cs@guc.edu.eg | DepartmentHead | Department reports |
+| team_web@guc.edu.eg | TeamManager | Team management |
+| reviewer1@guc.edu.eg | ReportReviewer | Review queue |
+| originator1@guc.edu.eg | ReportOriginator | Report submission |
 
-**System Status**:
-- Phase 8a+8b complete, Phase 8c-8d pending
-- All Phase 1-7 features remain functional
-- Seed data includes realistic sample data across all entities
-- 60 users across 7 roles, 36 org units, 4 sample reports with full workflow data
+### Next Steps (Phase 9)
+1. **Enhanced Notifications**
+   - Deadline reminders
+   - Approval/rejection notifications
+   - @mention alerts
+   - Feedback/decision notifications
 
-**Charts Implemented**:
-| Dashboard | Chart Types | Data Displayed |
-|-----------|-------------|----------------|
-| Executive | Line, Doughnut, Bar | 30-day activity trend, report status distribution, upward flow by type |
-| Manager | Doughnut, Bar | Team reports by status, team upward flow items |
-| Reviewer | Grouped Bar, Doughnut, H-Bar | Weekly performance, review outcomes, workload by org unit |
-| Originator | Doughnut, Bar | My reports by status, my upward flow items |
+2. **Notification Preferences**
+   - Per-user settings by type and channel
+   - Daily/weekly digest option
 
-**Next Steps**:
-1. Phase 8c: Export Capabilities (PDF/Excel/Word export)
-2. Phase 8d: Ad-hoc Report Builder
-3. Phase 9: Polish (enhanced notifications, responsive design, performance)
+3. **Polish**
+   - Responsive design for mobile/tablet
+   - Contextual help and tooltips
+   - Performance optimization
 
-**Git Branch**: `claude/analyze-reporting-system-HhdJs` - Phase 8b work ready for commit
+### Key Files for Reference
+| Purpose | File |
+|---------|------|
+| Database schema | `Data/ApplicationDbContext.cs` |
+| All models | `Models/*.cs` (25 files) |
+| Dashboard queries | `Services/DashboardService.cs` |
+| Export logic | `Services/ExportService.cs` |
+| Report creation | `Pages/Admin/Reports/Fill.cshtml` |
+| Report viewing | `Pages/Admin/Reports/View.cshtml` |
+| Report builder | `Pages/Admin/ReportBuilder/Index.cshtml` |
+| Seed data | `seed.sql` (SQL), `Data/SeedData.cs` (C#) |
+| Demo guide | `DEMO_GUIDE.md` |
 
+### Build Commands
+```bash
+# If schema changed, delete database first
+rm -f ReportingSystem/db/reporting.db
+
+# Restore, build, run
+dotnet restore --source /home/user/ReportingSystem/local-packages/ \
+  /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
+dotnet build --no-restore /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
+dotnet run --project /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
+
+# Access at http://localhost:5296
+```
+
+### NuGet Note
+NuGet.org is blocked by environment proxy. All packages are in `/home/user/ReportingSystem/local-packages/`. Always use `--source` flag for restore.
+
+---
+
+## Quick Reference
+
+### Adding a New Model
+1. Create `Models/NewModel.cs` with properties
+2. Add `DbSet<NewModel>` to `ApplicationDbContext.cs`
+3. Add entity configuration in `OnModelCreating()`
+4. Delete `db/reporting.db` and restart
+
+### Adding a New Page
+1. Create `Pages/Admin/NewSection/Index.cshtml`
+2. Create `Pages/Admin/NewSection/Index.cshtml.cs`
+3. Add navigation link in `_Layout.cshtml`
+4. Use `[BindProperty]` for form properties
+
+### Status Constants Pattern
+```csharp
+public static class MyStatus
+{
+    public const string Draft = "draft";
+    public const string Active = "active";
+
+    public static string DisplayName(string status) => status switch
+    {
+        Draft => "Draft",
+        Active => "Active",
+        _ => status
+    };
+
+    public static string BadgeClass(string status) => status switch
+    {
+        Draft => "bg-secondary",
+        Active => "bg-success",
+        _ => "bg-secondary"
+    };
+}
+```
+
+### Common EF Core Patterns
+```csharp
+// Eager loading
+await _context.Reports
+    .Include(r => r.ReportTemplate)
+    .Include(r => r.SubmittedBy)
+    .ThenInclude(u => u.OrganizationalUnit)
+    .ToListAsync();
+
+// Filtering with nullable
+if (statusFilter != null)
+    query = query.Where(r => r.Status == statusFilter);
+```

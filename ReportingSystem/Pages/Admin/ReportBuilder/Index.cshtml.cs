@@ -59,7 +59,7 @@ public class IndexModel : PageModel
     public List<SuggestedAction> SuggestedActionsData { get; set; } = new();
     public List<ResourceRequest> ResourceRequestsData { get; set; } = new();
     public List<User> UsersData { get; set; } = new();
-    public List<AuditLog> AuditLogData { get; set; } = new();
+    public List<Models.AuditLog> AuditLogData { get; set; } = new();
 
     public int TotalCount { get; set; }
     public bool HasResults => TotalCount > 0;
