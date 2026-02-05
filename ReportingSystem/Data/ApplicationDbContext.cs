@@ -30,6 +30,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<ReportFieldValue> ReportFieldValues { get; set; }
     public DbSet<Attachment> Attachments { get; set; }
 
+    // Upward Flow DbSets (Phase 4)
+    public DbSet<SuggestedAction> SuggestedActions { get; set; }
+    public DbSet<ResourceRequest> ResourceRequests { get; set; }
+    public DbSet<SupportRequest> SupportRequests { get; set; }
+
     // Notification DbSets
     public DbSet<Notification> Notifications { get; set; }
 
@@ -227,6 +232,77 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UploadedById)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure SuggestedAction (Phase 4)
+        modelBuilder.Entity<SuggestedAction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Priority);
+
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.SuggestedActions)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ReviewedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ReviewedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure ResourceRequest (Phase 4)
+        modelBuilder.Entity<ResourceRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Urgency);
+
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.ResourceRequests)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ReviewedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ReviewedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure SupportRequest (Phase 4)
+        modelBuilder.Entity<SupportRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Urgency);
+            entity.HasIndex(e => e.AssignedToId);
+
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.SupportRequests)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.AssignedTo)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedToId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.AcknowledgedBy)
+                .WithMany()
+                .HasForeignKey(e => e.AcknowledgedById)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ResolvedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedById)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Configure Notification

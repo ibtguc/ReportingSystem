@@ -228,4 +228,184 @@
             </div>
         </div>
     }
+
+    <!-- Upward Flow Sections (Phase 4) -->
+    @if (Model.Report.ReportTemplate.IncludeSuggestedActions && Model.SuggestedActions.Count > 0)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Suggested Actions (@Model.SuggestedActions.Count)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Timeline</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var action in Model.SuggestedActions)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@action.Title</strong>
+                                        @if (!string.IsNullOrEmpty(action.Description))
+                                        {
+                                            <br /><small class="text-muted">@action.Description</small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(action.Justification))
+                                        {
+                                            <br /><small><strong>Justification:</strong> @action.Justification</small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(action.ExpectedOutcome))
+                                        {
+                                            <br /><small><strong>Expected Outcome:</strong> @action.ExpectedOutcome</small>
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-secondary">@ActionCategory.DisplayName(action.Category)</span></td>
+                                    <td><span class="badge @ActionPriority.BadgeClass(action.Priority)">@action.Priority</span></td>
+                                    <td>
+                                        <span class="badge @ActionStatus.BadgeClass(action.Status)">@ActionStatus.DisplayName(action.Status)</span>
+                                        @if (action.ReviewedBy != null)
+                                        {
+                                            <br /><small class="text-muted">by @action.ReviewedBy.Name</small>
+                                        }
+                                    </td>
+                                    <td>@(action.Timeline ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model.Report.ReportTemplate.IncludeNeededResources && Model.ResourceRequests.Count > 0)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Resource Requests (@Model.ResourceRequests.Count)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Urgency</th>
+                                <th>Est. Cost</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var request in Model.ResourceRequests)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@request.Title</strong>
+                                        @if (!string.IsNullOrEmpty(request.Quantity))
+                                        {
+                                            <span class="badge bg-secondary ms-1">Qty: @request.Quantity</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(request.Description))
+                                        {
+                                            <br /><small class="text-muted">@request.Description</small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(request.Justification))
+                                        {
+                                            <br /><small><strong>Justification:</strong> @request.Justification</small>
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-secondary">@ResourceCategory.DisplayName(request.Category)</span></td>
+                                    <td><span class="badge @ResourceUrgency.BadgeClass(request.Urgency)">@request.Urgency</span></td>
+                                    <td>
+                                        @if (request.EstimatedCost.HasValue)
+                                        {
+                                            <text>@request.EstimatedCost.Value.ToString("N2") @request.Currency</text>
+                                            @if (request.ApprovedAmount.HasValue)
+                                            {
+                                                <br /><small class="text-success">Approved: @request.ApprovedAmount.Value.ToString("N2")</small>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <text>-</text>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @ResourceStatus.BadgeClass(request.Status)">@ResourceStatus.DisplayName(request.Status)</span>
+                                        @if (request.ReviewedBy != null)
+                                        {
+                                            <br /><small class="text-muted">by @request.ReviewedBy.Name</small>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model.Report.ReportTemplate.IncludeNeededSupport && Model.SupportRequests.Count > 0)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-life-preserver"></i> Support Requests (@Model.SupportRequests.Count)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Urgency</th>
+                                <th>Status</th>
+                                <th>Assigned To</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var request in Model.SupportRequests)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@request.Title</strong>
+                                        @if (!string.IsNullOrEmpty(request.Description))
+                                        {
+                                            <br /><small class="text-muted">@request.Description</small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(request.CurrentSituation))
+                                        {
+                                            <br /><small><strong>Current:</strong> @request.CurrentSituation</small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(request.DesiredOutcome))
+                                        {
+                                            <br /><small><strong>Desired:</strong> @request.DesiredOutcome</small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(request.Resolution))
+                                        {
+                                            <br /><small class="text-success"><strong>Resolution:</strong> @request.Resolution</small>
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-secondary">@SupportCategory.DisplayName(request.Category)</span></td>
+                                    <td><span class="badge @SupportUrgency.BadgeClass(request.Urgency)">@request.Urgency</span></td>
+                                    <td><span class="badge @SupportStatus.BadgeClass(request.Status)">@SupportStatus.DisplayName(request.Status)</span></td>
+                                    <td>@(request.AssignedTo?.Name ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
 </div>

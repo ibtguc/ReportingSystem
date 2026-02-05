@@ -20,6 +20,11 @@ public class ViewModel : PageModel
     public Dictionary<int, ReportFieldValue> FieldValues { get; set; } = new();
     public List<Attachment> Attachments { get; set; } = new();
 
+    // Upward flow items (Phase 4)
+    public List<SuggestedAction> SuggestedActions { get; set; } = new();
+    public List<ResourceRequest> ResourceRequests { get; set; } = new();
+    public List<SupportRequest> SupportRequests { get; set; } = new();
+
     [BindProperty]
     public string? ReviewComments { get; set; }
 
@@ -98,6 +103,12 @@ public class ViewModel : PageModel
             .Include(r => r.AssignedReviewer)
             .Include(r => r.FieldValues)
             .Include(r => r.Attachments)
+            .Include(r => r.SuggestedActions)
+                .ThenInclude(a => a.ReviewedBy)
+            .Include(r => r.ResourceRequests)
+                .ThenInclude(r => r.ReviewedBy)
+            .Include(r => r.SupportRequests)
+                .ThenInclude(s => s.AssignedTo)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         if (report == null) return NotFound();
@@ -112,6 +123,11 @@ public class ViewModel : PageModel
 
         FieldValues = report.FieldValues.ToDictionary(fv => fv.ReportFieldId);
         Attachments = report.Attachments.ToList();
+
+        // Load upward flow items
+        SuggestedActions = report.SuggestedActions.OrderBy(a => a.CreatedAt).ToList();
+        ResourceRequests = report.ResourceRequests.OrderBy(r => r.CreatedAt).ToList();
+        SupportRequests = report.SupportRequests.OrderBy(s => s.CreatedAt).ToList();
 
         return Page();
     }

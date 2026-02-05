@@ -95,6 +95,7 @@ ReportingSystem/
 Phase 1 (complete): Infrastructure - Auth, backup, notifications, admin pages, layout
 Phase 2 (complete): Organization & User Hierarchy - Org units, user roles, delegations, SQL seed script
 Phase 3 (complete): Report Templates & Report Entry - Templates, fields, periods, reports, review workflow
+Phase 4 (complete): Upward Flow - Suggested actions, resource requests, support requests with status tracking
 
 ### Key Models (Phase 2)
 - **OrganizationalUnit**: self-referential hierarchy with OrgUnitLevel enum (Root=0 → Team=5), Parent/Children nav props, DeleteBehavior.Restrict
@@ -112,12 +113,14 @@ Phase 3 (complete): Report Templates & Report Entry - Templates, fields, periods
 - **ReportFieldValue**: ReportId+ReportFieldId (unique), Value as string, NumericValue for aggregation, WasPrePopulated
 - **Attachment**: file storage with FileName/OriginalFileName/ContentType/StoragePath, linked to Report and optionally ReportField
 
-### Phase 4: Upward Flow (Suggestions, Resources, Support)
-- **SuggestedAction** model: title, description, justification, expected outcome, timeline, category (Process Improvement, Cost Reduction, Quality Enhancement, Innovation, Risk Mitigation), priority (Critical/High/Medium/Low), status tracking
-- **ResourceRequest** model: type, description, quantity, justification, urgency, category (Budget, Equipment, Software, Personnel, Materials, Facilities, Training), estimated cost, status tracking
-- **SupportRequest** model: type, description, current situation, desired outcome, urgency, category (Management Intervention, Cross-Dept Coordination, Technical Assistance, Training, Conflict Resolution, Policy Clarification), status tracking
-- Each linked to a Report, with file attachments
-- Pages: Entry forms for each type, list views with filtering, status management
+### Key Models (Phase 4)
+- **SuggestedAction**: title, description, justification, expected outcome, timeline, category (ActionCategory constants), priority (ActionPriority constants), status (ActionStatus: Submitted→UnderReview→Approved/Rejected/Implemented/Deferred), ReviewedById FK
+- **ResourceRequest**: title, description, quantity (string), justification, category (ResourceCategory constants), urgency (ResourceUrgency constants), EstimatedCost/ApprovedAmount/Currency, status (ResourceStatus constants), ReviewedById FK, FulfilledAt
+- **SupportRequest**: title, description, current situation, desired outcome, category (SupportCategory constants), urgency (SupportUrgency constants), status (SupportStatus: Submitted→Acknowledged→InProgress→Resolved/Closed), AssignedToId/AcknowledgedById/ResolvedById FKs, Resolution field, IsOpen computed
+- All three models link to Report via ReportId FK with cascade delete
+- Admin pages at `/Admin/UpwardFlow/{SuggestedActions,ResourceRequests,SupportRequests}/Index`
+- Report Fill page includes inline entry forms when template has IncludeSuggestedActions/IncludeNeededResources/IncludeNeededSupport enabled
+- Report View page displays submitted upward flow items with status badges
 
 ### Phase 5: Workflow & Tagging
 - **WorkflowInstance** model: report lifecycle (Draft → Submitted → Under Review → Approved/Rejected/Amended), configurable approval chain
@@ -172,18 +175,18 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 ## Session Handoff
 
 ### Current Status
-**Phase 3 complete** (of 9 phases) - Report Templates & Report Entry system fully implemented.
+**Phase 4 complete** (of 9 phases) - Upward Flow (SuggestedActions, ResourceRequests, SupportRequests) fully implemented.
 
 ### Project Statistics
 | Category | Count |
 |----------|-------|
-| Total .cs/.cshtml files | 91 |
-| Model classes | 11 |
-| Razor Pages (.cshtml) | 36 |
+| Total .cs/.cshtml files | ~100 |
+| Model classes | 14 |
+| Razor Pages (.cshtml) | 42 |
 | Services | 5 |
-| Admin page sections | 8 |
+| Admin page sections | 9 |
 
-### Implemented Models (11)
+### Implemented Models (14)
 | Model | Phase | Purpose |
 |-------|-------|---------|
 | `User` | 1,2 | Users with roles, org unit assignment, MagicLinks |
@@ -198,18 +201,24 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | `Report` | 3 | Report instances with status workflow |
 | `ReportFieldValue` | 3 | Actual data entries per field |
 | `Attachment` | 3 | File uploads linked to reports |
+| `SuggestedAction` | 4 | Process improvements attached to reports |
+| `ResourceRequest` | 4 | Budget/equipment/personnel requests |
+| `SupportRequest` | 4 | Management/technical assistance requests |
 
-### Implemented Admin Pages (8 sections, 36 pages)
+### Implemented Admin Pages (9 sections, 42 pages)
 | Section | Pages | Purpose |
 |---------|-------|---------|
 | `/Admin/Backup` | 4 | Create, restore, delete, WAL checkpoint |
 | `/Admin/Delegations` | 2 | Index with revoke, Create |
 | `/Admin/OrgUnits` | 5 | CRUD with recursive tree view |
 | `/Admin/Periods` | 3 | Index with Open/Close, Create, Edit |
-| `/Admin/Reports` | 4 | Index, Create, Fill (dynamic form), View (review) |
+| `/Admin/Reports` | 4 | Index, Create, Fill (with upward flow forms), View (with upward flow display) |
 | `/Admin/Templates` | 5 | CRUD with inline field/assignment management |
 | `/Admin/Users` | 5 | Full CRUD with org unit/role dropdowns |
-| `/Admin/Dashboard` | 1 | Quick-access buttons to all sections |
+| `/Admin/UpwardFlow/SuggestedActions` | 1 | Index with filtering and status management |
+| `/Admin/UpwardFlow/ResourceRequests` | 1 | Index with cost tracking and status management |
+| `/Admin/UpwardFlow/SupportRequests` | 1 | Index with assignment and status management |
+| `/Admin/Dashboard` | 1 | Quick-access buttons including Upward Flow section |
 
 ### Seed Data (seed.sql)
 | Entity | Count | Notes |
@@ -222,57 +231,60 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | ReportPeriods | 9 | Mix of Upcoming, Open, Closed statuses |
 | Reports | 4 | 2 Approved, 1 Draft, 1 Submitted |
 | ReportFieldValues | 18 | Sample data entries |
+| SuggestedActions | 6 | 3 Approved, 1 Implemented, 1 Under Review, 1 Submitted |
+| ResourceRequests | 7 | 3 Approved, 1 Fulfilled, 1 Partially Approved, 2 Submitted |
+| SupportRequests | 6 | 2 Resolved, 1 Closed, 1 In Progress, 1 Acknowledged, 1 Submitted |
 | Notifications | 5 | Welcome and delegation notifications |
 
 ### Database State
-- Schema includes all Phase 1-3 entities (13 tables)
+- Schema includes all Phase 1-4 entities (16 tables)
 - Uses SQLite for dev (`db/reporting.db`), SQL Server for prod
 - **Important**: Delete `db/reporting.db` before running if schema changed (EnsureCreatedAsync won't migrate)
 - Run `seed.sql` manually for full test data, or use C# SeedData.cs for minimal seeding
 
-### Remaining Phases (6)
+### Remaining Phases (5)
 | Phase | Name | Key Deliverables |
 |-------|------|------------------|
-| 4 | Upward Flow | SuggestedAction, ResourceRequest, SupportRequest models + pages |
 | 5 | Workflow & Tagging | WorkflowInstance, ConfirmationTag, Comment, auto-routing, reminders |
 | 6 | Downward Flow | Feedback, Recommendation, Decision models + pages |
 | 7 | Aggregation | Aggregation engine, drill-down, AuditLog, data lineage |
 | 8 | Dashboards & Export | Role-based dashboards, charts, PDF/Excel export |
 | 9 | Polish | Enhanced notifications, preferences, responsive design, performance |
 
-### Next Phase: Phase 4 - Upward Flow
-Implement three models that attach to reports for upward communication:
+### Next Phase: Phase 5 - Workflow & Tagging
+Implement workflow and collaboration features:
 
-1. **SuggestedAction** - Process improvements, innovations, cost reductions
-   - Categories: Process Improvement, Cost Reduction, Quality Enhancement, Innovation, Risk Mitigation
-   - Priority: Critical, High, Medium, Low
-   - Status: Submitted → Under Review → Approved/Rejected/Implemented/Deferred
+1. **WorkflowInstance** - Track report lifecycle through approval chain
+   - States: Draft → Submitted → Under Review → Approved/Rejected/Amended
+   - Configurable approval chain per template
+   - Route to direct manager automatically
 
-2. **ResourceRequest** - Budget, equipment, personnel, training requests
-   - Categories: Budget, Equipment, Software, Personnel, Materials, Facilities, Training
-   - Urgency levels, estimated cost
-   - Status: Submitted → Under Review → Approved/Partially Approved/Rejected/Fulfilled
+2. **ConfirmationTag** - Request confirmation from other users
+   - Status: Pending → Confirmed/RevisionRequested/Declined
+   - Tag users to verify specific report sections
+   - Timestamps for audit trail
 
-3. **SupportRequest** - Management intervention, coordination, technical assistance
-   - Categories: Management Intervention, Cross-Dept Coordination, Technical Assistance, Training, Conflict Resolution, Policy Clarification
-   - Status: Submitted → Acknowledged → In Progress → Resolved/Closed
+3. **Comment** - Threaded discussions on reports
+   - Support for @mentions
+   - Link to specific report sections
+   - Reply threading
 
-Each needs:
-- Model with categories/priorities/status tracking
-- FK to Report (report can have multiple of each)
-- Admin pages: Index (list with filters), Create, Edit, View
-- Update Report Fill page to show entry forms when template has `IncludeSuggestedActions`/`IncludeNeededResources`/`IncludeNeededSupport` enabled
-- Update Report View page to display submitted items
-- Add to seed.sql with sample data
+Additional features:
+- Submission deadline enforcement with grace periods
+- Reminder notifications (3 days, 1 day, same day before deadline)
+- Lock reports after final approval
+- Notification integration for all workflow events
 
 ### Key Files to Reference
 | File | Pattern/Purpose |
 |------|-----------------|
 | `Models/Report.cs` | Status workflow with constants, computed properties |
-| `Models/ReportField.cs` | Enum types, validation, JSON options |
-| `Pages/Admin/Reports/Fill.cshtml` | Dynamic form generation from template |
-| `Pages/Admin/Reports/Fill.cshtml.cs` | Dictionary binding for field values |
-| `Pages/Admin/Templates/Details.cshtml` | Inline CRUD (add field, assignment) |
+| `Models/SuggestedAction.cs` | Category/Priority/Status constants pattern |
+| `Models/ResourceRequest.cs` | Cost tracking, status workflow |
+| `Models/SupportRequest.cs` | Assignment tracking, IsOpen computed property |
+| `Pages/Admin/Reports/Fill.cshtml` | Inline upward flow entry forms |
+| `Pages/Admin/Reports/Fill.cshtml.cs` | Handler methods for add/remove upward flow |
+| `Pages/Admin/UpwardFlow/*/Index.cshtml` | Status management with dropdown menus |
 | `Data/ApplicationDbContext.cs` | Entity config with indexes, relationships |
 | `seed.sql` | Comprehensive data seeding patterns |
 

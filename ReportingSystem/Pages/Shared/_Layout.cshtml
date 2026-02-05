@@ -38,6 +38,17 @@
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="upwardFlowDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                Upward Flow
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="upwardFlowDropdown">
+                                <li><a class="dropdown-item" asp-page="/Admin/UpwardFlow/SuggestedActions/Index"><i class="bi bi-lightbulb text-info"></i> Suggested Actions</a></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/UpwardFlow/ResourceRequests/Index"><i class="bi bi-box-seam text-warning"></i> Resource Requests</a></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/UpwardFlow/SupportRequests/Index"><i class="bi bi-life-preserver text-danger"></i> Support Requests</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="orgDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 Organization

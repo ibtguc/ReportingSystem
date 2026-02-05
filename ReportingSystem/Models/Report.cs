@@ -65,6 +65,11 @@ public class Report
     public ICollection<ReportFieldValue> FieldValues { get; set; } = new List<ReportFieldValue>();
     public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 
+    // Upward flow collections (Phase 4)
+    public ICollection<SuggestedAction> SuggestedActions { get; set; } = new List<SuggestedAction>();
+    public ICollection<ResourceRequest> ResourceRequests { get; set; } = new List<ResourceRequest>();
+    public ICollection<SupportRequest> SupportRequests { get; set; } = new List<SupportRequest>();
+
     /// <summary>
     /// Whether this report can still be edited.
     /// </summary>

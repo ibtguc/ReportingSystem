@@ -181,6 +181,309 @@
             </div>
         }
 
+    <!-- Upward Flow Sections (Phase 4) -->
+    @if (Model.Report.ReportTemplate.IncludeSuggestedActions)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Suggested Actions</h5>
+                <span class="badge bg-light text-dark">@Model.SuggestedActions.Count items</span>
+            </div>
+            <div class="card-body">
+                @if (Model.SuggestedActions.Count > 0)
+                {
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th style="width:80px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var action in Model.SuggestedActions)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@action.Title</strong>
+                                            @if (!string.IsNullOrEmpty(action.Description))
+                                            {
+                                                <br /><small class="text-muted">@(action.Description.Length > 100 ? action.Description.Substring(0, 100) + "..." : action.Description)</small>
+                                            }
+                                        </td>
+                                        <td><span class="badge bg-secondary">@ActionCategory.DisplayName(action.Category)</span></td>
+                                        <td><span class="badge @ActionPriority.BadgeClass(action.Priority)">@action.Priority</span></td>
+                                        <td><span class="badge @ActionStatus.BadgeClass(action.Status)">@ActionStatus.DisplayName(action.Status)</span></td>
+                                        <td>
+                                            @if (Model.Report.IsEditable)
+                                            {
+                                                <form method="post" asp-page-handler="RemoveSuggestedAction" asp-route-id="@Model.Report.Id" asp-route-actionId="@action.Id" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this suggested action?');">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                @if (Model.Report.IsEditable)
+                {
+                    <div class="border rounded p-3 bg-light">
+                        <h6><i class="bi bi-plus-circle"></i> Add Suggested Action</h6>
+                        <form method="post" asp-page-handler="AddSuggestedAction" asp-route-id="@Model.Report.Id">
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <input type="text" name="NewSuggestedAction.Title" class="form-control" placeholder="Title *" required />
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <select name="NewSuggestedAction.Category" class="form-select">
+                                        @foreach (var cat in ActionCategory.All)
+                                        {
+                                            <option value="@cat">@ActionCategory.DisplayName(cat)</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <select name="NewSuggestedAction.Priority" class="form-select">
+                                        @foreach (var pri in ActionPriority.All)
+                                        {
+                                            <option value="@pri" selected="@(pri == ActionPriority.Medium)">@pri</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <textarea name="NewSuggestedAction.Description" class="form-control" rows="2" placeholder="Description *" required></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <textarea name="NewSuggestedAction.Justification" class="form-control" rows="2" placeholder="Justification (optional)"></textarea>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <textarea name="NewSuggestedAction.ExpectedOutcome" class="form-control" rows="2" placeholder="Expected Outcome (optional)"></textarea>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <input type="text" name="NewSuggestedAction.Timeline" class="form-control" placeholder="Timeline (optional)" />
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-info"><i class="bi bi-plus"></i> Add Action</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.Report.ReportTemplate.IncludeNeededResources)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Resource Requests</h5>
+                <span class="badge bg-light text-dark">@Model.ResourceRequests.Count items</span>
+            </div>
+            <div class="card-body">
+                @if (Model.ResourceRequests.Count > 0)
+                {
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Urgency</th>
+                                    <th>Est. Cost</th>
+                                    <th>Status</th>
+                                    <th style="width:80px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var request in Model.ResourceRequests)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@request.Title</strong>
+                                            @if (!string.IsNullOrEmpty(request.Quantity))
+                                            {
+                                                <span class="badge bg-secondary ms-1">Qty: @request.Quantity</span>
+                                            }
+                                        </td>
+                                        <td><span class="badge bg-secondary">@ResourceCategory.DisplayName(request.Category)</span></td>
+                                        <td><span class="badge @ResourceUrgency.BadgeClass(request.Urgency)">@request.Urgency</span></td>
+                                        <td>@(request.EstimatedCost.HasValue ? $"{request.EstimatedCost:N2} {request.Currency}" : "-")</td>
+                                        <td><span class="badge @ResourceStatus.BadgeClass(request.Status)">@ResourceStatus.DisplayName(request.Status)</span></td>
+                                        <td>
+                                            @if (Model.Report.IsEditable)
+                                            {
+                                                <form method="post" asp-page-handler="RemoveResourceRequest" asp-route-id="@Model.Report.Id" asp-route-requestId="@request.Id" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this resource request?');">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                @if (Model.Report.IsEditable)
+                {
+                    <div class="border rounded p-3 bg-light">
+                        <h6><i class="bi bi-plus-circle"></i> Add Resource Request</h6>
+                        <form method="post" asp-page-handler="AddResourceRequest" asp-route-id="@Model.Report.Id">
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <input type="text" name="NewResourceRequest.Title" class="form-control" placeholder="Title *" required />
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <select name="NewResourceRequest.Category" class="form-select">
+                                        @foreach (var cat in ResourceCategory.All)
+                                        {
+                                            <option value="@cat">@ResourceCategory.DisplayName(cat)</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <select name="NewResourceRequest.Urgency" class="form-select">
+                                        @foreach (var urg in ResourceUrgency.All)
+                                        {
+                                            <option value="@urg" selected="@(urg == ResourceUrgency.Medium)">@urg</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <textarea name="NewResourceRequest.Description" class="form-control" rows="2" placeholder="Description *" required></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <input type="number" name="NewResourceRequest.Quantity" class="form-control" placeholder="Quantity" min="1" />
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <input type="number" name="NewResourceRequest.EstimatedCost" class="form-control" placeholder="Est. Cost" step="0.01" min="0" />
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <input type="text" name="NewResourceRequest.Currency" class="form-control" value="EGP" placeholder="Currency" />
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <textarea name="NewResourceRequest.Justification" class="form-control" rows="1" placeholder="Justification (optional)"></textarea>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-warning"><i class="bi bi-plus"></i> Add Request</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.Report.ReportTemplate.IncludeNeededSupport)
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-life-preserver"></i> Support Requests</h5>
+                <span class="badge bg-light text-dark">@Model.SupportRequests.Count items</span>
+            </div>
+            <div class="card-body">
+                @if (Model.SupportRequests.Count > 0)
+                {
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Urgency</th>
+                                    <th>Status</th>
+                                    <th style="width:80px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var request in Model.SupportRequests)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@request.Title</strong>
+                                            @if (!string.IsNullOrEmpty(request.CurrentSituation))
+                                            {
+                                                <br /><small class="text-muted">@(request.CurrentSituation.Length > 80 ? request.CurrentSituation.Substring(0, 80) + "..." : request.CurrentSituation)</small>
+                                            }
+                                        </td>
+                                        <td><span class="badge bg-secondary">@SupportCategory.DisplayName(request.Category)</span></td>
+                                        <td><span class="badge @SupportUrgency.BadgeClass(request.Urgency)">@request.Urgency</span></td>
+                                        <td><span class="badge @SupportStatus.BadgeClass(request.Status)">@SupportStatus.DisplayName(request.Status)</span></td>
+                                        <td>
+                                            @if (Model.Report.IsEditable)
+                                            {
+                                                <form method="post" asp-page-handler="RemoveSupportRequest" asp-route-id="@Model.Report.Id" asp-route-requestId="@request.Id" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this support request?');">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                @if (Model.Report.IsEditable)
+                {
+                    <div class="border rounded p-3 bg-light">
+                        <h6><i class="bi bi-plus-circle"></i> Add Support Request</h6>
+                        <form method="post" asp-page-handler="AddSupportRequest" asp-route-id="@Model.Report.Id">
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <input type="text" name="NewSupportRequest.Title" class="form-control" placeholder="Title *" required />
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <select name="NewSupportRequest.Category" class="form-select">
+                                        @foreach (var cat in SupportCategory.All)
+                                        {
+                                            <option value="@cat">@SupportCategory.DisplayName(cat)</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <select name="NewSupportRequest.Urgency" class="form-select">
+                                        @foreach (var urg in SupportUrgency.All)
+                                        {
+                                            <option value="@urg" selected="@(urg == SupportUrgency.Medium)">@urg</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <textarea name="NewSupportRequest.Description" class="form-control" rows="2" placeholder="Description *" required></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <textarea name="NewSupportRequest.CurrentSituation" class="form-control" rows="2" placeholder="Current Situation (optional)"></textarea>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <textarea name="NewSupportRequest.DesiredOutcome" class="form-control" rows="2" placeholder="Desired Outcome (optional)"></textarea>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-danger"><i class="bi bi-plus"></i> Add Request</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
         <!-- Action Buttons -->
         <div class="card shadow-sm mb-4">
             <div class="card-body">

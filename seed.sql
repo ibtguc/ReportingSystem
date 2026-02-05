@@ -657,6 +657,101 @@ VALUES (18, 4, 21, '65', 65, 0, datetime('now', '-20 days'), NULL);
 
 
 -- =============================================================================
+-- 10. UPWARD FLOW DATA (Phase 4)
+-- =============================================================================
+-- SuggestedActions, ResourceRequests, SupportRequests attached to reports
+-- =============================================================================
+
+DELETE FROM SuggestedActions;
+DELETE FROM ResourceRequests;
+DELETE FROM SupportRequests;
+DELETE FROM sqlite_sequence WHERE name IN ('SuggestedActions', 'ResourceRequests', 'SupportRequests');
+
+-- ---- Suggested Actions ----
+-- ActionCategory: ProcessImprovement, CostReduction, QualityEnhancement, Innovation, RiskMitigation
+-- ActionPriority: Critical, High, Medium, Low
+-- ActionStatus: Submitted, UnderReview, Approved, Rejected, Implemented, Deferred
+
+-- Suggested actions for Report 1 (Approved Monthly Dept Report - Software Dev)
+INSERT INTO SuggestedActions (Id, ReportId, Title, Description, Justification, ExpectedOutcome, Timeline, Category, Priority, Status, ReviewedById, ReviewedAt, ReviewComments, CreatedAt, UpdatedAt)
+VALUES (1, 1, 'Implement automated code review tool', 'Integrate SonarQube or similar static analysis tool into our CI/CD pipeline to catch code quality issues early.', 'Manual code reviews are time-consuming and inconsistent. Automated tools can catch 70% of common issues.', 'Reduced code review time by 40%, improved code quality consistency.', 'Q2 2026', 'QualityEnhancement', 'High', 'Approved', 3, datetime('now', '-20 days'), 'Approved. Please coordinate with IT Infrastructure for licensing.', datetime('now', '-25 days'), datetime('now', '-20 days'));
+
+INSERT INTO SuggestedActions (Id, ReportId, Title, Description, Justification, ExpectedOutcome, Timeline, Category, Priority, Status, ReviewedById, ReviewedAt, ReviewComments, CreatedAt, UpdatedAt)
+VALUES (2, 1, 'Establish developer mentorship program', 'Create a structured mentorship program pairing senior developers with junior staff for knowledge transfer.', 'Recent resignations highlighted knowledge concentration risk. Need systematic knowledge sharing.', 'Improved knowledge retention, faster onboarding of new hires, reduced bus factor risk.', 'March 2026', 'RiskMitigation', 'Medium', 'Implemented', 3, datetime('now', '-18 days'), 'Great initiative. Already implementing.', datetime('now', '-25 days'), datetime('now', '-18 days'));
+
+INSERT INTO SuggestedActions (Id, ReportId, Title, Description, Justification, ExpectedOutcome, Timeline, Category, Priority, Status, ReviewedById, ReviewedAt, ReviewComments, CreatedAt, UpdatedAt)
+VALUES (3, 1, 'Migrate to containerized deployments', 'Move all applications to Docker/Kubernetes for improved scalability and deployment consistency.', 'Current deployment process is manual and error-prone. Containers provide reproducibility.', 'Faster deployments, reduced environment-related bugs, easier scaling.', 'Q3 2026', 'ProcessImprovement', 'Medium', 'UnderReview', NULL, NULL, NULL, datetime('now', '-25 days'), NULL);
+
+-- Suggested actions for Report 3 (Submitted Weekly Report - Backend Team)
+INSERT INTO SuggestedActions (Id, ReportId, Title, Description, Justification, ExpectedOutcome, Timeline, Category, Priority, Status, ReviewedById, ReviewedAt, ReviewComments, CreatedAt, UpdatedAt)
+VALUES (4, 3, 'Implement API rate limiting', 'Add rate limiting to public APIs to prevent abuse and ensure fair usage.', 'Recent spike in API calls caused performance degradation for legitimate users.', 'Improved API stability, protection against abuse, better resource allocation.', 'Feb 2026', 'RiskMitigation', 'High', 'Submitted', NULL, NULL, NULL, datetime('now', '-1 day'), NULL);
+
+INSERT INTO SuggestedActions (Id, ReportId, Title, Description, Justification, ExpectedOutcome, Timeline, Category, Priority, Status, ReviewedById, ReviewedAt, ReviewComments, CreatedAt, UpdatedAt)
+VALUES (5, 3, 'Reduce database query redundancy', 'Implement caching layer for frequently accessed but rarely changing data.', 'Database profiling shows 40% of queries are redundant within same session.', 'Reduced database load, improved response times, lower infrastructure costs.', 'March 2026', 'CostReduction', 'Medium', 'Submitted', NULL, NULL, NULL, datetime('now', '-1 day'), NULL);
+
+-- Suggested action for Report 4 (IT Infrastructure Report)
+INSERT INTO SuggestedActions (Id, ReportId, Title, Description, Justification, ExpectedOutcome, Timeline, Category, Priority, Status, ReviewedById, ReviewedAt, ReviewComments, CreatedAt, UpdatedAt)
+VALUES (6, 4, 'Implement predictive monitoring with ML', 'Use machine learning to predict infrastructure failures before they occur based on metrics patterns.', 'Reactive monitoring causes downtime. Predictive approach can prevent 60% of incidents.', 'Reduced unplanned downtime, proactive maintenance, improved SLA compliance.', 'Q2 2026', 'Innovation', 'High', 'Approved', 3, datetime('now', '-15 days'), 'Excellent proposal. Allocate resources from innovation budget.', datetime('now', '-20 days'), datetime('now', '-15 days'));
+
+
+-- ---- Resource Requests ----
+-- ResourceCategory: Budget, Equipment, Software, Personnel, Materials, Facilities, Training
+-- ResourceUrgency: Critical, High, Medium, Low
+-- ResourceStatus: Submitted, UnderReview, Approved, PartiallyApproved, Rejected, Fulfilled
+
+-- Resource requests for Report 1 (Software Dev)
+INSERT INTO ResourceRequests (Id, ReportId, Title, Description, Quantity, Justification, Category, Urgency, EstimatedCost, Currency, Status, ApprovedAmount, ReviewedById, ReviewedAt, FulfilledAt, CreatedAt, UpdatedAt)
+VALUES (1, 1, 'Senior Backend Developer Hire', 'Request to hire 2 senior backend developers to fill positions vacated by resignations.', 2, 'Team is understaffed after 2 resignations. Current workload is unsustainable.', 'Personnel', 'High', 480000.00, 'EGP', 'Approved', 480000.00, 20, datetime('now', '-22 days'), NULL, datetime('now', '-25 days'), datetime('now', '-22 days'));
+
+INSERT INTO ResourceRequests (Id, ReportId, Title, Description, Quantity, Justification, Category, Urgency, EstimatedCost, Currency, Status, ApprovedAmount, ReviewedById, ReviewedAt, FulfilledAt, CreatedAt, UpdatedAt)
+VALUES (2, 1, 'JetBrains Team Tools License', 'Annual license for JetBrains IDEs (IntelliJ, WebStorm, ReSharper) for the development team.', 24, 'Current licenses expiring. Tool is critical for developer productivity.', 'Software', 'Medium', 45000.00, 'EGP', 'Approved', 45000.00, 3, datetime('now', '-20 days'), datetime('now', '-19 days'), datetime('now', '-25 days'), datetime('now', '-19 days'));
+
+INSERT INTO ResourceRequests (Id, ReportId, Title, Description, Quantity, Justification, Category, Urgency, EstimatedCost, Currency, Status, ApprovedAmount, ReviewedById, ReviewedAt, FulfilledAt, CreatedAt, UpdatedAt)
+VALUES (3, 1, 'Cloud Infrastructure Budget Increase', 'Request 25% increase to monthly cloud infrastructure budget for new projects.', NULL, 'New projects requiring additional cloud resources. Current budget fully utilized.', 'Budget', 'Medium', 25000.00, 'EGP', 'PartiallyApproved', 15000.00, 3, datetime('now', '-18 days'), NULL, datetime('now', '-25 days'), datetime('now', '-18 days'));
+
+-- Resource requests for Report 3 (Backend Team)
+INSERT INTO ResourceRequests (Id, ReportId, Title, Description, Quantity, Justification, Category, Urgency, EstimatedCost, Currency, Status, ApprovedAmount, ReviewedById, ReviewedAt, FulfilledAt, CreatedAt, UpdatedAt)
+VALUES (4, 3, 'Developer Training - AWS Certification', 'AWS Solutions Architect certification training for 3 team members.', 3, 'Team needs AWS skills for upcoming cloud migration project.', 'Training', 'Medium', 15000.00, 'EGP', 'Submitted', NULL, NULL, NULL, NULL, datetime('now', '-1 day'), NULL);
+
+INSERT INTO ResourceRequests (Id, ReportId, Title, Description, Quantity, Justification, Category, Urgency, EstimatedCost, Currency, Status, ApprovedAmount, ReviewedById, ReviewedAt, FulfilledAt, CreatedAt, UpdatedAt)
+VALUES (5, 3, 'High-Performance Development Workstations', 'Upgrade to M3 MacBook Pro for backend team members for improved build times.', 4, 'Current machines struggle with Docker and IDE simultaneously. Build times are 3x longer than needed.', 'Equipment', 'Low', 320000.00, 'EGP', 'Submitted', NULL, NULL, NULL, NULL, datetime('now', '-1 day'), NULL);
+
+-- Resource requests for Report 4 (IT Infrastructure)
+INSERT INTO ResourceRequests (Id, ReportId, Title, Description, Quantity, Justification, Category, Urgency, EstimatedCost, Currency, Status, ApprovedAmount, ReviewedById, ReviewedAt, FulfilledAt, CreatedAt, UpdatedAt)
+VALUES (6, 4, 'Additional Server Rack', 'New server rack to accommodate growth in on-premise infrastructure.', 1, 'Current capacity at 75%. Expected growth will exceed capacity by Q3.', 'Facilities', 'High', 150000.00, 'EGP', 'Approved', 150000.00, 3, datetime('now', '-17 days'), NULL, datetime('now', '-20 days'), datetime('now', '-17 days'));
+
+INSERT INTO ResourceRequests (Id, ReportId, Title, Description, Quantity, Justification, Category, Urgency, EstimatedCost, Currency, Status, ApprovedAmount, ReviewedById, ReviewedAt, FulfilledAt, CreatedAt, UpdatedAt)
+VALUES (7, 4, 'Network Monitoring Software', 'Enterprise license for PRTG Network Monitor for comprehensive monitoring.', 1, 'Current monitoring has gaps. Need unified view across all network segments.', 'Software', 'Medium', 35000.00, 'EGP', 'Fulfilled', 35000.00, 3, datetime('now', '-18 days'), datetime('now', '-16 days'), datetime('now', '-20 days'), datetime('now', '-16 days'));
+
+
+-- ---- Support Requests ----
+-- SupportCategory: ManagementIntervention, CrossDeptCoordination, TechnicalAssistance, Training, ConflictResolution, PolicyClarification
+-- SupportUrgency: Critical, High, Medium, Low
+-- SupportStatus: Submitted, Acknowledged, InProgress, Resolved, Closed
+
+-- Support requests for Report 1 (Software Dev)
+INSERT INTO SupportRequests (Id, ReportId, Title, Description, CurrentSituation, DesiredOutcome, Category, Urgency, Status, Resolution, AssignedToId, AcknowledgedById, AcknowledgedAt, ResolvedById, ResolvedAt, CreatedAt, UpdatedAt)
+VALUES (1, 1, 'Expedite procurement for development tools', 'Need management intervention to speed up procurement process for critical development tools.', 'Procurement request submitted 45 days ago still pending. Standard lead time is 21 days.', 'Approval within 1 week to prevent project delays.', 'ManagementIntervention', 'High', 'Resolved', 'Escalated to VP Admin. Procurement approved within 3 days.', 3, 3, datetime('now', '-24 days'), 3, datetime('now', '-22 days'), datetime('now', '-25 days'), datetime('now', '-22 days'));
+
+INSERT INTO SupportRequests (Id, ReportId, Title, Description, CurrentSituation, DesiredOutcome, Category, Urgency, Status, Resolution, AssignedToId, AcknowledgedById, AcknowledgedAt, ResolvedById, ResolvedAt, CreatedAt, UpdatedAt)
+VALUES (2, 1, 'Cross-team API integration coordination', 'Need coordination between Backend Team and IT Infrastructure for API gateway setup.', 'Teams working in silos. API gateway configuration not aligned with backend requirements.', 'Joint planning session and aligned technical specifications.', 'CrossDeptCoordination', 'Medium', 'Closed', 'Meeting held between teams. Technical specs aligned. Integration completed.', 24, 18, datetime('now', '-23 days'), 18, datetime('now', '-20 days'), datetime('now', '-25 days'), datetime('now', '-20 days'));
+
+-- Support requests for Report 3 (Backend Team)
+INSERT INTO SupportRequests (Id, ReportId, Title, Description, CurrentSituation, DesiredOutcome, Category, Urgency, Status, Resolution, AssignedToId, AcknowledgedById, AcknowledgedAt, ResolvedById, ResolvedAt, CreatedAt, UpdatedAt)
+VALUES (3, 3, 'Staging environment provisioning delay', 'DevOps team has not provisioned the requested staging environment for 2 weeks.', 'Cannot proceed with integration testing. Sprint velocity affected.', 'Staging environment available within 3 days.', 'CrossDeptCoordination', 'High', 'InProgress', NULL, 25, 22, datetime('now'), NULL, NULL, datetime('now', '-1 day'), datetime('now'));
+
+INSERT INTO SupportRequests (Id, ReportId, Title, Description, CurrentSituation, DesiredOutcome, Category, Urgency, Status, Resolution, AssignedToId, AcknowledgedById, AcknowledgedAt, ResolvedById, ResolvedAt, CreatedAt, UpdatedAt)
+VALUES (4, 3, 'Database performance optimization assistance', 'Need DBA assistance for query optimization in the reporting module.', 'Complex queries taking 10+ seconds. Team lacks deep SQL optimization expertise.', 'Queries optimized to under 2 seconds response time.', 'TechnicalAssistance', 'Medium', 'Submitted', NULL, NULL, NULL, NULL, NULL, NULL, datetime('now', '-1 day'), NULL);
+
+-- Support request for Report 4 (IT Infrastructure)
+INSERT INTO SupportRequests (Id, ReportId, Title, Description, CurrentSituation, DesiredOutcome, Category, Urgency, Status, Resolution, AssignedToId, AcknowledgedById, AcknowledgedAt, ResolvedById, ResolvedAt, CreatedAt, UpdatedAt)
+VALUES (5, 4, 'Security policy clarification for cloud resources', 'Need clarification on security policies for hybrid cloud deployments.', 'Conflicting guidance from IT Security and Compliance departments.', 'Unified security policy document for hybrid cloud.', 'PolicyClarification', 'Medium', 'Resolved', 'Met with IT Security and Compliance. Created unified policy document.', 21, 19, datetime('now', '-18 days'), 21, datetime('now', '-15 days'), datetime('now', '-20 days'), datetime('now', '-15 days'));
+
+INSERT INTO SupportRequests (Id, ReportId, Title, Description, CurrentSituation, DesiredOutcome, Category, Urgency, Status, Resolution, AssignedToId, AcknowledgedById, AcknowledgedAt, ResolvedById, ResolvedAt, CreatedAt, UpdatedAt)
+VALUES (6, 4, 'Vendor negotiation support', 'Need management support for contract negotiation with network equipment vendor.', 'Vendor offering 10% discount. Believe 20% is achievable based on competitor quotes.', 'Better pricing terms saving estimated 50,000 EGP annually.', 'ManagementIntervention', 'Low', 'Acknowledged', NULL, 3, 3, datetime('now', '-17 days'), NULL, NULL, datetime('now', '-20 days'), datetime('now', '-17 days'));
+
+
+-- =============================================================================
 -- SUMMARY
 -- =============================================================================
 -- Organizational Units: 36 units across 6 levels
@@ -694,6 +789,17 @@ VALUES (18, 4, 21, '65', 65, 0, datetime('now', '-20 days'), NULL);
 -- Report Periods: 9 periods across templates
 -- Sample Reports: 4 reports (1 approved, 1 draft, 1 submitted, 1 approved)
 -- Report Field Values: 18 sample data entries
+--
+-- Upward Flow (Phase 4):
+--   Suggested Actions: 6 items
+--     - 3 Approved, 1 Implemented, 1 Under Review, 1 Submitted
+--     - Categories: Quality Enhancement, Risk Mitigation, Process Improvement, Cost Reduction, Innovation
+--   Resource Requests: 7 items
+--     - 3 Approved, 1 Fulfilled, 1 Partially Approved, 2 Submitted
+--     - Categories: Personnel, Software, Budget, Training, Equipment, Facilities
+--   Support Requests: 6 items
+--     - 2 Resolved, 1 Closed, 1 In Progress, 1 Acknowledged, 1 Submitted
+--     - Categories: Management Intervention, Cross-Dept Coordination, Technical Assistance, Policy Clarification
 --
 -- Notifications: 5 initial system notifications
 -- =============================================================================
