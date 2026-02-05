@@ -25,11 +25,37 @@ public class ViewModel : PageModel
     public List<ResourceRequest> ResourceRequests { get; set; } = new();
     public List<SupportRequest> SupportRequests { get; set; } = new();
 
+    // Workflow & Tagging items (Phase 5)
+    public List<Comment> Comments { get; set; } = new();
+    public List<ConfirmationTag> ConfirmationTags { get; set; } = new();
+    public List<User> AvailableUsers { get; set; } = new();
+
     [BindProperty]
     public string? ReviewComments { get; set; }
 
     [BindProperty]
     public string ReviewAction { get; set; } = "";
+
+    [BindProperty]
+    public string? NewCommentContent { get; set; }
+
+    [BindProperty]
+    public int? ReplyToCommentId { get; set; }
+
+    [BindProperty]
+    public int? TagUserId { get; set; }
+
+    [BindProperty]
+    public string? TagMessage { get; set; }
+
+    [BindProperty]
+    public string? TagSectionReference { get; set; }
+
+    [BindProperty]
+    public string? ConfirmationResponse { get; set; }
+
+    [BindProperty]
+    public string? ConfirmationAction { get; set; }
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -129,6 +155,156 @@ public class ViewModel : PageModel
         ResourceRequests = report.ResourceRequests.OrderBy(r => r.CreatedAt).ToList();
         SupportRequests = report.SupportRequests.OrderBy(s => s.CreatedAt).ToList();
 
+        // Load comments and confirmation tags (Phase 5)
+        Comments = await _context.Comments
+            .Where(c => c.ReportId == id && c.Status != CommentStatus.Deleted)
+            .Include(c => c.Author)
+            .Include(c => c.Replies.Where(r => r.Status != CommentStatus.Deleted))
+                .ThenInclude(r => r.Author)
+            .Where(c => c.ParentCommentId == null) // Only top-level comments
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync();
+
+        ConfirmationTags = await _context.ConfirmationTags
+            .Where(ct => ct.ReportId == id)
+            .Include(ct => ct.RequestedBy)
+            .Include(ct => ct.TaggedUser)
+            .OrderByDescending(ct => ct.CreatedAt)
+            .ToListAsync();
+
+        // Load available users for tagging
+        AvailableUsers = await _context.Users
+            .Where(u => u.IsActive)
+            .OrderBy(u => u.Name)
+            .ToListAsync();
+
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostAddCommentAsync(int id)
+    {
+        if (string.IsNullOrWhiteSpace(NewCommentContent))
+        {
+            TempData["ErrorMessage"] = "Comment content is required.";
+            return RedirectToPage("View", new { id });
+        }
+
+        var currentUserEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        var currentUser = currentUserEmail != null
+            ? await _context.Users.FirstOrDefaultAsync(u => u.Email == currentUserEmail)
+            : null;
+
+        if (currentUser == null)
+        {
+            TempData["ErrorMessage"] = "Could not identify current user.";
+            return RedirectToPage("View", new { id });
+        }
+
+        var comment = new Comment
+        {
+            ReportId = id,
+            AuthorId = currentUser.Id,
+            Content = NewCommentContent,
+            ParentCommentId = ReplyToCommentId,
+            Status = CommentStatus.Active,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Comments.Add(comment);
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = ReplyToCommentId.HasValue ? "Reply added." : "Comment added.";
+        return RedirectToPage("View", new { id });
+    }
+
+    public async Task<IActionResult> OnPostDeleteCommentAsync(int id, int commentId)
+    {
+        var comment = await _context.Comments.FindAsync(commentId);
+        if (comment == null || comment.ReportId != id)
+        {
+            return NotFound();
+        }
+
+        comment.Status = CommentStatus.Deleted;
+        comment.DeletedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Comment deleted.";
+        return RedirectToPage("View", new { id });
+    }
+
+    public async Task<IActionResult> OnPostAddConfirmationTagAsync(int id)
+    {
+        if (!TagUserId.HasValue)
+        {
+            TempData["ErrorMessage"] = "Please select a user to tag.";
+            return RedirectToPage("View", new { id });
+        }
+
+        var currentUserEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        var currentUser = currentUserEmail != null
+            ? await _context.Users.FirstOrDefaultAsync(u => u.Email == currentUserEmail)
+            : null;
+
+        if (currentUser == null)
+        {
+            TempData["ErrorMessage"] = "Could not identify current user.";
+            return RedirectToPage("View", new { id });
+        }
+
+        var tag = new ConfirmationTag
+        {
+            ReportId = id,
+            RequestedById = currentUser.Id,
+            TaggedUserId = TagUserId.Value,
+            Message = TagMessage,
+            SectionReference = TagSectionReference,
+            Status = ConfirmationStatus.Pending,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.ConfirmationTags.Add(tag);
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Confirmation request sent.";
+        return RedirectToPage("View", new { id });
+    }
+
+    public async Task<IActionResult> OnPostRespondToConfirmationAsync(int id, int tagId)
+    {
+        var tag = await _context.ConfirmationTags.FindAsync(tagId);
+        if (tag == null || tag.ReportId != id)
+        {
+            return NotFound();
+        }
+
+        if (string.IsNullOrEmpty(ConfirmationAction))
+        {
+            TempData["ErrorMessage"] = "Please select a response action.";
+            return RedirectToPage("View", new { id });
+        }
+
+        tag.Status = ConfirmationAction;
+        tag.Response = ConfirmationResponse;
+        tag.RespondedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = $"Confirmation {ConfirmationStatus.DisplayName(ConfirmationAction).ToLower()}.";
+        return RedirectToPage("View", new { id });
+    }
+
+    public async Task<IActionResult> OnPostCancelConfirmationAsync(int id, int tagId)
+    {
+        var tag = await _context.ConfirmationTags.FindAsync(tagId);
+        if (tag == null || tag.ReportId != id)
+        {
+            return NotFound();
+        }
+
+        tag.Status = ConfirmationStatus.Cancelled;
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Confirmation request cancelled.";
+        return RedirectToPage("View", new { id });
     }
 }

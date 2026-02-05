@@ -408,4 +408,205 @@
             </div>
         </div>
     }
+
+    <!-- Confirmation Tags (Phase 5) -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-person-check"></i> Confirmation Requests (@Model.ConfirmationTags.Count)</h5>
+            <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="collapse" data-bs-target="#addConfirmationForm">
+                <i class="bi bi-plus"></i> Request Confirmation
+            </button>
+        </div>
+        <div class="card-body">
+            <!-- Add Confirmation Form -->
+            <div class="collapse mb-3" id="addConfirmationForm">
+                <div class="border rounded p-3 bg-light">
+                    <h6><i class="bi bi-person-plus"></i> Request Confirmation from User</h6>
+                    <form method="post" asp-page-handler="AddConfirmationTag" asp-route-id="@Model.Report.Id">
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Tag User *</label>
+                                <select name="TagUserId" class="form-select" required>
+                                    <option value="">Select user...</option>
+                                    @foreach (var user in Model.AvailableUsers.Where(u => u.Id != Model.Report.SubmittedById))
+                                    {
+                                        <option value="@user.Id">@user.Name (@user.Email)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Section (optional)</label>
+                                <input type="text" name="TagSectionReference" class="form-control" placeholder="e.g., Key Metrics" />
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Message (optional)</label>
+                                <input type="text" name="TagMessage" class="form-control" placeholder="Please verify these figures..." />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-warning"><i class="bi bi-send"></i> Send Request</button>
+                    </form>
+                </div>
+            </div>
+
+            @if (Model.ConfirmationTags.Count == 0)
+            {
+                <p class="text-muted mb-0"><i class="bi bi-info-circle"></i> No confirmation requests for this report.</p>
+            }
+            else
+            {
+                <div class="list-group">
+                    @foreach (var tag in Model.ConfirmationTags)
+                    {
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>@tag.TaggedUser.Name</strong>
+                                    <span class="badge @ConfirmationStatus.BadgeClass(tag.Status) ms-2">@ConfirmationStatus.DisplayName(tag.Status)</span>
+                                    @if (!string.IsNullOrEmpty(tag.SectionReference))
+                                    {
+                                        <br /><small class="text-muted">Section: @tag.SectionReference</small>
+                                    }
+                                    @if (!string.IsNullOrEmpty(tag.Message))
+                                    {
+                                        <br /><small>@tag.Message</small>
+                                    }
+                                    @if (!string.IsNullOrEmpty(tag.Response))
+                                    {
+                                        <br /><small class="text-info"><strong>Response:</strong> @tag.Response</small>
+                                    }
+                                    <br /><small class="text-muted">Requested by @tag.RequestedBy.Name on @tag.CreatedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                                    @if (tag.RespondedAt.HasValue)
+                                    {
+                                        <small class="text-muted"> | Responded @tag.RespondedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                                    }
+                                </div>
+                                <div>
+                                    @if (tag.IsPending)
+                                    {
+                                        <!-- Response form for tagged user -->
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                Respond
+                                            </button>
+                                            <div class="dropdown-menu p-3" style="min-width: 280px;">
+                                                <form method="post" asp-page-handler="RespondToConfirmation" asp-route-id="@Model.Report.Id" asp-route-tagId="@tag.Id">
+                                                    <div class="mb-2">
+                                                        <label class="form-label">Response (optional)</label>
+                                                        <textarea name="ConfirmationResponse" class="form-control" rows="2" placeholder="Add a note..."></textarea>
+                                                    </div>
+                                                    <div class="d-flex gap-1">
+                                                        <button type="submit" name="ConfirmationAction" value="@ConfirmationStatus.Confirmed" class="btn btn-sm btn-success">
+                                                            <i class="bi bi-check"></i> Confirm
+                                                        </button>
+                                                        <button type="submit" name="ConfirmationAction" value="@ConfirmationStatus.RevisionRequested" class="btn btn-sm btn-warning">
+                                                            <i class="bi bi-pencil"></i> Request Revision
+                                                        </button>
+                                                        <button type="submit" name="ConfirmationAction" value="@ConfirmationStatus.Declined" class="btn btn-sm btn-danger">
+                                                            <i class="bi bi-x"></i> Decline
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        <form method="post" asp-page-handler="CancelConfirmation" asp-route-id="@Model.Report.Id" asp-route-tagId="@tag.Id" class="d-inline ms-1">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Cancel this confirmation request?');">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Comments (Phase 5) -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Discussion (@Model.Comments.Count comments)</h5>
+        </div>
+        <div class="card-body">
+            <!-- Add Comment Form -->
+            <form method="post" asp-page-handler="AddComment" asp-route-id="@Model.Report.Id" class="mb-3">
+                <div class="mb-2">
+                    <textarea name="NewCommentContent" class="form-control" rows="2" placeholder="Add a comment..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-send"></i> Post Comment</button>
+            </form>
+
+            @if (Model.Comments.Count == 0)
+            {
+                <p class="text-muted mb-0"><i class="bi bi-info-circle"></i> No comments yet. Be the first to comment!</p>
+            }
+            else
+            {
+                <div class="list-group">
+                    @foreach (var comment in Model.Comments)
+                    {
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>@comment.Author.Name</strong>
+                                    <small class="text-muted ms-2">@comment.CreatedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                                    @if (comment.IsEdited)
+                                    {
+                                        <small class="text-muted">(edited)</small>
+                                    }
+                                </div>
+                                <form method="post" asp-page-handler="DeleteComment" asp-route-id="@Model.Report.Id" asp-route-commentId="@comment.Id">
+                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('Delete this comment?');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            <p class="mb-1 mt-1">@comment.Content</p>
+
+                            <!-- Replies -->
+                            @if (comment.Replies.Any())
+                            {
+                                <div class="ms-4 mt-2 border-start ps-3">
+                                    @foreach (var reply in comment.Replies.OrderBy(r => r.CreatedAt))
+                                    {
+                                        <div class="mb-2">
+                                            <div class="d-flex justify-content-between">
+                                                <div>
+                                                    <strong>@reply.Author.Name</strong>
+                                                    <small class="text-muted ms-2">@reply.CreatedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                                                </div>
+                                                <form method="post" asp-page-handler="DeleteComment" asp-route-id="@Model.Report.Id" asp-route-commentId="@reply.Id">
+                                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('Delete this reply?');">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            <p class="mb-0 small">@reply.Content</p>
+                                        </div>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Reply Form -->
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#reply-@comment.Id">
+                                    <i class="bi bi-reply"></i> Reply
+                                </button>
+                                <div class="collapse mt-2" id="reply-@comment.Id">
+                                    <form method="post" asp-page-handler="AddComment" asp-route-id="@Model.Report.Id">
+                                        <input type="hidden" name="ReplyToCommentId" value="@comment.Id" />
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" name="NewCommentContent" class="form-control" placeholder="Write a reply..." required />
+                                            <button type="submit" class="btn btn-outline-primary"><i class="bi bi-send"></i></button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
 </div>

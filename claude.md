@@ -96,6 +96,7 @@ Phase 1 (complete): Infrastructure - Auth, backup, notifications, admin pages, l
 Phase 2 (complete): Organization & User Hierarchy - Org units, user roles, delegations, SQL seed script
 Phase 3 (complete): Report Templates & Report Entry - Templates, fields, periods, reports, review workflow
 Phase 4 (complete): Upward Flow - Suggested actions, resource requests, support requests with status tracking
+Phase 5 (complete): Workflow & Tagging - Comments, confirmation tags, threaded discussions, workflow admin pages
 
 ### Key Models (Phase 2)
 - **OrganizationalUnit**: self-referential hierarchy with OrgUnitLevel enum (Root=0 → Team=5), Parent/Children nav props, DeleteBehavior.Restrict
@@ -122,14 +123,13 @@ Phase 4 (complete): Upward Flow - Suggested actions, resource requests, support 
 - Report Fill page includes inline entry forms when template has IncludeSuggestedActions/IncludeNeededResources/IncludeNeededSupport enabled
 - Report View page displays submitted upward flow items with status badges
 
-### Phase 5: Workflow & Tagging
-- **WorkflowInstance** model: report lifecycle (Draft → Submitted → Under Review → Approved/Rejected/Amended), configurable approval chain
-- **ConfirmationTag** model: originator tags another user to confirm/verify report section, status (Pending, Confirmed, RevisionRequested, Declined), with timestamps
-- **Comment** model: threaded discussions on report sections, @mentions support
-- Route submitted reports to direct manager automatically
-- Submission deadline enforcement with grace periods
-- Reminder notifications (3 days, 1 day, same day before deadline)
-- Lock reports after final approval
+### Key Models (Phase 5)
+- **Comment**: threaded discussions on reports with @mentions support, Status (Active/Edited/Deleted/Hidden), ParentCommentId for replies, AuthorId FK, SectionReference optional, MentionedUserIdsJson for @mention tracking, IsReply/IsDeleted computed properties
+- **ConfirmationTag**: originator tags another user to confirm/verify report section, Status (Pending/Confirmed/RevisionRequested/Declined/Expired/Cancelled), RequestedById/TaggedUserId FKs, SectionReference optional, Message/Response fields, ReminderSentAt for reminder tracking, IsPending/IsConfirmed/DaysSinceRequested computed properties
+- Admin pages at `/Admin/Workflow/{Comments,Confirmations}/Index` with filtering, status management, and reminder functionality
+- Report View page includes Comments section (threaded with replies) and Confirmation Tags section (request/respond workflow)
+- Navigation updated with Workflow dropdown menu
+- SeedData.cs updated with Phase 5 sample data (comments and confirmation tags)
 
 ### Phase 6: Downward Flow (Feedback, Recommendations, Decisions)
 - **Feedback** model: category (Positive Recognition, Concern, Observation, Question, General), visibility (Private, Team-wide, Department-wide), threading support, acknowledgment tracking
@@ -175,18 +175,18 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 ## Session Handoff
 
 ### Current Status
-**Phase 4 complete** (of 9 phases) - Upward Flow (SuggestedActions, ResourceRequests, SupportRequests) fully implemented.
+**Phase 5 complete** (of 9 phases) - Workflow & Tagging (Comments, ConfirmationTags) fully implemented.
 
 ### Project Statistics
 | Category | Count |
 |----------|-------|
-| Total .cs/.cshtml files | ~100 |
-| Model classes | 14 |
-| Razor Pages (.cshtml) | 42 |
+| Total .cs/.cshtml files | ~110 |
+| Model classes | 17 |
+| Razor Pages (.cshtml) | 46 |
 | Services | 5 |
-| Admin page sections | 9 |
+| Admin page sections | 10 |
 
-### Implemented Models (14)
+### Implemented Models (17)
 | Model | Phase | Purpose |
 |-------|-------|---------|
 | `User` | 1,2 | Users with roles, org unit assignment, MagicLinks |
@@ -204,21 +204,25 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | `SuggestedAction` | 4 | Process improvements attached to reports |
 | `ResourceRequest` | 4 | Budget/equipment/personnel requests |
 | `SupportRequest` | 4 | Management/technical assistance requests |
+| `Comment` | 5 | Threaded discussions with @mentions |
+| `ConfirmationTag` | 5 | User verification requests on report sections |
 
-### Implemented Admin Pages (9 sections, 42 pages)
+### Implemented Admin Pages (10 sections, 46 pages)
 | Section | Pages | Purpose |
 |---------|-------|---------|
 | `/Admin/Backup` | 4 | Create, restore, delete, WAL checkpoint |
 | `/Admin/Delegations` | 2 | Index with revoke, Create |
 | `/Admin/OrgUnits` | 5 | CRUD with recursive tree view |
 | `/Admin/Periods` | 3 | Index with Open/Close, Create, Edit |
-| `/Admin/Reports` | 4 | Index, Create, Fill (with upward flow forms), View (with upward flow display) |
+| `/Admin/Reports` | 4 | Index, Create, Fill (with upward flow forms), View (with comments & confirmations) |
 | `/Admin/Templates` | 5 | CRUD with inline field/assignment management |
 | `/Admin/Users` | 5 | Full CRUD with org unit/role dropdowns |
 | `/Admin/UpwardFlow/SuggestedActions` | 1 | Index with filtering and status management |
 | `/Admin/UpwardFlow/ResourceRequests` | 1 | Index with cost tracking and status management |
 | `/Admin/UpwardFlow/SupportRequests` | 1 | Index with assignment and status management |
-| `/Admin/Dashboard` | 1 | Quick-access buttons including Upward Flow section |
+| `/Admin/Workflow/Comments` | 1 | Index with moderation and status management |
+| `/Admin/Workflow/Confirmations` | 1 | Index with reminder sending and status management |
+| `/Admin/Dashboard` | 1 | Quick-access buttons including Upward Flow and Workflow sections |
 
 ### Seed Data (seed.sql)
 | Entity | Count | Notes |
@@ -237,43 +241,46 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | Notifications | 5 | Welcome and delegation notifications |
 
 ### Database State
-- Schema includes all Phase 1-4 entities (16 tables)
+- Schema includes all Phase 1-5 entities (18 tables)
 - Uses SQLite for dev (`db/reporting.db`), SQL Server for prod
 - **Important**: Delete `db/reporting.db` before running if schema changed (EnsureCreatedAsync won't migrate)
-- Run `seed.sql` manually for full test data, or use C# SeedData.cs for minimal seeding
+- Run `seed.sql` manually for full test data, or use C# SeedData.cs for minimal seeding (now includes Phase 5 workflow data)
 
-### Remaining Phases (5)
+### Remaining Phases (4)
 | Phase | Name | Key Deliverables |
 |-------|------|------------------|
-| 5 | Workflow & Tagging | WorkflowInstance, ConfirmationTag, Comment, auto-routing, reminders |
 | 6 | Downward Flow | Feedback, Recommendation, Decision models + pages |
 | 7 | Aggregation | Aggregation engine, drill-down, AuditLog, data lineage |
 | 8 | Dashboards & Export | Role-based dashboards, charts, PDF/Excel export |
 | 9 | Polish | Enhanced notifications, preferences, responsive design, performance |
 
-### Next Phase: Phase 5 - Workflow & Tagging
-Implement workflow and collaboration features:
+### Next Phase: Phase 6 - Downward Flow
+Implement feedback, recommendations, and decisions from management:
 
-1. **WorkflowInstance** - Track report lifecycle through approval chain
-   - States: Draft → Submitted → Under Review → Approved/Rejected/Amended
-   - Configurable approval chain per template
-   - Route to direct manager automatically
+1. **Feedback** - Management responses to reports
+   - Category: Positive Recognition, Concern, Observation, Question, General
+   - Visibility: Private, Team-wide, Department-wide
+   - Threading support for follow-up discussions
+   - Acknowledgment tracking
 
-2. **ConfirmationTag** - Request confirmation from other users
-   - Status: Pending → Confirmed/RevisionRequested/Declined
-   - Tag users to verify specific report sections
-   - Timestamps for audit trail
+2. **Recommendation** - Guidance and directives
+   - Title, description, rationale, timeline, priority
+   - Category: Process Change, Skill Development, Performance Improvement, Compliance, Strategic Alignment
+   - Target scope: Individual/Team/Department/Org-wide
+   - Status tracking, cascade through hierarchy
 
-3. **Comment** - Threaded discussions on reports
-   - Support for @mentions
-   - Link to specific report sections
-   - Reply threading
+3. **Decision** - Formal responses to upward flow requests
+   - Link to SuggestedAction/ResourceRequest/SupportRequest
+   - Outcome: Approved, Approved with Modifications, Partially Approved, Deferred, Rejected, Referred
+   - Justification, effective date, conditions
+   - Cascade with acknowledgment tracking
+   - Audit trail
 
-Additional features:
-- Submission deadline enforcement with grace periods
-- Reminder notifications (3 days, 1 day, same day before deadline)
-- Lock reports after final approval
-- Notification integration for all workflow events
+Admin pages:
+- `/Admin/Downward/Feedback/Index` - View and manage feedback items
+- `/Admin/Downward/Recommendations/Index` - View and manage recommendations
+- `/Admin/Downward/Decisions/Index` - View and manage decisions
+- Response forms linking to source requests
 
 ### Key Files to Reference
 | File | Pattern/Purpose |
@@ -282,11 +289,16 @@ Additional features:
 | `Models/SuggestedAction.cs` | Category/Priority/Status constants pattern |
 | `Models/ResourceRequest.cs` | Cost tracking, status workflow |
 | `Models/SupportRequest.cs` | Assignment tracking, IsOpen computed property |
+| `Models/Comment.cs` | Threaded comments with ParentCommentId, @mentions |
+| `Models/ConfirmationTag.cs` | User tagging with confirmation workflow |
 | `Pages/Admin/Reports/Fill.cshtml` | Inline upward flow entry forms |
 | `Pages/Admin/Reports/Fill.cshtml.cs` | Handler methods for add/remove upward flow |
+| `Pages/Admin/Reports/View.cshtml` | Display comments and confirmations with forms |
+| `Pages/Admin/Reports/View.cshtml.cs` | Handler methods for comments/confirmations |
 | `Pages/Admin/UpwardFlow/*/Index.cshtml` | Status management with dropdown menus |
+| `Pages/Admin/Workflow/*/Index.cshtml` | Comment moderation and confirmation management |
 | `Data/ApplicationDbContext.cs` | Entity config with indexes, relationships |
-| `seed.sql` | Comprehensive data seeding patterns |
+| `Data/SeedData.cs` | C# seeding with Phase 5 workflow data |
 
 ### Build Commands
 ```bash

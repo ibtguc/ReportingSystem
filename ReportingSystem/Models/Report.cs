@@ -70,6 +70,10 @@ public class Report
     public ICollection<ResourceRequest> ResourceRequests { get; set; } = new List<ResourceRequest>();
     public ICollection<SupportRequest> SupportRequests { get; set; } = new List<SupportRequest>();
 
+    // Workflow & Tagging collections (Phase 5)
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+    public ICollection<ConfirmationTag> ConfirmationTags { get; set; } = new List<ConfirmationTag>();
+
     /// <summary>
     /// Whether this report can still be edited.
     /// </summary>

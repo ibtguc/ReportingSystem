@@ -35,6 +35,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<ResourceRequest> ResourceRequests { get; set; }
     public DbSet<SupportRequest> SupportRequests { get; set; }
 
+    // Workflow & Tagging DbSets (Phase 5)
+    public DbSet<Comment> Comments { get; set; }
+    public DbSet<ConfirmationTag> ConfirmationTags { get; set; }
+
     // Notification DbSets
     public DbSet<Notification> Notifications { get; set; }
 
@@ -302,6 +306,68 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.ResolvedBy)
                 .WithMany()
                 .HasForeignKey(e => e.ResolvedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure Comment (Phase 5)
+        modelBuilder.Entity<Comment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.ParentCommentId);
+            entity.HasIndex(e => e.AuthorId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.Comments)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ParentComment)
+                .WithMany(c => c.Replies)
+                .HasForeignKey(e => e.ParentCommentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Author)
+                .WithMany()
+                .HasForeignKey(e => e.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ReportField)
+                .WithMany()
+                .HasForeignKey(e => e.ReportFieldId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure ConfirmationTag (Phase 5)
+        modelBuilder.Entity<ConfirmationTag>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.RequestedById);
+            entity.HasIndex(e => e.TaggedUserId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => new { e.ReportId, e.TaggedUserId });
+
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.ConfirmationTags)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.RequestedBy)
+                .WithMany()
+                .HasForeignKey(e => e.RequestedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.TaggedUser)
+                .WithMany()
+                .HasForeignKey(e => e.TaggedUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ReportField)
+                .WithMany()
+                .HasForeignKey(e => e.ReportFieldId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
