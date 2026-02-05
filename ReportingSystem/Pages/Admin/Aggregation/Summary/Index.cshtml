@@ -1,0 +1,374 @@
+@page
+@model ReportingSystem.Pages.Admin.Aggregation.Summary.IndexModel
+@{
+    ViewData["Title"] = Model.DrillDownId.HasValue ? "Drill-Down View" : "Aggregated Data";
+}
+
+@if (Model.DrillDownId.HasValue && Model.SelectedValue != null)
+{
+    <!-- Drill-Down View -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-page="./Index">Aggregated Data</a></li>
+            <li class="breadcrumb-item active">Drill-Down</li>
+        </ol>
+    </nav>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Aggregated Value Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">Field</dt>
+                        <dd class="col-sm-8">@Model.SelectedValue.AggregationRule.ReportField.Label</dd>
+
+                        <dt class="col-sm-4">Template</dt>
+                        <dd class="col-sm-8">@Model.SelectedValue.AggregationRule.ReportField.ReportTemplate.Name</dd>
+
+                        <dt class="col-sm-4">Period</dt>
+                        <dd class="col-sm-8">@Model.SelectedValue.ReportPeriod.Name</dd>
+
+                        <dt class="col-sm-4">Org Unit</dt>
+                        <dd class="col-sm-8">@Model.SelectedValue.OrganizationalUnit.Name</dd>
+
+                        <dt class="col-sm-4">Method</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge @ReportingSystem.Models.AggregationMethod.BadgeClass(Model.SelectedValue.AggregationRule.Method)">
+                                @Model.SelectedValue.AggregationRule.MethodDisplayName
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">Value</dt>
+                        <dd class="col-sm-8">
+                            <span class="fs-4 fw-bold text-primary">@Model.SelectedValue.DisplayValue</span>
+                            @if (Model.SelectedValue.HasAmendment)
+                            {
+                                <span class="badge bg-warning ms-2">Amended</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge @Model.SelectedValue.StatusBadgeClass">@Model.SelectedValue.StatusDisplayName</span>
+                        </dd>
+
+                        <dt class="col-sm-4">Source Count</dt>
+                        <dd class="col-sm-8">@Model.SelectedValue.SourceCount reports</dd>
+
+                        <dt class="col-sm-4">Computed</dt>
+                        <dd class="col-sm-8">
+                            @Model.SelectedValue.ComputedAt.ToString("MMM dd, yyyy HH:mm")
+                            @if (Model.SelectedValue.ComputedBy != null)
+                            {
+                                <span>by @Model.SelectedValue.ComputedBy.Name</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Complete</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.SelectedValue.IsComplete)
+                            {
+                                <span class="text-success"><i class="bi bi-check-circle-fill"></i> Yes</span>
+                            }
+                            else
+                            {
+                                <span class="text-warning"><i class="bi bi-exclamation-circle-fill"></i> No (missing sources)</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.SelectedValue.Amendments.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Amendments</h6>
+            </div>
+            <div class="card-body">
+                @foreach (var amendment in Model.SelectedValue.Amendments.OrderByDescending(a => a.CreatedAt))
+                {
+                    <div class="border rounded p-3 mb-2 @(amendment.IsActive ? "" : "bg-light")">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="badge @ReportingSystem.Models.AmendmentTypes.BadgeClass(amendment.AmendmentType)">
+                                @amendment.AmendmentTypeDisplayName
+                            </span>
+                            <small class="text-muted">
+                                @amendment.CreatedAt.ToString("MMM dd, yyyy HH:mm") by @amendment.AmendedBy.Name
+                            </small>
+                        </div>
+                        @if (!string.IsNullOrEmpty(amendment.AmendedValue))
+                        {
+                            <div class="mb-2">
+                                <strong>Amended Value:</strong> @amendment.AmendedValue
+                            </div>
+                        }
+                        <p class="mb-1">@amendment.Annotation</p>
+                        @if (!string.IsNullOrEmpty(amendment.Justification))
+                        {
+                            <small class="text-muted"><em>Justification: @amendment.Justification</em></small>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.SourceReports.Any())
+    {
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Source Reports (@Model.SourceReports.Count)</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Org Unit</th>
+                            <th>Submitted By</th>
+                            <th>Status</th>
+                            <th>Field Value</th>
+                            <th>Submitted</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var report in Model.SourceReports)
+                        {
+                            var fieldValue = report.FieldValues.FirstOrDefault(fv => fv.ReportFieldId == Model.SelectedValue.AggregationRule.ReportFieldId);
+                            <tr>
+                                <td>@report.SubmittedBy.OrganizationalUnit?.Name</td>
+                                <td>@report.SubmittedBy.Name</td>
+                                <td>
+                                    <span class="badge @ReportingSystem.Models.ReportStatus.BadgeClass(report.Status)">
+                                        @ReportingSystem.Models.ReportStatus.DisplayName(report.Status)
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (fieldValue != null)
+                                    {
+                                        <span class="fw-semibold">@(fieldValue.Value ?? "(empty)")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">(no value)</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (report.SubmittedAt.HasValue)
+                                    {
+                                        @report.SubmittedAt.Value.ToString("MMM dd, yyyy")
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-page="/Admin/Reports/View" asp-route-id="@report.Id" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <!-- Main List View -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Aggregated Data</h1>
+            <p class="text-muted mb-0">View aggregated values with drill-down to source reports</p>
+        </div>
+        <a asp-page="/Admin/Aggregation/Rules/Index" class="btn btn-outline-primary">
+            <i class="bi bi-gear"></i> Manage Rules
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">@Model.TotalCount</h3>
+                    <small class="text-muted">Values (filtered)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">@Model.StaleCount</h3>
+                    <small>Stale Values</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">@Model.WithAmendmentsCount</h3>
+                    <small>With Amendments</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Template</label>
+                    <select asp-for="TemplateId" asp-items="Model.TemplateOptions" class="form-select">
+                        <option value="">All Templates</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Period</label>
+                    <select asp-for="PeriodId" asp-items="Model.PeriodOptions" class="form-select">
+                        <option value="">All Periods</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Org Unit</label>
+                    <select asp-for="OrgUnitId" asp-items="Model.OrgUnitOptions" class="form-select">
+                        <option value="">All Org Units</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select asp-for="StatusFilter" asp-items="Model.StatusOptions" class="form-select">
+                        <option value="">All Statuses</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        <input asp-for="OnlyWithAmendments" class="form-check-input" type="checkbox" />
+                        <label class="form-check-label" asp-for="OnlyWithAmendments">With amendments only</label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-filter"></i> Filter
+                    </button>
+                    <a asp-page="./Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Field / Template</th>
+                        <th>Period</th>
+                        <th>Org Unit</th>
+                        <th>Method</th>
+                        <th>Value</th>
+                        <th>Sources</th>
+                        <th>Status</th>
+                        <th>Computed</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.AggregatedValues.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                No aggregated data found. Values are computed when reports are approved.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var value in Model.AggregatedValues)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@value.AggregationRule.ReportField.Label</div>
+                                <small class="text-muted">@value.AggregationRule.ReportField.ReportTemplate.Name</small>
+                            </td>
+                            <td>@value.ReportPeriod.Name</td>
+                            <td>
+                                <span title="Level @value.OrganizationalUnit.Level">@value.OrganizationalUnit.Name</span>
+                            </td>
+                            <td>
+                                <span class="badge @ReportingSystem.Models.AggregationMethod.BadgeClass(value.AggregationRule.Method)">
+                                    @value.AggregationRule.MethodDisplayName
+                                </span>
+                            </td>
+                            <td>
+                                <span class="fw-bold">@value.DisplayValue</span>
+                                @if (value.HasAmendment)
+                                {
+                                    <i class="bi bi-pencil-square text-warning ms-1" title="Has amendments"></i>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">@value.SourceCount</span>
+                                @if (!value.IsComplete)
+                                {
+                                    <i class="bi bi-exclamation-triangle text-warning ms-1" title="Incomplete - missing sources"></i>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @value.StatusBadgeClass">@value.StatusDisplayName</span>
+                            </td>
+                            <td>
+                                <small>@value.ComputedAt.ToString("MMM dd HH:mm")</small>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-page="./Index" asp-route-DrillDownId="@value.Id" class="btn btn-outline-primary" title="Drill Down">
+                                        <i class="bi bi-diagram-3"></i>
+                                    </a>
+                                    <form method="post" asp-page-handler="Recompute" class="d-inline">
+                                        <input type="hidden" name="id" value="@value.Id" />
+                                        <button type="submit" class="btn btn-outline-secondary" title="Mark for Recomputation">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="Delete" class="d-inline" onsubmit="return confirm('Delete this aggregated value?');">
+                                        <input type="hidden" name="id" value="@value.Id" />
+                                        <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        if (typeof initFilterState === 'function') {
+            initFilterState();
+        }
+    </script>
+}

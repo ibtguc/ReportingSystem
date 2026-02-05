@@ -98,6 +98,7 @@ Phase 3 (complete): Report Templates & Report Entry - Templates, fields, periods
 Phase 4 (complete): Upward Flow - Suggested actions, resource requests, support requests with status tracking
 Phase 5 (complete): Workflow & Tagging - Comments, confirmation tags, threaded discussions, workflow admin pages
 Phase 6 (complete): Downward Flow - Feedback, recommendations, decisions with acknowledgment tracking
+Phase 7 (complete): Aggregation & Drill-Down - Aggregation rules, aggregated values, manager amendments, audit log
 
 ### Key Models (Phase 2)
 - **OrganizationalUnit**: self-referential hierarchy with OrgUnitLevel enum (Root=0 → Team=5), Parent/Children nav props, DeleteBehavior.Restrict
@@ -141,16 +142,16 @@ Phase 6 (complete): Downward Flow - Feedback, recommendations, decisions with ac
 - Navigation updated with Downward Flow dropdown menu
 - SeedData.cs updated with Phase 6 sample data
 
-### Phase 7: Aggregation & Drill-Down
-- Aggregation engine: configurable rules per field (Sum, Average, Weighted Average, Min, Max, Count, Percentage, Custom Formula)
-- Textual aggregation: concatenate, select representative, manual synthesis
-- Manager amendment layer: annotate/add context to aggregated data, distinguish original vs. amended
-- Aggregate upward flow items (suggestions, resources, support) at each hierarchy level
-- Auto-generate executive summaries with key metrics
-- **Drill-down**: navigate from any summary value to contributing source reports
-- **Data lineage**: originator, original value, amendment history, aggregation path
-- **AuditLog** model: all data changes with user, timestamp, before/after values
-- Visual hierarchy navigation (tree view, breadcrumb)
+### Key Models (Phase 7)
+- **AggregationRule**: configurable rules per ReportField, Method (Sum/Average/WeightedAverage/Min/Max/Count/Percentage/Custom for numeric; Concatenate/SelectFirst/SelectLast/SelectMostCommon/ManualSynthesis for text), Priority, WeightFieldKey for weighted avg, CustomFormula, TextAggregationMode, DecimalPrecision, AutoAggregate flag
+- **AggregatedValue**: stores computed aggregates at OrganizationalUnit level per ReportPeriod, Status (Pending/Current/Stale/Error/ManualOverride), SourceReportIdsJson for drill-down, MissingSourcesJson for incomplete tracking, HasAmendment flag, DisplayValue computed property
+- **ManagerAmendment**: allows managers to annotate/correct aggregated values, AmendmentType (Annotation/Correction/ExecutiveSummary/ContextualNote/Highlight/Warning), Visibility levels, ApprovalStatus for corrections, AmendedValue/Annotation/Justification/ExecutiveSummary fields
+- **AuditLog**: comprehensive change tracking with Action (Create/Update/Delete/View/Export/Login/Logout/Submit/Approve/Reject/Aggregate/Amend), EntityType, OldValue/NewValue, OldEntityJson/NewEntityJson for full snapshots, CorrelationId for grouping, IpAddress/UserAgent, ChangeSummary computed
+- Admin pages at `/Admin/Aggregation/{Rules,Summary}/Index` and `/Admin/AuditLog/Index`
+- Aggregation Rules page: create/configure rules, filter by template/method, toggle active status
+- Aggregation Summary page: view aggregated data with drill-down to source reports, filter by template/period/orgunit/status
+- AuditLog page: comprehensive filtering by action/entity/user/date, statistics, CSV export with pagination
+- Navigation updated with Aggregation dropdown menu (Summary Data, Aggregation Rules, Audit Log)
 
 ### Phase 8: Dashboards & Export
 - Role-based dashboards with KPIs and visualizations
@@ -179,18 +180,18 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 ## Session Handoff
 
 ### Current Status
-**Phase 6 complete** (of 9 phases) - Downward Flow (Feedback, Recommendations, Decisions) fully implemented.
+**Phase 7 complete** (of 9 phases) - Aggregation & Drill-Down (Aggregation Rules, Aggregated Values, Manager Amendments, Audit Log) fully implemented.
 
 ### Project Statistics
 | Category | Count |
 |----------|-------|
-| Total .cs/.cshtml files | ~120 |
-| Model classes | 20 |
-| Razor Pages (.cshtml) | 52 |
+| Total .cs/.cshtml files | ~130 |
+| Model classes | 24 |
+| Razor Pages (.cshtml) | 58 |
 | Services | 5 |
-| Admin page sections | 11 |
+| Admin page sections | 14 |
 
-### Implemented Models (20)
+### Implemented Models (24)
 | Model | Phase | Purpose |
 |-------|-------|---------|
 | `User` | 1,2 | Users with roles, org unit assignment, MagicLinks |
@@ -213,8 +214,12 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | `Feedback` | 6 | Management responses with categories/visibility |
 | `Recommendation` | 6 | Guidance/directives with target scope |
 | `Decision` | 6 | Formal responses to upward flow requests |
+| `AggregationRule` | 7 | Configurable aggregation methods per field |
+| `AggregatedValue` | 7 | Computed aggregates with drill-down support |
+| `ManagerAmendment` | 7 | Manager annotations/corrections to aggregates |
+| `AuditLog` | 7 | Comprehensive change tracking for compliance |
 
-### Implemented Admin Pages (11 sections, 52 pages)
+### Implemented Admin Pages (14 sections, 58 pages)
 | Section | Pages | Purpose |
 |---------|-------|---------|
 | `/Admin/Backup` | 4 | Create, restore, delete, WAL checkpoint |
@@ -232,6 +237,9 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | `/Admin/Downward/Feedback` | 1 | Index with category/visibility filtering |
 | `/Admin/Downward/Recommendations` | 1 | Index with priority/scope filtering |
 | `/Admin/Downward/Decisions` | 1 | Index with outcome/request type filtering |
+| `/Admin/Aggregation/Rules` | 1 | Create/manage aggregation rules per field |
+| `/Admin/Aggregation/Summary` | 1 | View aggregates with drill-down to sources |
+| `/Admin/AuditLog` | 1 | View all changes with filtering and CSV export |
 | `/Admin/Dashboard` | 1 | Quick-access buttons for all sections |
 
 ### Seed Data (seed.sql)
@@ -256,46 +264,50 @@ NuGet.org is blocked by the environment proxy. Packages are downloaded via Pytho
 | Decisions | 6 | 2 Approved, 1 ApprovedWithMods, 1 PartiallyApproved, 1 Deferred, 1 other |
 
 ### Database State
-- Schema includes all Phase 1-6 entities (21 tables)
+- Schema includes all Phase 1-7 entities (25 tables)
 - Uses SQLite for dev (`db/reporting.db`), SQL Server for prod
 - **Important**: Delete `db/reporting.db` before running if schema changed (EnsureCreatedAsync won't migrate)
 - **seed.sql**: Complete SQL seed script with all Phase 1-6 data (org units, users, templates, reports, upward flow, workflow, downward flow)
 - **SeedData.cs**: C# seeding for minimal data (includes Phase 5+6 sample data)
 
-### Remaining Phases (3)
+### Remaining Phases (2)
 | Phase | Name | Key Deliverables |
 |-------|------|------------------|
-| 7 | Aggregation | Aggregation engine, drill-down, AuditLog, data lineage |
 | 8 | Dashboards & Export | Role-based dashboards, charts, PDF/Excel export |
 | 9 | Polish | Enhanced notifications, preferences, responsive design, performance |
 
-### Next Phase: Phase 7 - Aggregation & Drill-Down
-Implement data aggregation and drill-down capabilities:
+### Next Phase: Phase 8 - Dashboards & Export
+Implement role-based dashboards and export capabilities:
 
-1. **Aggregation Engine** - Configurable rules per field
-   - Numeric: Sum, Average, Weighted Average, Min, Max, Count, Percentage
-   - Textual: Concatenate, select representative, manual synthesis
-   - Custom formulas for calculated aggregates
+1. **Role-Based Dashboards**
+   - Executive dashboard: high-level KPIs, org-wide trends, alerts
+   - Manager dashboard: team status, pending approvals, upward flow items
+   - Originator dashboard: my reports, deadlines, feedback received
+   - Reviewer dashboard: pending reviews, workload, completion rates
 
-2. **Manager Amendment Layer**
-   - Annotate/add context to aggregated data
-   - Distinguish original vs. amended values
-   - Aggregate upward flow items at each hierarchy level
-   - Auto-generate executive summaries with key metrics
+2. **Chart Visualizations**
+   - Bar charts for comparisons
+   - Line charts for trends over time
+   - Pie charts for distribution
+   - Gauge charts for targets/progress
 
-3. **Drill-Down Navigation**
-   - Navigate from any summary value to contributing source reports
-   - Data lineage: originator, original value, amendment history, aggregation path
-   - Visual hierarchy navigation (tree view, breadcrumb)
+3. **Export Capabilities**
+   - PDF reports with customizable layouts
+   - Excel export with data tables and charts
+   - Word document export for formal reports
+   - Batch export for multiple reports
 
-4. **AuditLog Model** - Track all data changes
-   - User, timestamp, before/after values
-   - Full change history for compliance
+4. **Ad-hoc Report Builder**
+   - Custom queries across report data
+   - Filter by period, org unit, template
+   - Aggregation and grouping options
+   - Save and share custom reports
 
 Admin pages:
-- `/Admin/Aggregation/Rules` - Configure aggregation rules per field
-- `/Admin/Aggregation/Summary` - View aggregated data with drill-down
-- `/Admin/AuditLog/Index` - View all data changes
+- `/Admin/Dashboard/Executive` - Executive-level dashboard
+- `/Admin/Dashboard/Manager` - Manager-level dashboard
+- `/Admin/Export/Index` - Export reports in various formats
+- `/Admin/Reports/Builder` - Ad-hoc report builder
 
 ### Key Files to Reference
 | File | Pattern/Purpose |
@@ -309,14 +321,18 @@ Admin pages:
 | `Models/Feedback.cs` | Management feedback with categories, visibility, threading |
 | `Models/Recommendation.cs` | Directives with target scope, priority, due dates |
 | `Models/Decision.cs` | Responses to upward flow with outcomes, acknowledgment |
+| `Models/AggregationRule.cs` | Configurable aggregation methods with numeric/text modes |
+| `Models/AggregatedValue.cs` | Computed aggregates with source tracking and amendments |
+| `Models/ManagerAmendment.cs` | Annotations/corrections with approval workflow |
+| `Models/AuditLog.cs` | Comprehensive change tracking with entity snapshots |
 | `Pages/Admin/Reports/Fill.cshtml` | Inline upward flow entry forms |
-| `Pages/Admin/Reports/Fill.cshtml.cs` | Handler methods for add/remove upward flow |
 | `Pages/Admin/Reports/View.cshtml` | Display all flow sections (upward, workflow, downward) |
-| `Pages/Admin/Reports/View.cshtml.cs` | Handler methods for comments/confirmations |
 | `Pages/Admin/UpwardFlow/*/Index.cshtml` | Status management with dropdown menus |
 | `Pages/Admin/Workflow/*/Index.cshtml` | Comment moderation and confirmation management |
 | `Pages/Admin/Downward/*/Index.cshtml` | Feedback, recommendations, decisions management |
-| `Data/ApplicationDbContext.cs` | Entity config with indexes, relationships |
+| `Pages/Admin/Aggregation/*/Index.cshtml` | Aggregation rules and summary with drill-down |
+| `Pages/Admin/AuditLog/Index.cshtml` | Audit log with filtering, stats, CSV export |
+| `Data/ApplicationDbContext.cs` | Entity config with indexes, relationships (Phase 7 entities) |
 | `Data/SeedData.cs` | C# seeding with Phase 5+6 workflow and downward flow data |
 
 ### Build Commands

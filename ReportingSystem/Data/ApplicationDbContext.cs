@@ -44,6 +44,12 @@ public class ApplicationDbContext : DbContext
     public DbSet<Recommendation> Recommendations { get; set; }
     public DbSet<Decision> Decisions { get; set; }
 
+    // Aggregation & Audit DbSets (Phase 7)
+    public DbSet<AggregationRule> AggregationRules { get; set; }
+    public DbSet<AggregatedValue> AggregatedValues { get; set; }
+    public DbSet<ManagerAmendment> ManagerAmendments { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
+
     // Notification DbSets
     public DbSet<Notification> Notifications { get; set; }
 
@@ -480,6 +486,107 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.SupportRequest)
                 .WithMany()
                 .HasForeignKey(e => e.SupportRequestId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure AggregationRule (Phase 7)
+        modelBuilder.Entity<AggregationRule>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportFieldId);
+            entity.HasIndex(e => e.Method);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.Priority);
+
+            entity.HasOne(e => e.ReportField)
+                .WithMany()
+                .HasForeignKey(e => e.ReportFieldId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure AggregatedValue (Phase 7)
+        modelBuilder.Entity<AggregatedValue>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.AggregationRuleId, e.ReportPeriodId, e.OrganizationalUnitId }).IsUnique();
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.ComputedAt);
+            entity.HasIndex(e => e.HasAmendment);
+
+            entity.HasOne(e => e.AggregationRule)
+                .WithMany(r => r.AggregatedValues)
+                .HasForeignKey(e => e.AggregationRuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ReportPeriod)
+                .WithMany()
+                .HasForeignKey(e => e.ReportPeriodId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.OrganizationalUnit)
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationalUnitId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ComputedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ComputedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure ManagerAmendment (Phase 7)
+        modelBuilder.Entity<ManagerAmendment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.AggregatedValueId);
+            entity.HasIndex(e => e.AmendedById);
+            entity.HasIndex(e => e.AmendmentType);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.ApprovalStatus);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasOne(e => e.AggregatedValue)
+                .WithMany(v => v.Amendments)
+                .HasForeignKey(e => e.AggregatedValueId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.AmendedBy)
+                .WithMany()
+                .HasForeignKey(e => e.AmendedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ApprovedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ApprovedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure AuditLog (Phase 7)
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Action);
+            entity.HasIndex(e => e.EntityType);
+            entity.HasIndex(e => e.EntityId);
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.CorrelationId);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.OrganizationalUnitId);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Report)
+                .WithMany()
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.OrganizationalUnit)
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationalUnitId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
