@@ -1,0 +1,118 @@
+@page
+@model ReportingSystem.Pages.Admin.Templates.CreateModel
+@{
+    ViewData["Title"] = "Create Report Template";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Create Report Template</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <h5 class="border-bottom pb-2 mb-3">Basic Information</h5>
+
+                        <div class="mb-3">
+                            <label asp-for="Template.Name" class="form-label"></label>
+                            <input asp-for="Template.Name" class="form-control" placeholder="e.g., Monthly Department Report" />
+                            <span asp-validation-for="Template.Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Template.Description" class="form-label"></label>
+                            <textarea asp-for="Template.Description" class="form-control" rows="3"
+                                      placeholder="Describe the purpose and scope of this report template"></textarea>
+                            <span asp-validation-for="Template.Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Template.Schedule" class="form-label"></label>
+                                <select asp-for="Template.Schedule" asp-items="Model.ScheduleOptions" class="form-select"></select>
+                                <span asp-validation-for="Template.Schedule" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">Standard Sections</h5>
+                        <p class="text-muted small">Select which standard upward-flow sections to include in reports based on this template.</p>
+
+                        <div class="mb-2 form-check">
+                            <input asp-for="Template.IncludeSuggestedActions" class="form-check-input" />
+                            <label asp-for="Template.IncludeSuggestedActions" class="form-check-label">
+                                Suggested Actions <small class="text-muted">(Process improvements, innovations)</small>
+                            </label>
+                        </div>
+
+                        <div class="mb-2 form-check">
+                            <input asp-for="Template.IncludeNeededResources" class="form-check-input" />
+                            <label asp-for="Template.IncludeNeededResources" class="form-check-label">
+                                Needed Resources <small class="text-muted">(Budget, equipment, personnel)</small>
+                            </label>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="Template.IncludeNeededSupport" class="form-check-input" />
+                            <label asp-for="Template.IncludeNeededSupport" class="form-check-label">
+                                Needed Support <small class="text-muted">(Management intervention, coordination)</small>
+                            </label>
+                        </div>
+
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">Settings</h5>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="Template.AutoSaveIntervalSeconds" class="form-label"></label>
+                                <input asp-for="Template.AutoSaveIntervalSeconds" class="form-control" type="number" min="10" max="600" />
+                                <span asp-validation-for="Template.AutoSaveIntervalSeconds" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Template.MaxAttachmentSizeMb" class="form-label"></label>
+                                <input asp-for="Template.MaxAttachmentSizeMb" class="form-control" type="number" min="1" max="100" />
+                                <span asp-validation-for="Template.MaxAttachmentSizeMb" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Template.AllowedFileTypes" class="form-label"></label>
+                            <input asp-for="Template.AllowedFileTypes" class="form-control"
+                                   placeholder=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg" />
+                            <div class="form-text">Comma-separated list of allowed file extensions.</div>
+                        </div>
+
+                        <div class="mb-2 form-check">
+                            <input asp-for="Template.AllowPrePopulation" class="form-check-input" />
+                            <label asp-for="Template.AllowPrePopulation" class="form-check-label">
+                                Allow pre-populating fields from previous period
+                            </label>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="Template.AllowBulkImport" class="form-check-input" />
+                            <label asp-for="Template.AllowBulkImport" class="form-check-label">
+                                Allow bulk data import from Excel/CSV
+                            </label>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-page="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Create Template
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

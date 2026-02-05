@@ -1,0 +1,222 @@
+@page
+@using ReportingSystem.Models
+@model ReportingSystem.Pages.Admin.Workflow.Confirmations.IndexModel
+@{
+    ViewData["Title"] = "Confirmation Requests";
+}
+
+<div class="container-fluid mt-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-person-check text-success"></i> Confirmation Requests</h2>
+            <p class="text-muted mb-0">Manage confirmation tags requesting user verification on reports</p>
+        </div>
+        <div>
+            @if (Model.PendingCount > 0)
+            {
+                <span class="badge bg-warning text-dark fs-6 me-2">
+                    <i class="bi bi-clock"></i> @Model.PendingCount pending
+                </span>
+            }
+            <a asp-page="/Admin/Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select asp-for="StatusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        @foreach (var status in ConfirmationStatus.All)
+                        {
+                            <option value="@status">@ConfirmationStatus.DisplayName(status)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Report ID</label>
+                    <input asp-for="ReportId" class="form-control" type="number" placeholder="Filter by report..." />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Filter</label>
+                    <div class="form-check">
+                        <input asp-for="OnlyOverdue" class="form-check-input" type="checkbox" />
+                        <label class="form-check-label" asp-for="OnlyOverdue">Only Overdue (3+ days)</label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Search</label>
+                    <input asp-for="SearchTerm" class="form-control" placeholder="Search message or users..." />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                    <a asp-page="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Results</h5>
+            <span class="badge bg-success">@Model.TotalCount requests</span>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.Confirmations.Count == 0)
+            {
+                <div class="alert alert-info m-3">
+                    <i class="bi bi-info-circle"></i> No confirmation requests found matching your criteria.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Report</th>
+                                <th>Requested By</th>
+                                <th>Tagged User</th>
+                                <th>Message</th>
+                                <th>Status</th>
+                                <th>Age</th>
+                                <th style="width:220px">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tag in Model.Confirmations)
+                            {
+                                var isOverdue = tag.IsPending && tag.DaysSinceRequested >= 3;
+                                <tr class="@(isOverdue ? "table-warning" : "")">
+                                    <td>
+                                        <a asp-page="/Admin/Reports/View" asp-route-id="@tag.ReportId">
+                                            @tag.Report.ReportTemplate.Name
+                                        </a>
+                                        <br /><small class="text-muted">by @tag.Report.SubmittedBy.Name</small>
+                                        @if (!string.IsNullOrEmpty(tag.SectionReference))
+                                        {
+                                            <br /><span class="badge bg-light text-dark">@tag.SectionReference</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong>@tag.RequestedBy.Name</strong>
+                                        <br /><small class="text-muted">@tag.RequestedBy.Email</small>
+                                    </td>
+                                    <td>
+                                        <strong>@tag.TaggedUser.Name</strong>
+                                        <br /><small class="text-muted">@tag.TaggedUser.Email</small>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(tag.Message))
+                                        {
+                                            if (tag.Message.Length > 60)
+                                            {
+                                                @tag.Message.Substring(0, 60)<text>...</text>
+                                            }
+                                            else
+                                            {
+                                                @tag.Message
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">No message</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(tag.Response))
+                                        {
+                                            <br /><small class="text-success"><i class="bi bi-reply"></i> @(tag.Response.Length > 40 ? tag.Response.Substring(0, 40) + "..." : tag.Response)</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @ConfirmationStatus.BadgeClass(tag.Status)">
+                                            @ConfirmationStatus.DisplayName(tag.Status)
+                                        </span>
+                                        @if (tag.RespondedAt.HasValue)
+                                        {
+                                            <br /><small class="text-muted">@tag.RespondedAt.Value.ToString("MMM dd")</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @tag.DaysSinceRequested days
+                                        @if (isOverdue)
+                                        {
+                                            <br /><span class="badge bg-danger">Overdue</span>
+                                        }
+                                        @if (tag.ReminderSentAt.HasValue)
+                                        {
+                                            <br /><small class="text-info"><i class="bi bi-bell"></i> Reminded</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            @if (tag.IsPending)
+                                            {
+                                                <form method="post" asp-page-handler="SendReminder" class="d-inline">
+                                                    <input type="hidden" name="id" value="@tag.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-info" title="Send Reminder">
+                                                        <i class="bi bi-bell"></i>
+                                                    </button>
+                                                </form>
+                                                <form method="post" asp-page-handler="Cancel" class="d-inline">
+                                                    <input type="hidden" name="id" value="@tag.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Cancel Request"
+                                                            onclick="return confirm('Cancel this confirmation request?')">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    Status
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    @foreach (var status in ConfirmationStatus.All.Where(s => s != tag.Status))
+                                                    {
+                                                        <li>
+                                                            <form method="post" asp-page-handler="UpdateStatus" class="d-inline">
+                                                                <input type="hidden" name="id" value="@tag.Id" />
+                                                                <input type="hidden" name="newStatus" value="@status" />
+                                                                <button type="submit" class="dropdown-item">
+                                                                    @ConfirmationStatus.DisplayName(status)
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

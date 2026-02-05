@@ -1,0 +1,67 @@
+@model List<ReportingSystem.Models.Delegation>
+
+<div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Delegator</th>
+                <th>Delegate</th>
+                <th>Scope</th>
+                <th>Period</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var d in Model)
+            {
+                <tr class="@(!d.IsActive || d.RevokedAt != null ? "opacity-50" : "")">
+                    <td>
+                        <strong>@d.Delegator.Name</strong>
+                        <br /><small class="text-muted">@d.Delegator.Email</small>
+                    </td>
+                    <td>
+                        <strong>@d.Delegate.Name</strong>
+                        <br /><small class="text-muted">@d.Delegate.Email</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-outline-primary border">@ReportingSystem.Models.DelegationScope.DisplayName(d.Scope)</span>
+                    </td>
+                    <td>
+                        <small>@d.StartDate.ToString("yyyy-MM-dd") — @d.EndDate.ToString("yyyy-MM-dd")</small>
+                    </td>
+                    <td>
+                        @if (d.RevokedAt.HasValue)
+                        {
+                            <span class="badge bg-secondary">Revoked</span>
+                        }
+                        else if (d.IsCurrentlyEffective)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else if (d.StartDate > DateTime.UtcNow)
+                        {
+                            <span class="badge bg-info">Upcoming</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Expired</span>
+                        }
+                    </td>
+                    <td>
+                        @if (d.IsActive && d.RevokedAt == null && d.EndDate >= DateTime.UtcNow)
+                        {
+                            <form method="post" asp-page-handler="Revoke" asp-page="/Admin/Delegations/Index" class="d-inline">
+                                <input type="hidden" name="id" value="@d.Id" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                        onclick="return confirm('Are you sure you want to revoke this delegation?');">
+                                    <i class="bi bi-x-circle"></i> Revoke
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
