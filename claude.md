@@ -347,6 +347,37 @@ dotnet run --project /home/user/ReportingSystem/ReportingSystem/ReportingSystem.
 dotnet restore --source /home/user/ReportingSystem/local-packages/ /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
 ```
 
+### Demo Guide
+**`DEMO_GUIDE.md`** at project root - comprehensive demonstration walkthrough including:
+- Authentication flow (magic link login)
+- 6 demo scenarios by user role (Admin, Originator, TeamManager, DeptHead, Executive, Auditor)
+- Key users for demo with emails and roles
+- Step-by-step navigation through all system features
+- Summary of information flow (upward, downward, workflow, aggregation)
+
 ### Git Branch
 `claude/create-reporting-system-2FPWa` - all work committed and pushed
+
+### Session Handoff Notes (Latest)
+**Date**: February 5, 2026
+
+**Completed This Session**:
+1. Created comprehensive `DEMO_GUIDE.md` with end-to-end demonstration walkthrough
+2. Guide covers all 6 user role perspectives with specific login credentials
+3. Demonstrates bidirectional information flow (upward/downward)
+4. Includes key demo points to highlight during presentation
+
+**System Status**:
+- All Phase 1-7 features fully implemented and functional
+- Build succeeds with 0 errors
+- Seed data includes realistic sample data across all entities
+- 60 users across 7 roles, 36 org units, 4 sample reports with full workflow data
+
+**Ready for Demo**:
+- Login as any seeded user (magic link displayed in dev mode)
+- Key demo users: `president@guc.edu.eg` (Executive), `admin@guc.edu.eg` (Admin), `head.sdev@guc.edu.eg` (DeptHead), `mgr.backend@guc.edu.eg` (TeamManager), `dev.backend1@guc.edu.eg` (Originator)
+
+**Next Steps**:
+1. Phase 8: Dashboards & Export (role-based dashboards, charts, PDF/Excel export)
+2. Phase 9: Polish (enhanced notifications, responsive design, performance)
 
