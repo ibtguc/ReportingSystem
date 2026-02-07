@@ -2,162 +2,281 @@
 
 ## Project Overview
 
-ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows (upward reports/suggestions/resources/support and downward feedback/recommendations/decisions).
+ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows.
+
+**Current Status**: Phase 1 Infrastructure Complete
 
 ## Tech Stack
 
-- **Framework**: ASP.NET Core 8.0, Razor Pages
+- **Framework**: ASP.NET Core 8.0, Razor Pages (not MVC)
 - **Database**: EF Core 8.0 with SQLite (dev) / SQL Server (prod)
-- **Auth**: Cookie-based with magic link passwordless login (15-min token expiry, 30-day sliding cookie)
-- **Email**: Microsoft Graph API (disabled in dev mode)
-- **Frontend**: Bootstrap 5.3.3, Bootstrap Icons (CDN), jQuery + jQuery Validation (bundled)
+- **Auth**: Cookie-based with magic link passwordless login
+  - 15-minute token expiry
+  - 30-day sliding session cookie
+- **Email**: Microsoft Graph API (disabled by default in dev)
+- **Frontend**: Bootstrap 5.3.3, Bootstrap Icons (CDN), jQuery + jQuery Validation
 - **Data Protection**: Keys persisted to `/keys` folder
 
-## Build & Run
+## Quick Start
 
 ```bash
-# Restore (uses local NuGet feed due to environment proxy)
-dotnet restore --source /home/user/ReportingSystem/local-packages/ \
-  --source /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
-
 # Build
-dotnet build --no-restore /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
+dotnet build ReportingSystem/ReportingSystem.csproj
 
-# Run (dev mode)
-dotnet run --project /home/user/ReportingSystem/ReportingSystem/ReportingSystem.csproj
+# Run (creates db/reporting.db automatically)
+dotnet run --project ReportingSystem/ReportingSystem.csproj
+
+# Dev URL
+http://localhost:5296
 ```
-
-Dev URL: http://localhost:5296 / https://localhost:7155
 
 ## Project Structure
 
 ```
 ReportingSystem/
-├── Data/                  # EF Core DbContext, seed data, user seeder
-├── Filters/               # AutomaticBackupFilter (pre-POST/PUT/DELETE backups)
-├── Models/                # Domain entities (User, MagicLink, Notification, DatabaseBackup)
+├── Data/
+│   ├── ApplicationDbContext.cs    # EF Core DbContext with 4 DbSets
+│   ├── SeedData.cs                # Placeholder for domain seeding
+│   └── UserSeeder.cs              # Seeds 3 admin users
+├── Filters/
+│   └── AutomaticBackupFilter.cs   # Pre-POST/PUT/DELETE backup trigger
+├── Models/
+│   ├── User.cs                    # User + MagicLink models
+│   ├── Notification.cs            # In-app notifications
+│   └── DatabaseBackup.cs          # Backup records
 ├── Pages/
-│   ├── Admin/             # Requires authentication
-│   │   ├── Backup/        # Database backup management (create/restore/delete/WAL)
-│   │   ├── Users/         # User CRUD (Index, Create, Edit, Details, Delete)
-│   │   └── Dashboard.cshtml
-│   ├── Auth/              # Anonymous access (Login, Verify, Logout)
-│   └── Shared/            # _Layout, _ValidationScriptsPartial
-├── Services/              # MagicLink, Email, Notification, Backup, DailyBackupHostedService
+│   ├── Admin/                     # [Authorize] - requires login
+│   │   ├── Backup/Index.cshtml    # Backup management UI
+│   │   ├── Users/                 # CRUD for users
+│   │   └── Dashboard.cshtml       # Admin home (placeholder)
+│   ├── Auth/                      # [AllowAnonymous]
+│   │   ├── Login.cshtml           # Magic link request
+│   │   ├── Verify.cshtml          # Token verification
+│   │   └── Logout.cshtml          # Sign out
+│   ├── Shared/
+│   │   └── _Layout.cshtml         # Main layout with nav
+│   ├── Index.cshtml               # Public landing page
+│   └── Error.cshtml               # Error page
+├── Services/
+│   ├── MagicLinkService.cs        # Token generation/verification
+│   ├── EmailService.cs            # Microsoft Graph email
+│   ├── NotificationService.cs     # In-app notifications CRUD
+│   ├── DatabaseBackupService.cs   # Backup create/restore/delete
+│   └── DailyBackupHostedService.cs # Background backup scheduler
 ├── wwwroot/
 │   ├── css/site.css
-│   ├── js/                # site.js, filter-state.js (URL + sessionStorage persistence)
-│   └── lib/               # Bootstrap, jQuery, jQuery Validation (bundled)
-├── Program.cs             # DI setup, auth config, database init
-├── appsettings.json       # Production config template
-└── appsettings.Development.json  # SQLite config
+│   ├── js/site.js
+│   └── lib/                       # Bootstrap, jQuery (bundled)
+├── Program.cs                     # App configuration & DI
+├── appsettings.json               # Production config
+└── appsettings.Development.json   # Dev config (SQLite)
 ```
 
-## Architecture Patterns
+## Current Models (Phase 1)
 
-- **Razor Pages with `[BindProperty]`**: All form-bound properties use `[BindProperty]` attribute
-- **EF Core with eager loading**: Use `.Include()` for navigation properties
-- **Policy-based authorization**: `"AdministratorOnly"` policy, folder-level auth (`/Admin` requires auth, `/Auth` is anonymous)
-- **Modal dialogs**: Bootstrap modals for confirmations and AJAX operations
-- **TempData flash messages**: Success/error messages via `TempData["SuccessMessage"]` / `TempData["ErrorMessage"]`
-- **Filter state**: `filter-state.js` persists filters in URL query params + sessionStorage
-- **Async/await**: All database operations are async
-- **Nullable reference types**: Enabled project-wide
-- **File-scoped namespaces**: Use `namespace X;` syntax (not `namespace X { }`)
+### User
+```csharp
+public class User
+{
+    public int Id { get; set; }
+    public string Email { get; set; }           // Unique
+    public string Name { get; set; }
+    public string Role { get; set; }            // "Administrator" only for now
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public ICollection<MagicLink> MagicLinks { get; set; }
+}
+```
 
-## Database
+### MagicLink
+```csharp
+public class MagicLink
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public string Token { get; set; }           // 32-byte secure random
+    public DateTime ExpiresAt { get; set; }     // 15 minutes
+    public bool IsUsed { get; set; }
+    public DateTime? UsedAt { get; set; }
+    public string? IpAddress { get; set; }
+    public string? UserAgent { get; set; }
+}
+```
 
-- **Dev**: SQLite at `db/reporting.db` (auto-created via `EnsureCreatedAsync`)
-- **Prod**: SQL Server (configure in appsettings.json)
-- **Seeded users**: admin@reporting.com, admin1@reporting.com, admin2@reporting.com (all Administrators)
-- **Known limitation**: `TimeSpan` properties cannot be used in `ORDER BY` with SQLite provider
+### Notification
+```csharp
+public class Notification
+{
+    public int Id { get; set; }
+    public string UserId { get; set; }          // String (not FK to User)
+    public NotificationType Type { get; set; }  // Enum
+    public string Title { get; set; }
+    public string Message { get; set; }
+    public string? ActionUrl { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? ReadAt { get; set; }
+    public NotificationPriority Priority { get; set; }
+    public int? RelatedEntityId { get; set; }
+}
 
-## Key Services
+public enum NotificationType
+{
+    ReportSubmitted, ReportApproved, ReportRejected,
+    FeedbackReceived, DecisionMade, RecommendationIssued,
+    ConfirmationRequested, DeadlineApproaching, General
+}
+
+public enum NotificationPriority
+{
+    Low, Normal, High, Urgent
+}
+```
+
+### DatabaseBackup
+```csharp
+public class DatabaseBackup
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string? Description { get; set; }
+    public string FileName { get; set; }
+    public string FilePath { get; set; }
+    public long FileSizeBytes { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public BackupType Type { get; set; }
+    public string? CreatedBy { get; set; }
+    public bool IsAutomaticDailyBackup { get; set; }
+}
+
+public enum BackupType { Manual, AutomaticDaily, PreRestore }
+```
+
+## Services
 
 | Service | Purpose |
 |---------|---------|
-| `MagicLinkService` | Generate/validate magic link tokens |
-| `EmailService` | Send emails via Microsoft Graph API |
-| `NotificationService` | In-app notifications CRUD |
-| `DatabaseBackupService` | Create/restore/delete backups, WAL checkpoint |
-| `DailyBackupHostedService` | Automatic backups at 2:00 and 14:00 UTC |
-| `AutomaticBackupFilter` | Trigger backup before POST/PUT/DELETE requests |
+| `MagicLinkService` | Generate 32-byte tokens, verify & consume, cleanup expired |
+| `EmailService` | Send via Microsoft Graph API (configurable, disabled by default) |
+| `NotificationService` | Create, list, mark read, cleanup old notifications |
+| `DatabaseBackupService` | Create manual/auto backups, restore, WAL checkpoint |
+| `DailyBackupHostedService` | Background service, checks hourly, creates backup every 12h |
 
-## Domain Implementation Phases (SRS-based)
+## Key Features
 
-Phase 1 (complete): Infrastructure - Auth, backup, notifications, admin pages, layout
+### Authentication Flow
+1. User enters email on `/Auth/Login`
+2. `MagicLinkService` generates token, creates `MagicLink` record
+3. In dev mode: link displayed on page
+4. In prod: `EmailService` sends email with link
+5. User clicks `/Auth/Verify?token=xxx`
+6. `MagicLinkService.VerifyMagicLinkAsync` validates token
+7. Cookie issued via `HttpContext.SignInAsync`
+
+### Database Backup System
+- **Automatic**: Every 12 hours via `DailyBackupHostedService`
+- **Pre-modification**: `AutomaticBackupFilter` triggers on POST/PUT/DELETE
+- **Manual**: Admin can create named backups
+- **Pre-restore**: Automatic backup before any restore
+- **WAL checkpoint**: Force SQLite WAL flush
+- **Storage**: `db/Backups/` folder
+
+### Authorization
+- `/Admin/*` requires authentication (cookie)
+- `/Auth/*` allows anonymous
+- `/Index` and `/Error` allow anonymous
+- Single role: "Administrator" (future: multi-role RBAC)
+
+## Configuration
+
+### appsettings.Development.json
+```json
+{
+  "DatabaseSettings": {
+    "Provider": "SQLite",
+    "ConnectionStrings": {
+      "SQLite": "Data Source=db/reporting.db"
+    }
+  }
+}
+```
+
+### appsettings.json (Email - disabled by default)
+```json
+{
+  "EmailSettings": {
+    "Enabled": false,
+    "TenantId": "",
+    "ClientId": "",
+    "ClientSecret": "",
+    "SenderUserId": "",
+    "SenderEmail": "",
+    "SenderName": ""
+  }
+}
+```
+
+## Seeded Data
+
+| Email | Name | Role |
+|-------|------|------|
+| admin@reporting.com | System Administrator | Administrator |
+| admin1@reporting.com | Administrator One | Administrator |
+| admin2@reporting.com | Administrator Two | Administrator |
+
+## Development Patterns
+
+- **File-scoped namespaces**: `namespace X;` (not `namespace X { }`)
+- **Nullable reference types**: Enabled (`<Nullable>enable</Nullable>`)
+- **Async/await**: All database operations
+- **[BindProperty]**: For Razor Pages form binding
+- **TempData**: Flash messages (`TempData["SuccessMessage"]`, `TempData["ErrorMessage"]`)
+- **Include()**: Eager loading for navigation properties
+
+## Future Phases (TODO)
 
 ### Phase 2: Organization & User Hierarchy
-- **OrganizationalUnit** model: self-referential hierarchy (Campus > Department > Sector > Team), unlimited depth
-- Extend **User** model: link to OrganizationalUnit, add role (SystemAdmin, ReportOriginator, ReportReviewer, TeamManager, DepartmentHead, Executive, Auditor)
-- **Role/Permission** system: RBAC with configurable permissions per role
-- **Delegation** model: temporary authority transfer (delegator, delegate, start/end dates, scope)
-- Admin pages: Org unit CRUD, org tree visualization, role/permission management
-- Update layout navigation for role-based menus
+- `OrganizationalUnit` model with self-referential hierarchy
+- Extend `User` with org unit FK and expanded roles
+- `Delegation` model for temporary authority transfer
+- Org tree visualization
 
-### Phase 3: Report Templates & Report Entry
-- **ReportTemplate** model: name, description, version, assigned org units/roles, schedule (daily/weekly/monthly/quarterly/annual)
-- **ReportField** definition: field types (numeric, text, date, dropdown, checkbox, file upload, rich text, table/grid), validation rules, calculated fields with formulas
-- **ReportPeriod** model: time period definition linked to template schedule
-- **Report** model: instance for specific user + period + template, status (Draft, Submitted, UnderReview, Approved, Rejected, Amended)
-- **ReportFieldValue**: actual data entries per report per field
-- **Attachment** model: file uploads with size/type constraints
-- Pages: Template designer (admin), report entry screen (dynamic form from template), draft auto-save, bulk import from Excel/CSV
-- Pre-populate from previous period data
+### Phase 3: Report Templates & Entry
+- `ReportTemplate`, `ReportField`, `ReportPeriod` models
+- `Report`, `ReportFieldValue`, `Attachment` models
+- Dynamic form generation from templates
+- Draft auto-save, bulk import
 
-### Phase 4: Upward Flow (Suggestions, Resources, Support)
-- **SuggestedAction** model: title, description, justification, expected outcome, timeline, category (Process Improvement, Cost Reduction, Quality Enhancement, Innovation, Risk Mitigation), priority (Critical/High/Medium/Low), status tracking
-- **ResourceRequest** model: type, description, quantity, justification, urgency, category (Budget, Equipment, Software, Personnel, Materials, Facilities, Training), estimated cost, status tracking
-- **SupportRequest** model: type, description, current situation, desired outcome, urgency, category (Management Intervention, Cross-Dept Coordination, Technical Assistance, Training, Conflict Resolution, Policy Clarification), status tracking
-- Each linked to a Report, with file attachments
-- Pages: Entry forms for each type, list views with filtering, status management
+### Phase 4: Upward Flow
+- `SuggestedAction`, `ResourceRequest`, `SupportRequest` models
+- Entry forms, status tracking
 
 ### Phase 5: Workflow & Tagging
-- **WorkflowInstance** model: report lifecycle (Draft → Submitted → Under Review → Approved/Rejected/Amended), configurable approval chain
-- **ConfirmationTag** model: originator tags another user to confirm/verify report section, status (Pending, Confirmed, RevisionRequested, Declined), with timestamps
-- **Comment** model: threaded discussions on report sections, @mentions support
-- Route submitted reports to direct manager automatically
-- Submission deadline enforcement with grace periods
-- Reminder notifications (3 days, 1 day, same day before deadline)
-- Lock reports after final approval
+- Approval workflow (Draft → Submitted → Under Review → Approved/Rejected)
+- `ConfirmationTag` for section verification
+- `Comment` with @mentions
+- Deadline enforcement
 
-### Phase 6: Downward Flow (Feedback, Recommendations, Decisions)
-- **Feedback** model: category (Positive Recognition, Concern, Observation, Question, General), visibility (Private, Team-wide, Department-wide), threading support, acknowledgment tracking
-- **Recommendation** model: title, description, rationale, timeline, priority, category (Process Change, Skill Development, Performance Improvement, Compliance, Strategic Alignment), target scope (Individual/Team/Department/Org-wide), status tracking, cascade through hierarchy
-- **Decision** model: type, outcome (Approved, Approved with Modifications, Partially Approved, Deferred, Rejected, Referred), justification, effective date, conditions, linked to originating request (SuggestedAction/ResourceRequest/SupportRequest), audit trail, cascade with acknowledgment tracking
-- Pages: Response forms for each type, linking to source requests
+### Phase 6: Downward Flow
+- `Feedback`, `Recommendation`, `Decision` models
+- Linked to originating requests
 
 ### Phase 7: Aggregation & Drill-Down
-- Aggregation engine: configurable rules per field (Sum, Average, Weighted Average, Min, Max, Count, Percentage, Custom Formula)
-- Textual aggregation: concatenate, select representative, manual synthesis
-- Manager amendment layer: annotate/add context to aggregated data, distinguish original vs. amended
-- Aggregate upward flow items (suggestions, resources, support) at each hierarchy level
-- Auto-generate executive summaries with key metrics
-- **Drill-down**: navigate from any summary value to contributing source reports
-- **Data lineage**: originator, original value, amendment history, aggregation path
-- **AuditLog** model: all data changes with user, timestamp, before/after values
-- Visual hierarchy navigation (tree view, breadcrumb)
+- Aggregation rules per field
+- Drill-down navigation
+- `AuditLog` for data lineage
 
 ### Phase 8: Dashboards & Export
-- Role-based dashboards with KPIs and visualizations
-- Submission status, pending actions, trends, alerts, recent activity
-- Request status dashboard (open suggestions, pending resource requests, unresolved support)
-- Chart visualizations (bar, line, pie, gauge)
-- Export: PDF/Word/Excel reports with customizable layouts
-- Ad-hoc report builder for custom queries
+- Role-based KPI dashboards
+- Chart visualizations
+- PDF/Word/Excel export
+- Ad-hoc report builder
 
 ### Phase 9: Notifications & Polish
-- Enhanced notification system: deadline reminders, approval notifications, tag/mention alerts, feedback/decision notifications
-- Notification preferences per user (by type and channel)
-- Notification digest (daily/weekly summary)
-- Responsive design polish for mobile/tablet
-- Contextual help and tooltips
-- Performance optimization
+- Enhanced notifications with preferences
+- Responsive design polish
 
-## Reference Project
+## Reference
 
-Infrastructure was replicated from `/ref-only-example/SchedulingSystem/` with namespace/branding changes. Domain-specific scheduling code was NOT replicated.
-
-## NuGet Environment Note
-
-NuGet.org is blocked by the environment proxy. Packages are downloaded via Python script to `/home/user/ReportingSystem/local-packages/` and restored from that local source. Use `--source /home/user/ReportingSystem/local-packages/` flag with `dotnet restore`.
+Infrastructure based on `/ref-only-example/SchedulingSystem/` with namespace changes. Domain-specific scheduling code was not replicated.
