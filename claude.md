@@ -4,7 +4,7 @@
 
 ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows, structured meeting management, confidentiality controls, and full audit trail.
 
-**Current Status**: Phases 1-9 Complete — Phase 10 (Report Templates & Polish) is NEXT
+**Current Status**: Phases 1-10 Complete — Phase 11 (Knowledge Base & AI) is NEXT
 
 ## Tech Stack
 
@@ -59,11 +59,12 @@ ReportingSystem/
 ├── Data/
 │   ├── ApplicationDbContext.cs      # EF Core DbContext (~420 lines)
 │   │                                 # DbSets: Users, MagicLinks, Committees, CommitteeMemberships,
-│   │                                 # ShadowAssignments, Reports, Attachments, ReportStatusHistories,
-│   │                                 # ReportSourceLinks, Directives, DirectiveStatusHistories,
-│   │                                 # Meetings, MeetingAgendaItems, MeetingAttendees,
-│   │                                 # MeetingDecisions, ActionItems, ConfidentialityMarkings,
-│   │                                 # AccessGrants, AuditLogs, Notifications, DatabaseBackups
+│   │                                 # ShadowAssignments, Reports, ReportTemplates, Attachments,
+│   │                                 # ReportStatusHistories, ReportSourceLinks, Directives,
+│   │                                 # DirectiveStatusHistories, Meetings, MeetingAgendaItems,
+│   │                                 # MeetingAttendees, MeetingDecisions, ActionItems,
+│   │                                 # ConfidentialityMarkings, AccessGrants, AuditLogs,
+│   │                                 # Notifications, DatabaseBackups
 │   ├── SeedData.cs                  # Placeholder for domain seeding
 │   ├── UserSeeder.cs                # Seeds 3 admin users
 │   └── OrganizationSeeder.cs        # Seeds ~155 users, ~185 committees, memberships (853 lines)
@@ -74,7 +75,8 @@ ReportingSystem/
 │   ├── Committee.cs                 # Committee + HierarchyLevel enum (Phase 2)
 │   ├── CommitteeMembership.cs       # Membership + CommitteeRole enum (Phase 2)
 │   ├── ShadowAssignment.cs          # Shadow/backup assignments (Phase 2)
-│   ├── Report.cs                    # Report + ReportType/ReportStatus enums (Phase 3)
+│   ├── Report.cs                    # Report + ReportType/ReportStatus enums (Phase 3) + TemplateId FK (Phase 10)
+│   ├── ReportTemplate.cs            # Configurable report templates with section config (Phase 10)
 │   ├── Attachment.cs                # File attachments for reports (Phase 3)
 │   ├── ReportStatusHistory.cs       # Audit trail for status transitions (Phase 3)
 │   ├── ReportSourceLink.cs          # Summary→Source report links (Phase 4)
@@ -95,6 +97,7 @@ ReportingSystem/
 │   │   ├── Dashboard.cshtml(.cs)    # Stats: org + report + directive + meeting counts
 │   │   ├── Backup/Index             # Backup management (SystemAdmin only)
 │   │   ├── Users/                   # CRUD: Index, Create, Edit, Details, Delete
+│   │   ├── Templates/               # Report template CRUD: Index, Create, Edit, Details, Delete (Phase 10)
 │   │   └── Organization/
 │   │       ├── Index                # Org tree visualization
 │   │       ├── _CommitteeTreeNode   # Recursive tree partial
@@ -105,9 +108,9 @@ ReportingSystem/
 │   │   └── Logout                   # Sign out
 │   ├── Reports/
 │   │   ├── Index                    # Filterable report list (committee, status, type, mine)
-│   │   ├── Create                   # New report with file uploads
+│   │   ├── Create                   # New report with template picker + Quill rich text editor (Phase 10)
 │   │   ├── Details                  # Full view + actions + source/summary links + drill-down
-│   │   ├── Edit                     # Edit draft / create revision
+│   │   ├── Edit                     # Edit draft / create revision with Quill rich text editor (Phase 10)
 │   │   ├── CreateSummary            # Summary creation with source report selection
 │   │   ├── DrillDown                # Upward/downward chain visualization
 │   │   └── _DrillDownNode           # Recursive partial for drill-down tree
@@ -149,7 +152,8 @@ ReportingSystem/
 │   ├── ConfidentialityService.cs    # Confidentiality marking, access control, impact preview, explicit grants (~350 lines)
 │   ├── AuditService.cs             # Append-only audit logging, query/export, item history (~200 lines) (Phase 8)
 │   ├── SearchService.cs            # Unified full-text search across all content types (~280 lines) (Phase 8)
-│   └── DashboardService.cs        # Role-specific dashboards (Chairman/Office/Head/Personal) (~250 lines) (Phase 9)
+│   ├── DashboardService.cs        # Role-specific dashboards (Chairman/Office/Head/Personal) (~250 lines) (Phase 9)
+│   └── ReportTemplateService.cs   # Template CRUD, committee-scoped lookup, default seeding (~200 lines) (Phase 10)
 ├── wwwroot/                         # Static files (Bootstrap, jQuery, uploads/)
 ├── Program.cs                       # App configuration & DI (~140 lines)
 ├── appsettings.json                 # Production config
@@ -278,8 +282,17 @@ Chairman/CEO
 - [x] Dashboard/Index replaces Admin/Dashboard as primary landing page; role-adaptive display
 - [x] Layout nav: Dashboard link, user dropdown with My Dashboard + Notifications, brand link updated
 
-### Phase 10: Report Templates & Polish [NEXT]
-**Goal**: Configurable templates, PDF/Word export, RTL/Arabic support (SRS 4.2.4)
+### Phase 10: Report Templates & Polish [COMPLETE]
+- [x] Model: ReportTemplate with scope (ReportType, HierarchyLevel, CommitteeId), section include/require flags, body template (HTML), default flag
+- [x] Report model extended: TemplateId FK for template tracking, Template navigation property
+- [x] ReportTemplateService: CRUD, committee-scoped template lookup (committee-specific > level-specific > universal), default template seeding, usage tracking, soft-delete
+- [x] 5 default templates seeded on startup (FR-4.2.4.4): Progress Report, Incident Report, Decision Request, Status Update, Meeting Preparation Brief
+- [x] Admin/Templates pages: Index (card grid with usage counts, active/inactive toggle), Create, Edit, Details (body preview), Delete (soft-delete if in use)
+- [x] Report Create page: template picker (button row), pre-fill body content + report type from template, template-driven required field validation, hidden TemplateId binding
+- [x] Quill rich text editor (CDN v2.0.2) integrated on Report Create and Edit pages: headings (H1-H3), bold/italic/underline/strike, ordered/bullet lists, blockquotes, links, clean formatting
+- [x] Template-aware optional sections: only show sections the template includes, mark required sections with asterisk, auto-expand accordion when template selected
+- [x] Navigation: Report Templates link added to Administration dropdown
+- [x] Bug fixes: ConfidentialityService IsActive→EffectiveTo==null, Archives DateTime? conversion
 
 ### Phase 11: Knowledge Base & AI (Future)
 **Goal**: Knowledge base, AI summarization, REST API, mobile app (SRS Phase 4)
@@ -295,7 +308,8 @@ Chairman/CEO
 | `Committee` | 2 | Name, HierarchyLevel (L0-L4), ParentCommitteeId, Sector | → Parent, SubCommittees, Memberships, Shadows |
 | `CommitteeMembership` | 2 | UserId, CommitteeId, Role (Head/Member), EffectiveFrom/To | → User, Committee |
 | `ShadowAssignment` | 2 | PrincipalUserId, ShadowUserId, CommitteeId, IsActive | → Users, Committee |
-| `Report` | 3 | Title, ReportType, Status, AuthorId, CommitteeId, BodyContent, Version, OriginalReportId | → Author, Committee, Attachments, StatusHistory, SourceLinks, SummaryLinks, Revisions |
+| `Report` | 3+10 | Title, ReportType, Status, AuthorId, CommitteeId, BodyContent, Version, OriginalReportId, TemplateId | → Author, Committee, Template, Attachments, StatusHistory, SourceLinks, SummaryLinks, Revisions |
+| `ReportTemplate` | 10 | Name, Description, ReportType, HierarchyLevel, CommitteeId, BodyTemplate, Include/Require flags for 4 sections, IsDefault, IsActive, CreatedById | → CreatedBy, Committee |
 | `Attachment` | 3 | ReportId, FileName, StoragePath, ContentType, FileSizeBytes | → Report, UploadedBy |
 | `ReportStatusHistory` | 3 | ReportId, OldStatus, NewStatus, ChangedById, Comments | → Report, ChangedBy |
 | `ReportSourceLink` | 4 | SummaryReportId, SourceReportId, Annotation | → SummaryReport, SourceReport |
@@ -348,6 +362,7 @@ Chairman/CEO
 | `AuditService` | LogAsync, LogStatusChangeAsync, LogAccessDecisionAsync, GetAuditLogsAsync, GetAuditLogByIdAsync, GetItemHistoryAsync, GetAuditStatsAsync, ExportToCsvAsync |
 | `SearchService` | SearchAsync (unified search across Reports, Directives, Meetings, ActionItems with keyword, date, committee, status, type filtering) |
 | `DashboardService` | GetChairmanDashboardAsync, GetOfficeDashboardAsync, GetCommitteeHeadDashboardAsync, GetPersonalDashboardAsync |
+| `ReportTemplateService` | GetTemplatesAsync, GetTemplateByIdAsync, GetTemplatesForCommitteeAsync, CreateTemplateAsync, UpdateTemplateAsync, DeleteTemplateAsync, GetTemplateUsageCountAsync, SeedDefaultTemplatesAsync |
 
 ## Pages (Route Map)
 
@@ -371,7 +386,7 @@ Chairman/CEO
 | Committee Details | `/Admin/Organization/Committees/Details?id=` | GET, POST:AddMember/RemoveMember/ToggleRole |
 | Committee Delete | `/Admin/Organization/Committees/Delete?id=` | GET, POST |
 | Reports Index | `/Reports` | GET (CommitteeId, Status, ReportType, ShowMine, IncludeArchived) |
-| Report Create | `/Reports/Create` | GET, POST (with file uploads) |
+| Report Create | `/Reports/Create?templateId=` | GET, POST (with template picker, Quill editor, file uploads) |
 | Report Details | `/Reports/Details/{id}` | GET, POST:Submit/StartReview/RequestFeedback/Approve/Archive/RemoveAttachment |
 | Report Edit | `/Reports/Edit/{id}?revise=` | GET, POST |
 | Create Summary | `/Reports/CreateSummary?committeeId=` | GET, POST |
@@ -391,6 +406,11 @@ Chairman/CEO
 | Archives | `/Archives` | GET (ContentType, CommitteeId, FromDate, ToDate) |
 | Audit Log | `/Admin/AuditLog` | GET (FilterUserId, ActionType, ItemType, FromDate, ToDate, Page), GET:ExportCsv |
 | Audit Details | `/Admin/AuditLog/Details/{id}` | GET |
+| Templates Index | `/Admin/Templates` | GET (ShowInactive) |
+| Template Create | `/Admin/Templates/Create` | GET, POST |
+| Template Edit | `/Admin/Templates/Edit/{id}` | GET, POST |
+| Template Details | `/Admin/Templates/Details/{id}` | GET |
+| Template Delete | `/Admin/Templates/Delete/{id}` | GET, POST |
 | Dashboard | `/Dashboard` | GET (role-adaptive: Chairman/Office/Head/Personal) |
 | Notifications | `/Notifications` | GET (UnreadOnly), POST:MarkRead/MarkAllRead |
 
@@ -487,9 +507,10 @@ COMPLETED PHASES:
 - Phase 7 (Confidentiality): ConfidentialityMarking + AccessGrant models, hierarchy-based access control, Chairman's Office rank-based access, shadow exclusion, explicit sharing, access impact preview, reversible markings, confidentiality indicators on all Detail pages, list-level filtering
 - Phase 8 (Search, Archives & Audit): AuditLog model (append-only), unified search across all content types, archive management, comprehensive audit logging (login/logout, status changes, searches, exports), CSV export
 - Phase 9 (Dashboards & Notifications): Role-specific dashboards (Chairman/Office/Head/Personal), enhanced notification system with event-driven helpers, notification center with badge counts
+- Phase 10 (Report Templates & Polish): ReportTemplate model with scope/section config, 5 default templates seeded, Admin/Templates CRUD, template picker on Report Create, Quill rich text editor on Create/Edit, template-driven required field validation
 
 CURRENT STATE:
-- 21 model classes, 13 services, 36 page models, 46+ Razor views
+- 22 model classes, 14 services, 41 page models, 51+ Razor views
 - ConfidentialityService.cs (~350 lines) handles: mark/unmark, access checks, impact preview, explicit grants, filtering
 - MeetingService.cs (~420 lines) handles: meeting lifecycle, agenda, RSVP, minutes, confirmation, decisions, action items, overdue tracking
 - DirectiveService.cs (~340 lines) handles: directive CRUD, 7-status workflow, propagation tree, forwarding, overdue tracking, access control
@@ -497,10 +518,11 @@ CURRENT STATE:
 - AuditService.cs (~200 lines) handles: append-only audit logging, query/filtering, CSV export, item history
 - SearchService.cs (~280 lines) handles: unified full-text search across reports, directives, meetings, action items
 - DashboardService.cs (~250 lines) handles: role-specific dashboard data aggregation for Chairman, Office, Committee Head, Personal
-- ApplicationDbContext.cs (~420 lines) with 21 DbSets and full relationship configuration
+- ReportTemplateService.cs (~200 lines) handles: template CRUD, committee-scoped lookup, default template seeding, usage tracking
+- ApplicationDbContext.cs (~450 lines) with 22 DbSets and full relationship configuration
 - OrganizationSeeder.cs (853 lines) seeds entire test dataset
 
-NEXT: Phase 10 — Report Templates & Polish (configurable templates, PDF/Word export, RTL/Arabic support, SRS 4.2.4)
+NEXT: Phase 11 — Knowledge Base & AI (Future)
 
 Read claude.md for full roadmap, model definitions, service methods, and page routes.
 ```
