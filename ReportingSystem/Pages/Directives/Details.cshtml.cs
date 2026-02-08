@@ -12,11 +12,13 @@ public class DetailsModel : PageModel
 {
     private readonly DirectiveService _directiveService;
     private readonly ConfidentialityService _confidentialityService;
+    private readonly AuditService _auditService;
 
-    public DetailsModel(DirectiveService directiveService, ConfidentialityService confidentialityService)
+    public DetailsModel(DirectiveService directiveService, ConfidentialityService confidentialityService, AuditService auditService)
     {
         _directiveService = directiveService;
         _confidentialityService = confidentialityService;
+        _auditService = auditService;
     }
 
     public Directive Directive { get; set; } = null!;
@@ -75,6 +77,8 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var success = await _directiveService.AcknowledgeAsync(id, userId);
+        if (success)
+            await _auditService.LogStatusChangeAsync("Directive", id, null, "Delivered", "Acknowledged", userId, User.Identity?.Name);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Directive acknowledged." : "Unable to acknowledge directive.";
         return RedirectToPage(new { id });
@@ -84,6 +88,8 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var success = await _directiveService.StartProgressAsync(id, userId);
+        if (success)
+            await _auditService.LogStatusChangeAsync("Directive", id, null, "Acknowledged", "InProgress", userId, User.Identity?.Name);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Work started on directive." : "Unable to start progress.";
         return RedirectToPage(new { id });
@@ -93,6 +99,8 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var success = await _directiveService.MarkImplementedAsync(id, userId, ActionComments);
+        if (success)
+            await _auditService.LogStatusChangeAsync("Directive", id, null, "InProgress", "Implemented", userId, User.Identity?.Name, ActionComments);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Directive marked as implemented." : "Unable to mark as implemented.";
         return RedirectToPage(new { id });
@@ -102,6 +110,8 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var success = await _directiveService.VerifyAsync(id, userId, ActionComments);
+        if (success)
+            await _auditService.LogStatusChangeAsync("Directive", id, null, "Implemented", "Verified", userId, User.Identity?.Name, ActionComments);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Directive implementation verified." : "Unable to verify.";
         return RedirectToPage(new { id });
@@ -111,6 +121,8 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var success = await _directiveService.CloseAsync(id, userId, ActionComments);
+        if (success)
+            await _auditService.LogStatusChangeAsync("Directive", id, null, "Verified", "Closed", userId, User.Identity?.Name, ActionComments);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Directive closed." : "Unable to close directive.";
         return RedirectToPage(new { id });
@@ -127,6 +139,10 @@ public class DetailsModel : PageModel
         var userId = GetUserId();
         var child = await _directiveService.ForwardDirectiveAsync(id, ForwardToCommitteeId.Value,
             ForwardAnnotation, userId);
+
+        await _auditService.LogAsync(AuditActionType.DirectiveForwarded, "Directive", id,
+            userId: userId, userName: User.Identity?.Name,
+            details: $"Forwarded to committee {ForwardToCommitteeId.Value} as #{child.Id}");
 
         TempData["SuccessMessage"] = $"Directive forwarded as #{child.Id}.";
         return RedirectToPage(new { id });

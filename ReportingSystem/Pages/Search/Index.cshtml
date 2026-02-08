@@ -1,0 +1,173 @@
+@page
+@model ReportingSystem.Pages.Search.IndexModel
+@{
+    ViewData["Title"] = "Search";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2><i class="bi bi-search"></i> Unified Search</h2>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Search Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get">
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" name="Keywords" value="@Model.Keywords"
+                               placeholder="Search reports, directives, meetings, action items..." autofocus />
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Filters -->
+            <div class="row g-3 mt-2">
+                <div class="col-md-2">
+                    <label class="form-label">Content Type</label>
+                    <select name="ContentType" class="form-select form-select-sm">
+                        <option value="">All Types</option>
+                        <option value="Report" selected="@(Model.ContentType == "Report")">Reports</option>
+                        <option value="Directive" selected="@(Model.ContentType == "Directive")">Directives</option>
+                        <option value="Meeting" selected="@(Model.ContentType == "Meeting")">Meetings</option>
+                        <option value="ActionItem" selected="@(Model.ContentType == "ActionItem")">Action Items</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Committee</label>
+                    <select name="CommitteeId" class="form-select form-select-sm">
+                        <option value="">All Committees</option>
+                        @foreach (var c in Model.Committees)
+                        {
+                            <option value="@c.Value" selected="@(c.Value == Model.CommitteeId?.ToString())">@c.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <input type="text" name="Status" value="@Model.Status" class="form-control form-control-sm"
+                           placeholder="e.g. Draft, Approved" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="FromDate" value="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                           class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="ToDate" value="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                           class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Sort</label>
+                    <select name="SortBy" class="form-select form-select-sm">
+                        <option value="date_desc" selected="@(Model.SortBy == "date_desc")">Newest</option>
+                        <option value="date_asc" selected="@(Model.SortBy == "date_asc")">Oldest</option>
+                        <option value="title" selected="@(Model.SortBy == "title")">Title</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Search Results -->
+@if (Model.HasSearched)
+{
+    @if (Model.Results != null && Model.Results.TotalCount > 0)
+    {
+        <div class="mb-3">
+            <span class="text-muted">Found <strong>@Model.Results.TotalCount</strong> result(s)</span>
+        </div>
+
+        @foreach (var item in Model.Results.Items)
+        {
+            <div class="card mb-2">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                @switch (item.ItemType)
+                                {
+                                    case "Report":
+                                        <span class="badge bg-info"><i class="bi bi-file-earmark-text"></i> Report</span>
+                                        break;
+                                    case "Directive":
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-megaphone"></i> Directive</span>
+                                        break;
+                                    case "Meeting":
+                                        <span class="badge bg-success"><i class="bi bi-calendar-event"></i> Meeting</span>
+                                        break;
+                                    case "ActionItem":
+                                        <span class="badge bg-secondary"><i class="bi bi-list-task"></i> Action Item</span>
+                                        break;
+                                }
+                                <span class="badge bg-light text-dark">@item.Status</span>
+                                <a href="@item.Url" class="text-decoration-none fw-bold">@item.Title</a>
+                            </div>
+                            @if (!string.IsNullOrEmpty(item.Snippet))
+                            {
+                                <p class="text-muted small mb-1">@item.Snippet</p>
+                            }
+                            <small class="text-muted">
+                                <i class="bi bi-person"></i> @item.Author
+                                @if (!string.IsNullOrEmpty(item.Committee))
+                                {
+                                    <span class="ms-2"><i class="bi bi-people"></i> @item.Committee</span>
+                                }
+                                <span class="ms-2"><i class="bi bi-calendar"></i> @item.Date.ToString("dd MMM yyyy")</span>
+                            </small>
+                        </div>
+                        <a href="@item.Url" class="btn btn-sm btn-outline-primary ms-3">View</a>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-search display-4 text-muted"></i>
+            <p class="text-muted mt-2">No results found. Try different keywords or filters.</p>
+        </div>
+    }
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="bi bi-search display-4 text-muted"></i>
+        <p class="text-muted mt-2">Enter keywords or select filters to search across all content.</p>
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-8">
+                <div class="row g-3">
+                    <div class="col-md-3 text-center">
+                        <i class="bi bi-file-earmark-text display-6 text-info"></i>
+                        <p class="small mt-1">Reports & Summaries</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <i class="bi bi-megaphone display-6 text-warning"></i>
+                        <p class="small mt-1">Directives</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <i class="bi bi-calendar-event display-6 text-success"></i>
+                        <p class="small mt-1">Meetings & Minutes</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <i class="bi bi-list-task display-6 text-secondary"></i>
+                        <p class="small mt-1">Action Items</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

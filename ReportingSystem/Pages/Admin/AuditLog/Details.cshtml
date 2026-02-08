@@ -1,0 +1,109 @@
+@page "{id:int}"
+@model ReportingSystem.Pages.Admin.AuditLog.DetailsModel
+@{
+    ViewData["Title"] = "Audit Entry Details";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2><i class="bi bi-journal-text"></i> Audit Entry #@Model.AuditEntry.Id</h2>
+    <a asp-page="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Audit Log
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Timestamp</dt>
+            <dd class="col-sm-9">@Model.AuditEntry.Timestamp.ToString("dd MMM yyyy HH:mm:ss") UTC</dd>
+
+            <dt class="col-sm-3">User</dt>
+            <dd class="col-sm-9">@(Model.AuditEntry.UserName ?? "System") (ID: @Model.AuditEntry.UserId)</dd>
+
+            <dt class="col-sm-3">Action Type</dt>
+            <dd class="col-sm-9"><span class="badge bg-primary">@Model.AuditEntry.ActionType</span></dd>
+
+            <dt class="col-sm-3">Item Type</dt>
+            <dd class="col-sm-9">@Model.AuditEntry.ItemType</dd>
+
+            <dt class="col-sm-3">Item ID</dt>
+            <dd class="col-sm-9">@(Model.AuditEntry.ItemId?.ToString() ?? "N/A")</dd>
+
+            <dt class="col-sm-3">Item Title</dt>
+            <dd class="col-sm-9">@(Model.AuditEntry.ItemTitle ?? "N/A")</dd>
+
+            @if (!string.IsNullOrEmpty(Model.AuditEntry.BeforeValue))
+            {
+                <dt class="col-sm-3">Before Value</dt>
+                <dd class="col-sm-9"><code>@Model.AuditEntry.BeforeValue</code></dd>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.AuditEntry.AfterValue))
+            {
+                <dt class="col-sm-3">After Value</dt>
+                <dd class="col-sm-9"><code>@Model.AuditEntry.AfterValue</code></dd>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.AuditEntry.Details))
+            {
+                <dt class="col-sm-3">Details</dt>
+                <dd class="col-sm-9">@Model.AuditEntry.Details</dd>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.AuditEntry.IpAddress))
+            {
+                <dt class="col-sm-3">IP Address</dt>
+                <dd class="col-sm-9">@Model.AuditEntry.IpAddress</dd>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.AuditEntry.SessionId))
+            {
+                <dt class="col-sm-3">Session ID</dt>
+                <dd class="col-sm-9"><code>@Model.AuditEntry.SessionId</code></dd>
+            }
+        </dl>
+    </div>
+</div>
+
+@if (Model.RelatedEntries.Any())
+{
+    <h4>Related History for @Model.AuditEntry.ItemType #@Model.AuditEntry.ItemId</h4>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in Model.RelatedEntries)
+                    {
+                        <tr class="@(entry.Id == Model.AuditEntry.Id ? "table-active" : "")">
+                            <td><small>@entry.Timestamp.ToString("dd MMM yyyy HH:mm:ss")</small></td>
+                            <td><small>@(entry.UserName ?? $"#{entry.UserId}")</small></td>
+                            <td><span class="badge bg-secondary">@entry.ActionType</span></td>
+                            <td>
+                                <small>
+                                    @if (!string.IsNullOrEmpty(entry.BeforeValue) && !string.IsNullOrEmpty(entry.AfterValue))
+                                    {
+                                        <span class="text-danger">@entry.BeforeValue</span>
+                                        <i class="bi bi-arrow-right"></i>
+                                        <span class="text-success">@entry.AfterValue</span>
+                                    }
+                                    else
+                                    {
+                                        @entry.Details
+                                    }
+                                </small>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

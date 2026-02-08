@@ -71,6 +71,9 @@
                                 <li><a class="dropdown-item" asp-page="/Meetings/ActionItems"><i class="bi bi-list-task"></i> Action Items</a></li>
                             </ul>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-page="/Search/Index"><i class="bi bi-search"></i> Search</a>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
@@ -79,6 +82,9 @@
                             <ul class="dropdown-menu" aria-labelledby="adminDropdown">
                                 <li><a class="dropdown-item" asp-page="/Admin/Users/Index"><i class="bi bi-people-fill"></i> Users</a></li>
                                 <li><a class="dropdown-item" asp-page="/Admin/Backup/Index"><i class="bi bi-database-fill-gear"></i> Database Backups</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/AuditLog/Index"><i class="bi bi-journal-text"></i> Audit Log</a></li>
+                                <li><a class="dropdown-item" asp-page="/Archives/Index"><i class="bi bi-archive"></i> Archives</a></li>
                             </ul>
                         </li>
                     </ul>

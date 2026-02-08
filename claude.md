@@ -4,7 +4,7 @@
 
 ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows, structured meeting management, confidentiality controls, and full audit trail.
 
-**Current Status**: Phases 1-7 Complete — Phase 8 (Search, Archives & Audit) is NEXT
+**Current Status**: Phases 1-8 Complete — Phase 9 (Dashboards & Notifications) is NEXT
 
 ## Tech Stack
 
@@ -57,13 +57,13 @@ dotnet build ReportingSystem/ReportingSystem.csproj
 ```
 ReportingSystem/
 ├── Data/
-│   ├── ApplicationDbContext.cs      # EF Core DbContext (~400 lines)
+│   ├── ApplicationDbContext.cs      # EF Core DbContext (~420 lines)
 │   │                                 # DbSets: Users, MagicLinks, Committees, CommitteeMemberships,
 │   │                                 # ShadowAssignments, Reports, Attachments, ReportStatusHistories,
 │   │                                 # ReportSourceLinks, Directives, DirectiveStatusHistories,
 │   │                                 # Meetings, MeetingAgendaItems, MeetingAttendees,
 │   │                                 # MeetingDecisions, ActionItems, ConfidentialityMarkings,
-│   │                                 # AccessGrants, Notifications, DatabaseBackups
+│   │                                 # AccessGrants, AuditLogs, Notifications, DatabaseBackups
 │   ├── SeedData.cs                  # Placeholder for domain seeding
 │   ├── UserSeeder.cs                # Seeds 3 admin users
 │   └── OrganizationSeeder.cs        # Seeds ~155 users, ~185 committees, memberships (853 lines)
@@ -87,6 +87,7 @@ ReportingSystem/
 │   ├── ActionItem.cs                # Trackable action items + ActionItemStatus enum (Phase 6)
 │   ├── ConfidentialityMarking.cs    # Confidentiality markings with hierarchy-based access (Phase 7)
 │   ├── AccessGrant.cs               # Explicit access grants for confidential items (Phase 7)
+│   ├── AuditLog.cs                  # Append-only audit log + AuditActionType enum (Phase 8)
 │   ├── Notification.cs              # In-app notifications
 │   └── DatabaseBackup.cs            # Backup records
 ├── Pages/
@@ -124,7 +125,11 @@ ReportingSystem/
 │   ├── Confidentiality/
 │   │   ├── Mark                     # Mark/unmark confidential with impact preview (Phase 7)
 │   │   └── AccessGrants             # Explicit access grants + audit trail (Phase 7)
-│   ├── Shared/_Layout.cshtml        # Nav: Home, Organization, Reports, Directives, Meetings, Administration, User
+│   ├── Search/
+│   │   └── Index                    # Unified search across all content types (Phase 8)
+│   ├── Archives/
+│   │   └── Index                    # Archive management — archived reports, closed directives, finalized meetings (Phase 8)
+│   ├── Shared/_Layout.cshtml        # Nav: Home, Organization, Reports, Directives, Meetings, Search, Administration, User
 │   ├── Index.cshtml                 # Landing → redirects to Dashboard or Login
 │   └── Error.cshtml
 ├── Services/
@@ -137,7 +142,9 @@ ReportingSystem/
 │   ├── ReportService.cs             # Reports, status workflow, summarization, drill-down (547 lines)
 │   ├── DirectiveService.cs          # Directives, status transitions, propagation, overdue (~340 lines)
 │   ├── MeetingService.cs            # Meetings, agenda, attendees, RSVP, minutes, decisions, action items (~420 lines)
-│   └── ConfidentialityService.cs    # Confidentiality marking, access control, impact preview, explicit grants (~350 lines)
+│   ├── ConfidentialityService.cs    # Confidentiality marking, access control, impact preview, explicit grants (~350 lines)
+│   ├── AuditService.cs             # Append-only audit logging, query/export, item history (~200 lines) (Phase 8)
+│   └── SearchService.cs            # Unified full-text search across all content types (~280 lines) (Phase 8)
 ├── wwwroot/                         # Static files (Bootstrap, jQuery, uploads/)
 ├── Program.cs                       # App configuration & DI (~140 lines)
 ├── appsettings.json                 # Production config
@@ -245,12 +252,16 @@ Chairman/CEO
 - [x] Access enforcement: list pages filter inaccessible items, detail pages block unauthorized access
 - [x] DbContext: 2 new DbSets (ConfidentialityMarkings, AccessGrants) with indexes and FK configs
 
-### Phase 8: Search, Archives & Audit [NEXT]
-**Goal**: Full-text search, archive management, comprehensive audit logging (SRS 4.6, 4.8)
+### Phase 8: Search, Archives & Audit [COMPLETE]
+- [x] Model: AuditLog (append-only with AuditActionType enum: Login/Logout/Create/Update/Delete/StatusChange/Access/Confidentiality/Search/Export/Meeting/Directive actions)
+- [x] AuditService: append-only logging, query/filtering (user, action, item type, date range, committee), CSV export, item history, stats
+- [x] SearchService: unified full-text search across Reports, Directives, Meetings, ActionItems with keyword matching, date/committee/status/content-type filtering, confidentiality-aware results, snippet generation with keyword highlighting, sorting (date/title)
+- [x] Pages: Search/Index (unified search with advanced filters), Admin/AuditLog/Index (filterable log viewer with pagination + CSV export), Admin/AuditLog/Details (entry details + related history), Archives/Index (archived reports, closed directives, finalized meetings with filters)
+- [x] Audit integration: Login/Logout (Auth pages), Report status changes (Details page), Directive status changes + forwarding (Details page), Meeting status changes + minutes confirmation (Details page), Search queries (Search page)
+- [x] Layout nav: Search link in main nav, Audit Log + Archives in Administration dropdown
+- [x] DbContext: AuditLogs DbSet with indexes on Timestamp, UserId, ActionType, ItemType+ItemId, CommitteeId
 
-**Model**: AuditLog — append-only, unified search across all content types
-
-### Phase 9: Dashboards & Notifications
+### Phase 9: Dashboards & Notifications [NEXT]
 **Goal**: Role-specific dashboards (Chairman/Office/Head/Personal), enhanced notifications (SRS 4.7)
 
 ### Phase 10: Report Templates & Polish
@@ -283,6 +294,7 @@ Chairman/CEO
 | `ActionItem` | 6 | MeetingId, MeetingDecisionId, Title, Description, AssignedToId, AssignedById, Status, Deadline, CompletedAt, VerifiedAt | → Meeting, MeetingDecision, AssignedTo, AssignedBy |
 | `ConfidentialityMarking` | 7 | ItemType, ItemId, MarkedById, MarkerCommitteeLevel, MarkerCommitteeId, MinChairmanOfficeRank, IsActive, Reason, MarkedAt, UnmarkedAt, UnmarkedById | → MarkedBy, MarkerCommittee, UnmarkedBy |
 | `AccessGrant` | 7 | ItemType, ItemId, GrantedToUserId, GrantedById, Reason, IsActive, GrantedAt, RevokedAt, RevokedById | → GrantedTo, GrantedBy, RevokedBy |
+| `AuditLog` | 8 | Timestamp, UserId, UserName, ActionType, ItemType, ItemId, ItemTitle, BeforeValue, AfterValue, Details, IpAddress, SessionId, CommitteeId | — (append-only) |
 | `Notification` | 1 | UserId, Type, Title, Message, IsRead, Priority | — |
 | `DatabaseBackup` | 1 | Name, FileName, FilePath, Type, CreatedBy | — |
 
@@ -303,6 +315,7 @@ Chairman/CEO
 - `DecisionType`: Approval, Direction, Resolution, Deferral
 - `ActionItemStatus`: Assigned, InProgress, Completed, Verified
 - `ConfidentialItemType`: Report, Directive, Meeting
+- `AuditActionType`: Login, Logout, Create, Update, Delete, StatusChange, AccessGranted, AccessDenied, AccessRevoked, ConfidentialityMarked, ConfidentialityUnmarked, RoleChanged, MembershipAdded, MembershipRemoved, SearchPerformed, Export, MeetingStarted, MinutesSubmitted, MinutesConfirmed, MinutesFinalized, DirectiveForwarded, DirectiveAcknowledged
 
 ## Services (with key methods)
 
@@ -318,6 +331,8 @@ Chairman/CEO
 | `DirectiveService` | GetDirectivesAsync, GetDirectiveByIdAsync, GetDirectivesForUserAsync, CreateDirectiveAsync, ForwardDirectiveAsync, MarkDeliveredAsync, AcknowledgeAsync, StartProgressAsync, MarkImplementedAsync, VerifyAsync, CloseAsync, GetPropagationTreeAsync, GetOverdueDirectivesAsync, GetApproachingDeadlineDirectivesAsync, CanUserIssueDirectivesAsync, IsUserTargetOfDirectiveAsync, GetTargetableCommitteesAsync, GetForwardableCommitteesAsync, GetDirectiveStatsAsync |
 | `MeetingService` | GetMeetingsAsync, GetMeetingByIdAsync, GetMeetingsForUserAsync, CreateMeetingAsync, UpdateMeetingAsync, CancelMeetingAsync, StartMeetingAsync, BeginMinutesEntryAsync, SubmitMinutesAsync, TryFinalizeMinutesAsync, AddAttendeeAsync, AddAttendeesFromCommitteeAsync, RemoveAttendeeAsync, UpdateRsvpAsync, UpdateConfirmationAsync, AddAgendaItemAsync, UpdateAgendaItemAsync, RemoveAgendaItemAsync, UpdateAgendaDiscussionNotesAsync, AddDecisionAsync, RemoveDecisionAsync, CreateActionItemAsync, StartActionItemAsync, CompleteActionItemAsync, VerifyActionItemAsync, GetActionItemsForUserAsync, GetAllActionItemsAsync, GetOverdueActionItemsAsync, CanUserScheduleMeetingAsync, IsUserModeratorAsync, IsUserAttendeeAsync, GetSchedulableCommitteesAsync, GetMeetingStatsAsync, GetUpcomingMeetingsAsync |
 | `ConfidentialityService` | MarkAsConfidentialAsync, RemoveConfidentialMarkingAsync, GetActiveMarkingAsync, GetMarkingHistoryAsync, CanUserAccessConfidentialItemAsync, GetAccessImpactPreviewAsync, GrantAccessAsync, RevokeAccessAsync, GetAccessGrantsAsync, FilterAccessibleReportsAsync, FilterAccessibleDirectivesAsync, FilterAccessibleMeetingsAsync, CanUserMarkConfidentialAsync, GetItemCommitteeAsync |
+| `AuditService` | LogAsync, LogStatusChangeAsync, LogAccessDecisionAsync, GetAuditLogsAsync, GetAuditLogByIdAsync, GetItemHistoryAsync, GetAuditStatsAsync, ExportToCsvAsync |
+| `SearchService` | SearchAsync (unified search across Reports, Directives, Meetings, ActionItems with keyword, date, committee, status, type filtering) |
 
 ## Pages (Route Map)
 
@@ -357,10 +372,14 @@ Chairman/CEO
 | Action Items | `/Meetings/ActionItems` | GET (Status, ShowMine), POST:Start/Complete/Verify |
 | Confidentiality Mark | `/Confidentiality/Mark?ItemType=&ItemId=` | GET (impact preview), POST:Mark/Unmark |
 | Access Grants | `/Confidentiality/AccessGrants?ItemType=&ItemId=` | GET, POST:Grant/Revoke |
+| Search | `/Search` | GET (Keywords, ContentType, CommitteeId, Status, FromDate, ToDate, SortBy) |
+| Archives | `/Archives` | GET (ContentType, CommitteeId, FromDate, ToDate) |
+| Audit Log | `/Admin/AuditLog` | GET (FilterUserId, ActionType, ItemType, FromDate, ToDate, Page), GET:ExportCsv |
+| Audit Details | `/Admin/AuditLog/Details/{id}` | GET |
 
 ## Authorization
 
-- `/Admin/*`, `/Reports/*`, `/Directives/*`, `/Meetings/*`, and `/Confidentiality/*` → `[Authorize]` (any authenticated user)
+- `/Admin/*`, `/Reports/*`, `/Directives/*`, `/Meetings/*`, `/Confidentiality/*`, `/Search/*`, and `/Archives/*` → `[Authorize]` (any authenticated user)
 - `/Admin/Backup/*` → `SystemAdminOnly` policy
 - `/Auth/*` and `/` → `[AllowAnonymous]`
 - Report actions: committee membership checks (submit), head-of-committee/parent checks (review)
@@ -451,15 +470,17 @@ COMPLETED PHASES:
 - Phase 7 (Confidentiality): ConfidentialityMarking + AccessGrant models, hierarchy-based access control, Chairman's Office rank-based access, shadow exclusion, explicit sharing, access impact preview, reversible markings, confidentiality indicators on all Detail pages, list-level filtering
 
 CURRENT STATE:
-- 20 model classes, 10 services, 30 page models, 38+ Razor views
+- 21 model classes, 12 services, 34 page models, 42+ Razor views
 - ConfidentialityService.cs (~350 lines) handles: mark/unmark, access checks, impact preview, explicit grants, filtering
 - MeetingService.cs (~420 lines) handles: meeting lifecycle, agenda, RSVP, minutes, confirmation, decisions, action items, overdue tracking
 - DirectiveService.cs (~340 lines) handles: directive CRUD, 7-status workflow, propagation tree, forwarding, overdue tracking, access control
 - ReportService.cs (547 lines) handles: report CRUD, status transitions, file attachments, summary creation, recursive drill-down tree building, access control checks
-- ApplicationDbContext.cs (~400 lines) with 20 DbSets and full relationship configuration
+- AuditService.cs (~200 lines) handles: append-only audit logging, query/filtering, CSV export, item history
+- SearchService.cs (~280 lines) handles: unified full-text search across reports, directives, meetings, action items
+- ApplicationDbContext.cs (~420 lines) with 21 DbSets and full relationship configuration
 - OrganizationSeeder.cs (853 lines) seeds entire test dataset
 
-NEXT: Phase 8 — Search, Archives & Audit (full-text search, archive management, comprehensive audit logging, SRS 4.6, 4.8)
+NEXT: Phase 9 — Dashboards & Notifications (role-specific dashboards, enhanced notification system, SRS 4.7)
 
 Read claude.md for full roadmap, model definitions, service methods, and page routes.
 ```

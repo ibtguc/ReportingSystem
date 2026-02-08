@@ -14,12 +14,14 @@ public class DetailsModel : PageModel
 {
     private readonly MeetingService _meetingService;
     private readonly ConfidentialityService _confidentialityService;
+    private readonly AuditService _auditService;
     private readonly ApplicationDbContext _context;
 
-    public DetailsModel(MeetingService meetingService, ConfidentialityService confidentialityService, ApplicationDbContext context)
+    public DetailsModel(MeetingService meetingService, ConfidentialityService confidentialityService, AuditService auditService, ApplicationDbContext context)
     {
         _meetingService = meetingService;
         _confidentialityService = confidentialityService;
+        _auditService = auditService;
         _context = context;
     }
 
@@ -133,6 +135,7 @@ public class DetailsModel : PageModel
     public async Task<IActionResult> OnPostStartMeetingAsync(int id)
     {
         await _meetingService.StartMeetingAsync(id);
+        await _auditService.LogStatusChangeAsync("Meeting", id, null, "Scheduled", "InProgress", GetUserId(), User.Identity?.Name);
         TempData["SuccessMessage"] = "Meeting started.";
         return RedirectToPage(new { id });
     }
@@ -140,12 +143,14 @@ public class DetailsModel : PageModel
     public async Task<IActionResult> OnPostBeginMinutesAsync(int id)
     {
         await _meetingService.BeginMinutesEntryAsync(id);
+        await _auditService.LogStatusChangeAsync("Meeting", id, null, "InProgress", "MinutesEntry", GetUserId(), User.Identity?.Name);
         return RedirectToPage("/Meetings/Minutes", new { id });
     }
 
     public async Task<IActionResult> OnPostCancelMeetingAsync(int id)
     {
         await _meetingService.CancelMeetingAsync(id);
+        await _auditService.LogStatusChangeAsync("Meeting", id, null, "Scheduled", "Cancelled", GetUserId(), User.Identity?.Name);
         TempData["SuccessMessage"] = "Meeting cancelled.";
         return RedirectToPage("Index");
     }
@@ -226,7 +231,10 @@ public class DetailsModel : PageModel
 
     public async Task<IActionResult> OnPostConfirmMinutesAsync(int id)
     {
-        await _meetingService.UpdateConfirmationAsync(id, GetUserId(), ConfirmationStatus.Confirmed, ConfirmationComment);
+        var userId = GetUserId();
+        await _meetingService.UpdateConfirmationAsync(id, userId, ConfirmationStatus.Confirmed, ConfirmationComment);
+        await _auditService.LogAsync(AuditActionType.MinutesConfirmed, "Meeting", id,
+            userId: userId, userName: User.Identity?.Name, details: "Minutes confirmed");
 
         // Try to finalize if all confirmed
         await _meetingService.TryFinalizeMinutesAsync(id);

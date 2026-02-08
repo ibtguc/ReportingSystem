@@ -40,6 +40,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<ConfidentialityMarking> ConfidentialityMarkings { get; set; }
     public DbSet<AccessGrant> AccessGrants { get; set; }
 
+    // Audit
+    public DbSet<AuditLog> AuditLogs { get; set; }
+
     // Notifications
     public DbSet<Notification> Notifications { get; set; }
 
@@ -375,6 +378,17 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.RevokedById)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure AuditLog (append-only)
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.ActionType);
+            entity.HasIndex(e => new { e.ItemType, e.ItemId });
+            entity.HasIndex(e => e.CommitteeId);
         });
 
         // Configure Notification

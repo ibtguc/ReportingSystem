@@ -11,12 +11,14 @@ public class DetailsModel : PageModel
 {
     private readonly ReportService _reportService;
     private readonly ConfidentialityService _confidentialityService;
+    private readonly AuditService _auditService;
     private readonly IWebHostEnvironment _env;
 
-    public DetailsModel(ReportService reportService, ConfidentialityService confidentialityService, IWebHostEnvironment env)
+    public DetailsModel(ReportService reportService, ConfidentialityService confidentialityService, AuditService auditService, IWebHostEnvironment env)
     {
         _reportService = reportService;
         _confidentialityService = confidentialityService;
+        _auditService = auditService;
         _env = env;
     }
 
@@ -68,6 +70,8 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var success = await _reportService.SubmitReportAsync(id, userId);
+        if (success)
+            await _auditService.LogStatusChangeAsync("Report", id, null, "Draft", "Submitted", userId, User.Identity?.Name);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Report submitted for review." : "Unable to submit report.";
         return RedirectToPage(new { id });
@@ -77,6 +81,8 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var success = await _reportService.StartReviewAsync(id, userId);
+        if (success)
+            await _auditService.LogStatusChangeAsync("Report", id, null, "Submitted", "UnderReview", userId, User.Identity?.Name);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Review started." : "Unable to start review.";
         return RedirectToPage(new { id });
@@ -87,6 +93,8 @@ public class DetailsModel : PageModel
         var userId = GetUserId();
         var comments = FeedbackComments ?? "Feedback requested — please revise.";
         var success = await _reportService.RequestFeedbackAsync(id, userId, comments);
+        if (success)
+            await _auditService.LogStatusChangeAsync("Report", id, null, "UnderReview", "FeedbackRequested", userId, User.Identity?.Name, comments);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Feedback requested from author." : "Unable to request feedback.";
         return RedirectToPage(new { id });
@@ -96,6 +104,8 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var success = await _reportService.ApproveReportAsync(id, userId, ApprovalComments);
+        if (success)
+            await _auditService.LogStatusChangeAsync("Report", id, null, "UnderReview", "Approved", userId, User.Identity?.Name, ApprovalComments);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Report approved." : "Unable to approve report.";
         return RedirectToPage(new { id });
@@ -105,6 +115,8 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var success = await _reportService.ArchiveReportAsync(id, userId);
+        if (success)
+            await _auditService.LogStatusChangeAsync("Report", id, null, "Approved", "Archived", userId, User.Identity?.Name);
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Report archived." : "Unable to archive report.";
         return RedirectToPage(new { id });
