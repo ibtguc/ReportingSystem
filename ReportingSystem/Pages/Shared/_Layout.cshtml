@@ -48,6 +48,18 @@
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="directivesDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                Directives
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="directivesDropdown">
+                                <li><a class="dropdown-item" asp-page="/Directives/Index"><i class="bi bi-megaphone"></i> All Directives</a></li>
+                                <li><a class="dropdown-item" asp-page="/Directives/Create"><i class="bi bi-plus-circle"></i> Issue Directive</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-page="/Directives/Track"><i class="bi bi-exclamation-triangle"></i> Track Overdue</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 Administration

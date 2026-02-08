@@ -25,6 +25,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<ReportStatusHistory> ReportStatusHistories { get; set; }
     public DbSet<ReportSourceLink> ReportSourceLinks { get; set; }
 
+    // Directives
+    public DbSet<Directive> Directives { get; set; }
+    public DbSet<DirectiveStatusHistory> DirectiveStatusHistories { get; set; }
+
     // Notifications
     public DbSet<Notification> Notifications { get; set; }
 
@@ -174,6 +178,54 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.SourceReport)
                 .WithMany(r => r.SummaryLinks)
                 .HasForeignKey(e => e.SourceReportId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Directive
+        modelBuilder.Entity<Directive>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.TargetCommitteeId, e.Status });
+            entity.HasIndex(e => new { e.IssuerId, e.Status });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Priority);
+            entity.HasIndex(e => e.Deadline);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasOne(e => e.Issuer)
+                .WithMany()
+                .HasForeignKey(e => e.IssuerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.TargetCommittee)
+                .WithMany()
+                .HasForeignKey(e => e.TargetCommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.TargetUser)
+                .WithMany()
+                .HasForeignKey(e => e.TargetUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.RelatedReport)
+                .WithMany()
+                .HasForeignKey(e => e.RelatedReportId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.ParentDirective)
+                .WithMany(d => d.ChildDirectives)
+                .HasForeignKey(e => e.ParentDirectiveId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure DirectiveStatusHistory
+        modelBuilder.Entity<DirectiveStatusHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.DirectiveId);
+            entity.HasIndex(e => e.ChangedAt);
+            entity.HasOne(e => e.Directive)
+                .WithMany(d => d.StatusHistory)
+                .HasForeignKey(e => e.DirectiveId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ChangedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ChangedById)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
