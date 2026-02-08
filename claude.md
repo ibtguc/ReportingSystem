@@ -4,7 +4,7 @@
 
 ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows, structured meeting management, confidentiality controls, and full audit trail.
 
-**Current Status**: Phases 1-8 Complete — Phase 9 (Dashboards & Notifications) is NEXT
+**Current Status**: Phases 1-9 Complete — Phase 10 (Report Templates & Polish) is NEXT
 
 ## Tech Stack
 
@@ -88,7 +88,7 @@ ReportingSystem/
 │   ├── ConfidentialityMarking.cs    # Confidentiality markings with hierarchy-based access (Phase 7)
 │   ├── AccessGrant.cs               # Explicit access grants for confidential items (Phase 7)
 │   ├── AuditLog.cs                  # Append-only audit log + AuditActionType enum (Phase 8)
-│   ├── Notification.cs              # In-app notifications
+│   ├── Notification.cs              # In-app notifications + enhanced NotificationType enum (Phase 9)
 │   └── DatabaseBackup.cs            # Backup records
 ├── Pages/
 │   ├── Admin/
@@ -129,7 +129,11 @@ ReportingSystem/
 │   │   └── Index                    # Unified search across all content types (Phase 8)
 │   ├── Archives/
 │   │   └── Index                    # Archive management — archived reports, closed directives, finalized meetings (Phase 8)
-│   ├── Shared/_Layout.cshtml        # Nav: Home, Organization, Reports, Directives, Meetings, Search, Administration, User
+│   ├── Dashboard/
+│   │   └── Index                    # Role-specific dashboard (Chairman/Office/Head/Personal) (Phase 9)
+│   ├── Notifications/
+│   │   └── Index                    # Notification center with read/unread, filtering (Phase 9)
+│   ├── Shared/_Layout.cshtml        # Nav: Dashboard, Organization, Reports, Directives, Meetings, Search, Administration, User
 │   ├── Index.cshtml                 # Landing → redirects to Dashboard or Login
 │   └── Error.cshtml
 ├── Services/
@@ -144,7 +148,8 @@ ReportingSystem/
 │   ├── MeetingService.cs            # Meetings, agenda, attendees, RSVP, minutes, decisions, action items (~420 lines)
 │   ├── ConfidentialityService.cs    # Confidentiality marking, access control, impact preview, explicit grants (~350 lines)
 │   ├── AuditService.cs             # Append-only audit logging, query/export, item history (~200 lines) (Phase 8)
-│   └── SearchService.cs            # Unified full-text search across all content types (~280 lines) (Phase 8)
+│   ├── SearchService.cs            # Unified full-text search across all content types (~280 lines) (Phase 8)
+│   └── DashboardService.cs        # Role-specific dashboards (Chairman/Office/Head/Personal) (~250 lines) (Phase 9)
 ├── wwwroot/                         # Static files (Bootstrap, jQuery, uploads/)
 ├── Program.cs                       # App configuration & DI (~140 lines)
 ├── appsettings.json                 # Production config
@@ -261,10 +266,19 @@ Chairman/CEO
 - [x] Layout nav: Search link in main nav, Audit Log + Archives in Administration dropdown
 - [x] DbContext: AuditLogs DbSet with indexes on Timestamp, UserId, ActionType, ItemType+ItemId, CommitteeId
 
-### Phase 9: Dashboards & Notifications [NEXT]
-**Goal**: Role-specific dashboards (Chairman/Office/Head/Personal), enhanced notifications (SRS 4.7)
+### Phase 9: Dashboards & Notifications [COMPLETE]
+- [x] DashboardService: role-specific data aggregation (Chairman, Office, Committee Head, Personal dashboards)
+- [x] Chairman dashboard (FR-4.7.2.1): pending exec summaries, open directives, overdue items, health metrics (reports/directives/meetings this month)
+- [x] Chairman's Office bridge dashboard (FR-4.7.2.4): incoming L0 reports, outgoing exec summaries, pending directive relays, cross-stream stats
+- [x] Committee Head dashboard (FR-4.7.2.2): pending reports, open directives, upcoming meetings, overdue actions for managed committees
+- [x] Personal dashboard (FR-4.7.2.3): draft reports, feedback requests, pending directives, pending meetings, action items, committees, recent notifications
+- [x] Notification model enhanced with new event types: DirectiveIssued, DirectiveDelivered, DirectiveStatusChanged, MeetingInvitation, MinutesSubmitted, ActionItemAssigned, ActionItemOverdue, ConfidentialityChanged, ReportStatusChanged
+- [x] NotificationService enhanced with event-driven helpers: NotifyReportSubmittedAsync, NotifyReportStatusChangedAsync, NotifyDirectiveIssuedAsync, NotifyMeetingInvitationAsync, NotifyMinutesSubmittedAsync, NotifyActionItemAssignedAsync, NotifyActionItemOverdueAsync
+- [x] Notification center page (FR-4.7.1.4): unread badge count, mark-as-read, mark-all-read, unread-only filter, action URLs
+- [x] Dashboard/Index replaces Admin/Dashboard as primary landing page; role-adaptive display
+- [x] Layout nav: Dashboard link, user dropdown with My Dashboard + Notifications, brand link updated
 
-### Phase 10: Report Templates & Polish
+### Phase 10: Report Templates & Polish [NEXT]
 **Goal**: Configurable templates, PDF/Word export, RTL/Arabic support (SRS 4.2.4)
 
 ### Phase 11: Knowledge Base & AI (Future)
@@ -323,7 +337,7 @@ Chairman/CEO
 |---------|------------|
 | `MagicLinkService` | GenerateMagicLinkAsync, VerifyMagicLinkAsync, CleanupExpiredLinksAsync |
 | `EmailService` | SendMagicLinkEmailAsync, SendNotificationEmailAsync |
-| `NotificationService` | CreateNotificationAsync, GetUserNotificationsAsync, MarkAsReadAsync, GetUnreadCountAsync |
+| `NotificationService` | CreateNotificationAsync, GetUserNotificationsAsync, MarkAsReadAsync, MarkAllAsReadAsync, GetUnreadCountAsync, NotifyReportSubmittedAsync, NotifyReportStatusChangedAsync, NotifyDirectiveIssuedAsync, NotifyMeetingInvitationAsync, NotifyMinutesSubmittedAsync, NotifyActionItemAssignedAsync, NotifyActionItemOverdueAsync |
 | `DatabaseBackupService` | CreateManualBackupAsync, RestoreBackupAsync, DeleteBackupAsync, GetStatisticsAsync, ForceWalCheckpointAsync |
 | `DailyBackupHostedService` | ExecuteAsync (hourly check, 12h interval) |
 | `OrganizationService` | GetAllCommitteesAsync, GetHierarchyTreeAsync, CreateCommitteeAsync, AddMembershipAsync, AddShadowAssignmentAsync, GetOrganizationStatsAsync |
@@ -333,6 +347,7 @@ Chairman/CEO
 | `ConfidentialityService` | MarkAsConfidentialAsync, RemoveConfidentialMarkingAsync, GetActiveMarkingAsync, GetMarkingHistoryAsync, CanUserAccessConfidentialItemAsync, GetAccessImpactPreviewAsync, GrantAccessAsync, RevokeAccessAsync, GetAccessGrantsAsync, FilterAccessibleReportsAsync, FilterAccessibleDirectivesAsync, FilterAccessibleMeetingsAsync, CanUserMarkConfidentialAsync, GetItemCommitteeAsync |
 | `AuditService` | LogAsync, LogStatusChangeAsync, LogAccessDecisionAsync, GetAuditLogsAsync, GetAuditLogByIdAsync, GetItemHistoryAsync, GetAuditStatsAsync, ExportToCsvAsync |
 | `SearchService` | SearchAsync (unified search across Reports, Directives, Meetings, ActionItems with keyword, date, committee, status, type filtering) |
+| `DashboardService` | GetChairmanDashboardAsync, GetOfficeDashboardAsync, GetCommitteeHeadDashboardAsync, GetPersonalDashboardAsync |
 
 ## Pages (Route Map)
 
@@ -376,10 +391,12 @@ Chairman/CEO
 | Archives | `/Archives` | GET (ContentType, CommitteeId, FromDate, ToDate) |
 | Audit Log | `/Admin/AuditLog` | GET (FilterUserId, ActionType, ItemType, FromDate, ToDate, Page), GET:ExportCsv |
 | Audit Details | `/Admin/AuditLog/Details/{id}` | GET |
+| Dashboard | `/Dashboard` | GET (role-adaptive: Chairman/Office/Head/Personal) |
+| Notifications | `/Notifications` | GET (UnreadOnly), POST:MarkRead/MarkAllRead |
 
 ## Authorization
 
-- `/Admin/*`, `/Reports/*`, `/Directives/*`, `/Meetings/*`, `/Confidentiality/*`, `/Search/*`, and `/Archives/*` → `[Authorize]` (any authenticated user)
+- `/Admin/*`, `/Reports/*`, `/Directives/*`, `/Meetings/*`, `/Confidentiality/*`, `/Search/*`, `/Archives/*`, `/Dashboard/*`, and `/Notifications/*` → `[Authorize]` (any authenticated user)
 - `/Admin/Backup/*` → `SystemAdminOnly` policy
 - `/Auth/*` and `/` → `[AllowAnonymous]`
 - Report actions: committee membership checks (submit), head-of-committee/parent checks (review)
@@ -468,19 +485,22 @@ COMPLETED PHASES:
 - Phase 5 (Directives): Directive model (7 statuses, 5 types, 3 priorities), propagation chain via ParentDirectiveId, forwarding with annotations, overdue tracking, status pipeline view
 - Phase 6 (Meetings): Meeting scheduling, structured agenda, RSVP, minutes entry with per-agenda-item notes, attendee confirmation workflow (all must Confirm/Abstain to finalize), decisions with DecisionType, action items (Assigned→InProgress→Completed→Verified), overdue action item tracking
 - Phase 7 (Confidentiality): ConfidentialityMarking + AccessGrant models, hierarchy-based access control, Chairman's Office rank-based access, shadow exclusion, explicit sharing, access impact preview, reversible markings, confidentiality indicators on all Detail pages, list-level filtering
+- Phase 8 (Search, Archives & Audit): AuditLog model (append-only), unified search across all content types, archive management, comprehensive audit logging (login/logout, status changes, searches, exports), CSV export
+- Phase 9 (Dashboards & Notifications): Role-specific dashboards (Chairman/Office/Head/Personal), enhanced notification system with event-driven helpers, notification center with badge counts
 
 CURRENT STATE:
-- 21 model classes, 12 services, 34 page models, 42+ Razor views
+- 21 model classes, 13 services, 36 page models, 46+ Razor views
 - ConfidentialityService.cs (~350 lines) handles: mark/unmark, access checks, impact preview, explicit grants, filtering
 - MeetingService.cs (~420 lines) handles: meeting lifecycle, agenda, RSVP, minutes, confirmation, decisions, action items, overdue tracking
 - DirectiveService.cs (~340 lines) handles: directive CRUD, 7-status workflow, propagation tree, forwarding, overdue tracking, access control
 - ReportService.cs (547 lines) handles: report CRUD, status transitions, file attachments, summary creation, recursive drill-down tree building, access control checks
 - AuditService.cs (~200 lines) handles: append-only audit logging, query/filtering, CSV export, item history
 - SearchService.cs (~280 lines) handles: unified full-text search across reports, directives, meetings, action items
+- DashboardService.cs (~250 lines) handles: role-specific dashboard data aggregation for Chairman, Office, Committee Head, Personal
 - ApplicationDbContext.cs (~420 lines) with 21 DbSets and full relationship configuration
 - OrganizationSeeder.cs (853 lines) seeds entire test dataset
 
-NEXT: Phase 9 — Dashboards & Notifications (role-specific dashboards, enhanced notification system, SRS 4.7)
+NEXT: Phase 10 — Report Templates & Polish (configurable templates, PDF/Word export, RTL/Arabic support, SRS 4.2.4)
 
 Read claude.md for full roadmap, model definitions, service methods, and page routes.
 ```

@@ -64,13 +64,33 @@ public class Notification
 /// </summary>
 public enum NotificationType
 {
+    // Reports
     ReportSubmitted,         // Report has been submitted
+    ReportStatusChanged,     // Report status changed
     ReportApproved,          // Report has been approved
     ReportRejected,          // Report has been rejected
     FeedbackReceived,        // New feedback from management
+
+    // Directives
+    DirectiveIssued,         // New directive issued
+    DirectiveDelivered,      // Directive delivered to target
+    DirectiveStatusChanged,  // Directive status changed
+
+    // Meetings
+    MeetingInvitation,       // Invited to a meeting
+    MinutesSubmitted,        // Minutes submitted for confirmation
+    ConfirmationRequested,   // Tagged for confirmation
+
+    // Action Items
+    ActionItemAssigned,      // Action item assigned to you
+    ActionItemOverdue,       // Action item is overdue
+
+    // Confidentiality
+    ConfidentialityChanged,  // Confidentiality marking affects access
+
+    // Legacy/General
     DecisionMade,            // Decision on a request
     RecommendationIssued,    // New recommendation received
-    ConfirmationRequested,   // Tagged for confirmation
     DeadlineApproaching,     // Submission deadline approaching
     General                  // General announcement
 }

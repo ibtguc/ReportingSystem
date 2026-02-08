@@ -1,0 +1,110 @@
+@page
+@model ReportingSystem.Pages.Notifications.IndexModel
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2>
+        <i class="bi bi-bell"></i> Notifications
+        @if (Model.UnreadCount > 0)
+        {
+            <span class="badge bg-danger">@Model.UnreadCount</span>
+        }
+    </h2>
+    <div>
+        @if (Model.UnreadCount > 0)
+        {
+            <form method="post" asp-page-handler="MarkAllRead" class="d-inline">
+                <button type="submit" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-check-all"></i> Mark All Read
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Filter -->
+<div class="mb-3">
+    <div class="btn-group btn-group-sm">
+        <a asp-page="Index" class="btn @(!Model.UnreadOnly ? "btn-primary" : "btn-outline-primary")">All</a>
+        <a asp-page="Index" asp-route-UnreadOnly="true" class="btn @(Model.UnreadOnly ? "btn-primary" : "btn-outline-primary")">
+            Unread @if (Model.UnreadCount > 0) { <span class="badge bg-danger">@Model.UnreadCount</span> }
+        </a>
+    </div>
+</div>
+
+@if (!Model.Notifications.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-bell-slash display-4 text-muted"></i>
+        <p class="text-muted mt-2">No notifications.</p>
+    </div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var n in Model.Notifications)
+        {
+            <div class="list-group-item @(!n.IsRead ? "list-group-item-light border-start border-primary border-3" : "")">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2">
+                            @{
+                                var icon = n.Type switch
+                                {
+                                    ReportingSystem.Models.NotificationType.ReportSubmitted => "bi-file-earmark-arrow-up",
+                                    ReportingSystem.Models.NotificationType.ReportApproved => "bi-check-circle",
+                                    ReportingSystem.Models.NotificationType.ReportRejected => "bi-x-circle",
+                                    ReportingSystem.Models.NotificationType.FeedbackReceived => "bi-chat-dots",
+                                    ReportingSystem.Models.NotificationType.DecisionMade => "bi-gavel",
+                                    ReportingSystem.Models.NotificationType.RecommendationIssued => "bi-megaphone",
+                                    ReportingSystem.Models.NotificationType.ConfirmationRequested => "bi-question-circle",
+                                    ReportingSystem.Models.NotificationType.DeadlineApproaching => "bi-clock",
+                                    _ => "bi-bell"
+                                };
+                                var priorityBadge = n.Priority switch
+                                {
+                                    ReportingSystem.Models.NotificationPriority.Urgent => "bg-danger",
+                                    ReportingSystem.Models.NotificationPriority.High => "bg-warning text-dark",
+                                    _ => ""
+                                };
+                            }
+                            <i class="bi @icon @(!n.IsRead ? "text-primary" : "text-muted")"></i>
+                            <strong class="@(!n.IsRead ? "" : "text-muted")">@n.Title</strong>
+                            @if (!string.IsNullOrEmpty(priorityBadge))
+                            {
+                                <span class="badge @priorityBadge">@n.Priority</span>
+                            }
+                        </div>
+                        <p class="mb-1 small @(!n.IsRead ? "" : "text-muted")">@n.Message</p>
+                        <small class="text-muted">@n.CreatedAt.ToString("dd MMM yyyy HH:mm")</small>
+                    </div>
+                    <div class="d-flex gap-1">
+                        @if (!string.IsNullOrEmpty(n.ActionUrl))
+                        {
+                            <a href="@n.ActionUrl" class="btn btn-sm btn-outline-primary">View</a>
+                        }
+                        @if (!n.IsRead)
+                        {
+                            <form method="post" asp-page-handler="MarkRead" class="d-inline">
+                                <input type="hidden" name="notificationId" value="@n.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Mark as read">
+                                    <i class="bi bi-check"></i>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

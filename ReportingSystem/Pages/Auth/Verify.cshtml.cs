@@ -84,6 +84,6 @@ public class VerifyModel : PageModel
             ipAddress: ipAddress);
 
         // Redirect to dashboard
-        return RedirectToPage("/Admin/Dashboard");
+        return RedirectToPage("/Dashboard/Index");
     }
 }

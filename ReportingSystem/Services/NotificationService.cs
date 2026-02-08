@@ -131,6 +131,86 @@ public class NotificationService
         return count;
     }
 
+    // ── Event-driven notification helpers (FR-4.7.1.1) ──
+
+    public async Task NotifyReportSubmittedAsync(int reportId, string reportTitle, int authorId, int committeeId)
+    {
+        // Notify committee heads
+        var heads = await _context.CommitteeMemberships
+            .Where(m => m.CommitteeId == committeeId && m.Role == CommitteeRole.Head && m.EffectiveTo == null)
+            .Select(m => m.UserId)
+            .ToListAsync();
+
+        foreach (var headId in heads)
+        {
+            await CreateNotificationAsync(headId.ToString(), NotificationType.ReportSubmitted,
+                "Report Submitted", $"Report \"{reportTitle}\" has been submitted for review.",
+                $"/Reports/Details/{reportId}", NotificationPriority.Normal, reportId);
+        }
+    }
+
+    public async Task NotifyReportStatusChangedAsync(int reportId, string reportTitle, int authorId, string newStatus)
+    {
+        await CreateNotificationAsync(authorId.ToString(), NotificationType.ReportStatusChanged,
+            $"Report {newStatus}", $"Your report \"{reportTitle}\" status changed to {newStatus}.",
+            $"/Reports/Details/{reportId}", NotificationPriority.Normal, reportId);
+    }
+
+    public async Task NotifyDirectiveIssuedAsync(int directiveId, string directiveTitle, int targetCommitteeId, int? targetUserId)
+    {
+        if (targetUserId.HasValue)
+        {
+            await CreateNotificationAsync(targetUserId.Value.ToString(), NotificationType.DirectiveIssued,
+                "New Directive", $"You have received directive: \"{directiveTitle}\".",
+                $"/Directives/Details/{directiveId}", NotificationPriority.High, directiveId);
+        }
+        else
+        {
+            var members = await _context.CommitteeMemberships
+                .Where(m => m.CommitteeId == targetCommitteeId && m.EffectiveTo == null)
+                .Select(m => m.UserId)
+                .ToListAsync();
+
+            foreach (var memberId in members)
+            {
+                await CreateNotificationAsync(memberId.ToString(), NotificationType.DirectiveIssued,
+                    "New Directive", $"Your committee has received directive: \"{directiveTitle}\".",
+                    $"/Directives/Details/{directiveId}", NotificationPriority.High, directiveId);
+            }
+        }
+    }
+
+    public async Task NotifyMeetingInvitationAsync(int meetingId, string meetingTitle, int userId)
+    {
+        await CreateNotificationAsync(userId.ToString(), NotificationType.MeetingInvitation,
+            "Meeting Invitation", $"You have been invited to meeting: \"{meetingTitle}\".",
+            $"/Meetings/Details/{meetingId}", NotificationPriority.Normal, meetingId);
+    }
+
+    public async Task NotifyMinutesSubmittedAsync(int meetingId, string meetingTitle, List<int> attendeeIds)
+    {
+        foreach (var attendeeId in attendeeIds)
+        {
+            await CreateNotificationAsync(attendeeId.ToString(), NotificationType.MinutesSubmitted,
+                "Minutes for Confirmation", $"Minutes for \"{meetingTitle}\" are ready for your confirmation.",
+                $"/Meetings/Details/{meetingId}", NotificationPriority.Normal, meetingId);
+        }
+    }
+
+    public async Task NotifyActionItemAssignedAsync(int actionItemId, string actionItemTitle, int assigneeId, int meetingId)
+    {
+        await CreateNotificationAsync(assigneeId.ToString(), NotificationType.ActionItemAssigned,
+            "Action Item Assigned", $"You have been assigned action item: \"{actionItemTitle}\".",
+            "/Meetings/ActionItems", NotificationPriority.Normal, actionItemId);
+    }
+
+    public async Task NotifyActionItemOverdueAsync(int actionItemId, string actionItemTitle, int assigneeId)
+    {
+        await CreateNotificationAsync(assigneeId.ToString(), NotificationType.ActionItemOverdue,
+            "Action Item Overdue", $"Action item \"{actionItemTitle}\" is overdue.",
+            "/Meetings/ActionItems", NotificationPriority.High, actionItemId);
+    }
+
     /// <summary>
     /// Delete old read notifications (cleanup)
     /// </summary>
