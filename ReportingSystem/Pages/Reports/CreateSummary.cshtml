@@ -1,0 +1,192 @@
+@page
+@model ReportingSystem.Pages.Reports.CreateSummaryModel
+@{
+    ViewData["Title"] = "Create Summary Report";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="bi bi-layers"></i> Create Summary Report</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Step 1: Select Committee to load source reports -->
+                    <form method="get" class="mb-4">
+                        <div class="row align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Select Committee to Summarize</label>
+                                <select name="committeeId" class="form-select" asp-items="Model.CommitteeOptions">
+                                    <option value="">Choose committee...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="bi bi-funnel"></i> Load Reports
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    @if (Model.CommitteeId.HasValue)
+                    {
+                        <form method="post">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                            <input type="hidden" asp-for="CommitteeId" />
+
+                            <!-- Summary Details -->
+                            <div class="row mb-3">
+                                <div class="col-md-8">
+                                    <label asp-for="Summary.Title" class="form-label fw-semibold">Summary Title *</label>
+                                    <input asp-for="Summary.Title" class="form-control" placeholder="Enter summary title" />
+                                    <span asp-validation-for="Summary.Title" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="Summary.CommitteeId" class="form-label fw-semibold">Target Committee *</label>
+                                    <select asp-for="Summary.CommitteeId" class="form-select" asp-items="Model.CommitteeOptions">
+                                        <option value="">Select...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label asp-for="Summary.ReportType" class="form-label fw-semibold">Summary Type</label>
+                                    <select asp-for="Summary.ReportType" class="form-select">
+                                        <option value="@ReportingSystem.Models.ReportType.Summary">Summary</option>
+                                        <option value="@ReportingSystem.Models.ReportType.ExecutiveSummary">Executive Summary</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check mt-4 pt-2">
+                                        <input asp-for="Summary.IsConfidential" class="form-check-input" type="checkbox" />
+                                        <label asp-for="Summary.IsConfidential" class="form-check-label">
+                                            <i class="bi bi-lock-fill"></i> Confidential
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Source Reports Selection -->
+                            <h5 class="mt-4 mb-3"><i class="bi bi-file-earmark-check"></i> Select Source Reports</h5>
+
+                            @if (!Model.AvailableReports.Any())
+                            {
+                                <div class="alert alert-info">
+                                    No approved/submitted detailed reports found in this committee's tree.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive mb-3">
+                                    <table class="table table-hover table-sm">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width:40px;"></th>
+                                                <th>Report</th>
+                                                <th>Committee</th>
+                                                <th>Author</th>
+                                                <th>Status</th>
+                                                <th>Date</th>
+                                                <th>Annotation</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var report in Model.AvailableReports)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <input type="checkbox" name="SelectedSourceIds" value="@report.Id"
+                                                               class="form-check-input" />
+                                                    </td>
+                                                    <td>
+                                                        <a asp-page="Details" asp-route-id="@report.Id" target="_blank"
+                                                           class="text-decoration-none">
+                                                            @report.Title
+                                                        </a>
+                                                    </td>
+                                                    <td class="small">@report.Committee.Name</td>
+                                                    <td class="small">@report.Author.Name</td>
+                                                    <td><span class="badge bg-success">@report.Status</span></td>
+                                                    <td class="small">@report.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                                    <td>
+                                                        <input type="text" name="Annotations[@report.Id]"
+                                                               class="form-control form-control-sm"
+                                                               placeholder="Optional note..." />
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="mb-2 small text-muted">
+                                    <i class="bi bi-info-circle"></i> @Model.AvailableReports.Count report(s) available. Select the ones to include in your summary.
+                                </div>
+                            }
+
+                            <!-- Summary Body -->
+                            <div class="mb-3">
+                                <label asp-for="Summary.BodyContent" class="form-label fw-semibold">Summary Content *</label>
+                                <textarea asp-for="Summary.BodyContent" class="form-control" rows="10"
+                                          placeholder="Write your summary, synthesizing key points from selected reports..."></textarea>
+                                <span asp-validation-for="Summary.BodyContent" class="text-danger"></span>
+                            </div>
+
+                            <!-- Optional Sections -->
+                            <div class="accordion mb-3" id="optionalSections">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                                data-bs-target="#additionalFields">
+                                            <i class="bi bi-plus-circle me-2"></i> Additional Sections (Optional)
+                                        </button>
+                                    </h2>
+                                    <div id="additionalFields" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <div class="mb-3">
+                                                <label asp-for="Summary.SuggestedAction" class="form-label">Suggested Action</label>
+                                                <textarea asp-for="Summary.SuggestedAction" class="form-control" rows="3"></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label asp-for="Summary.NeededResources" class="form-label">Needed Resources</label>
+                                                <textarea asp-for="Summary.NeededResources" class="form-control" rows="3"></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label asp-for="Summary.NeededSupport" class="form-label">Needed Support</label>
+                                                <textarea asp-for="Summary.NeededSupport" class="form-control" rows="3"></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label asp-for="Summary.SpecialRemarks" class="form-label">Special Remarks</label>
+                                                <textarea asp-for="Summary.SpecialRemarks" class="form-control" rows="3"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                The summary will be saved as <strong>Draft</strong>. Selected source reports will be marked as <em>Summarized</em> once you submit.
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <a asp-page="Index" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Back
+                                </a>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-layers"></i> Create Summary
+                                </button>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

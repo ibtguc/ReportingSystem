@@ -79,4 +79,14 @@ public class Report
     public ICollection<Report> Revisions { get; set; } = new List<Report>();
     public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
     public ICollection<ReportStatusHistory> StatusHistory { get; set; } = new List<ReportStatusHistory>();
+
+    /// <summary>
+    /// When this report IS a summary — links to the source reports it summarizes.
+    /// </summary>
+    public ICollection<ReportSourceLink> SourceLinks { get; set; } = new List<ReportSourceLink>();
+
+    /// <summary>
+    /// When this report IS a source — links to summaries that reference it.
+    /// </summary>
+    public ICollection<ReportSourceLink> SummaryLinks { get; set; } = new List<ReportSourceLink>();
 }

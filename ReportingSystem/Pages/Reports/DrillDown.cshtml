@@ -1,0 +1,116 @@
+@page "{id:int}"
+@model ReportingSystem.Pages.Reports.DrillDownModel
+@using ReportingSystem.Services
+@{
+    ViewData["Title"] = $"Drill-Down: {Model.Report.Title}";
+}
+
+<div class="mt-4">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h2>
+                <i class="bi bi-diagram-2"></i> Drill-Down View
+            </h2>
+            <p class="text-muted mb-0">
+                Explore the summarization chain from executive summaries down to raw reports.
+            </p>
+        </div>
+        <div>
+            <a asp-page="Details" asp-route-id="@Model.Report.Id" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-file-earmark"></i> Report Details
+            </a>
+            <a asp-page="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> All Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Header -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">@Model.Report.Title</h4>
+                    <span class="text-muted me-3"><i class="bi bi-people"></i> @Model.Report.Committee.Name</span>
+                    <span class="text-muted me-3"><i class="bi bi-person"></i> @Model.Report.Author.Name</span>
+                </div>
+                <div class="text-end">
+                    @{
+                        var depthLabel = Model.SummarizationDepth switch
+                        {
+                            0 => "Raw Report",
+                            1 => "Level 1 Summary",
+                            2 => "Level 2 Summary",
+                            _ => $"Level {Model.SummarizationDepth} Summary"
+                        };
+                        var depthBadge = Model.SummarizationDepth switch
+                        {
+                            0 => "bg-info",
+                            1 => "bg-warning text-dark",
+                            2 => "bg-dark",
+                            _ => "bg-dark"
+                        };
+                    }
+                    <span class="badge @depthBadge fs-6">
+                        <i class="bi bi-layers"></i> @depthLabel
+                    </span>
+                    <br />
+                    <span class="badge @(Model.Report.ReportType == ReportingSystem.Models.ReportType.ExecutiveSummary ? "bg-dark" : Model.Report.ReportType == ReportingSystem.Models.ReportType.Summary ? "bg-warning text-dark" : "bg-info") mt-1">
+                        @Model.Report.ReportType
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upward Chain: Summaries that reference this report -->
+    @if (Model.SummariesOfThis.Any())
+    {
+        <div class="card shadow-sm mb-3 border-start border-4 border-dark">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-arrow-up-circle"></i> Summarized In (Upward)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    @foreach (var summary in Model.SummariesOfThis)
+                    {
+                        <a asp-page="DrillDown" asp-route-id="@summary.Id" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <i class="bi bi-layers"></i> <strong>@summary.Title</strong>
+                                    <span class="text-muted small ms-2">@summary.Committee.Name</span>
+                                </div>
+                                <span class="badge @(summary.ReportType == ReportingSystem.Models.ReportType.ExecutiveSummary ? "bg-dark" : "bg-warning text-dark")">
+                                    @summary.ReportType
+                                </span>
+                            </div>
+                            <small class="text-muted">by @summary.Author.Name — @summary.CreatedAt.ToString("yyyy-MM-dd")</small>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Downward Chain: Source reports tree -->
+    @if (Model.Tree.Children.Any())
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-arrow-down-circle"></i> Source Reports (Downward Drill-Down)</h5>
+            </div>
+            <div class="card-body">
+                @await Html.PartialAsync("_DrillDownNode", Model.Tree)
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-body text-center text-muted py-4">
+                <i class="bi bi-file-earmark-text fs-3"></i>
+                <p class="mt-2">This is a raw report with no source links.</p>
+            </div>
+        </div>
+    }
+</div>

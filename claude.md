@@ -4,7 +4,7 @@
 
 ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows, structured meeting management, confidentiality controls, and full audit trail.
 
-**Current Status**: Phase 2 Organization & Hierarchy Complete — Phase 3 (Report Lifecycle) next
+**Current Status**: Phase 4 Progressive Summarization & Drill-Down Complete — Phase 5 (Directives & Feedback) next
 
 ## Tech Stack
 
@@ -153,7 +153,7 @@ Chairman/CEO
 - Support cross-committee memberships
 - Shadow access inheritance (Phase 7 enforces confidentiality exceptions)
 
-### Phase 3: Report Lifecycle [NEXT]
+### Phase 3: Report Lifecycle [COMPLETE]
 **Goal**: Core report submission and lifecycle management (SRS 4.2.1, 4.2.2)
 
 **Models to create**:
@@ -174,7 +174,7 @@ Chairman/CEO
 - Feedback loop: reviewer sends back with comments, author revises (new version, preserves original)
 - Notification on submission to parent committee head(s)
 
-### Phase 4: Progressive Summarization & Drill-Down
+### Phase 4: Progressive Summarization & Drill-Down [COMPLETE]
 **Goal**: Summary chains and Chairman drill-down (SRS 4.2.3)
 
 **Models to create**:
@@ -192,7 +192,7 @@ Chairman/CEO
 - Summarization depth badge on each item
 - Chairman has universal drill-down access
 
-### Phase 5: Directives & Feedback
+### Phase 5: Directives & Feedback [NEXT]
 **Goal**: Top-down communication with propagation tracking (SRS 4.3)
 
 **Models to create**:
@@ -378,6 +378,45 @@ public class ShadowAssignment
 }
 ```
 
+### Report (Phase 3)
+```csharp
+public enum ReportType { Detailed, Summary, ExecutiveSummary }
+public enum ReportStatus { Draft, Submitted, UnderReview, FeedbackRequested, Revised, Summarized, Approved, Archived }
+public class Report
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public ReportType ReportType { get; set; }
+    public ReportStatus Status { get; set; }
+    public int AuthorId { get; set; }
+    public int CommitteeId { get; set; }
+    public string BodyContent { get; set; }
+    public string? SuggestedAction { get; set; }
+    public string? NeededResources { get; set; }
+    public string? NeededSupport { get; set; }
+    public string? SpecialRemarks { get; set; }
+    public bool IsConfidential { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+    public int Version { get; set; }
+    public int? OriginalReportId { get; set; }  // Self-ref FK for versioning
+    public DateTime CreatedAt { get; set; }
+    // Nav: Author, Committee, Attachments, StatusHistory, Revisions, OriginalReport, SourceLinks, SummaryLinks
+}
+```
+
+### ReportSourceLink (Phase 4)
+```csharp
+public class ReportSourceLink
+{
+    public int Id { get; set; }
+    public int SummaryReportId { get; set; }
+    public int SourceReportId { get; set; }
+    public string? Annotation { get; set; }
+    public DateTime CreatedAt { get; set; }
+    // Nav: SummaryReport, SourceReport
+}
+```
+
 ### MagicLink (Phase 1)
 ```csharp
 public class MagicLink
@@ -438,6 +477,7 @@ public class DatabaseBackup
 | `DatabaseBackupService` | Create manual/auto backups, restore, WAL checkpoint |
 | `DailyBackupHostedService` | Background service, checks hourly, creates backup every 12h |
 | `OrganizationService` | Committee/membership/shadow CRUD, hierarchy tree, stats (Phase 2) |
+| `ReportService` | Report CRUD, status workflow, attachments, summarization, drill-down (Phase 3+4) |
 
 ## Configuration
 

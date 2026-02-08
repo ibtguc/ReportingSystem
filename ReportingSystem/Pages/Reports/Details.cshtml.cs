@@ -23,6 +23,9 @@ public class DetailsModel : PageModel
     public bool CanSubmit { get; set; }
     public bool CanReview { get; set; }
     public bool IsAuthor { get; set; }
+    public List<ReportSourceLink> SourceLinks { get; set; } = new();
+    public List<Report> SummariesOfThis { get; set; } = new();
+    public int SummarizationDepth { get; set; }
 
     [BindProperty]
     public string? FeedbackComments { get; set; }
@@ -37,6 +40,13 @@ public class DetailsModel : PageModel
 
         Report = report;
         await ComputePermissions();
+
+        // Phase 4: Load summarization data
+        SourceLinks = await _reportService.GetSourceLinksAsync(id);
+        SummariesOfThis = await _reportService.GetSummariesOfReportAsync(id);
+        if (report.ReportType == ReportType.Summary || report.ReportType == ReportType.ExecutiveSummary)
+            SummarizationDepth = await _reportService.GetSummarizationDepthAsync(id);
+
         return Page();
     }
 

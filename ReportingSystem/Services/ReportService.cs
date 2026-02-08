@@ -326,6 +326,178 @@ public class ReportService
             .ToListAsync();
     }
 
+    // ── Summarization ──
+
+    public async Task<Report> CreateSummaryAsync(Report summaryReport, List<int> sourceReportIds,
+        Dictionary<int, string?>? annotations, int userId)
+    {
+        summaryReport.AuthorId = userId;
+        summaryReport.CreatedAt = DateTime.UtcNow;
+        summaryReport.Status = ReportStatus.Draft;
+        summaryReport.Version = 1;
+
+        _context.Reports.Add(summaryReport);
+        await _context.SaveChangesAsync();
+
+        // Create source links
+        foreach (var sourceId in sourceReportIds)
+        {
+            var link = new ReportSourceLink
+            {
+                SummaryReportId = summaryReport.Id,
+                SourceReportId = sourceId,
+                Annotation = annotations?.GetValueOrDefault(sourceId),
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.ReportSourceLinks.Add(link);
+        }
+        await _context.SaveChangesAsync();
+
+        // Mark source reports as Summarized
+        foreach (var sourceId in sourceReportIds)
+        {
+            var source = await _context.Reports.FindAsync(sourceId);
+            if (source != null && (source.Status == ReportStatus.Approved || source.Status == ReportStatus.Submitted))
+            {
+                var oldStatus = source.Status;
+                source.Status = ReportStatus.Summarized;
+                source.UpdatedAt = DateTime.UtcNow;
+                await AddStatusHistoryAsync(sourceId, oldStatus, ReportStatus.Summarized, userId,
+                    $"Summarized in Report #{summaryReport.Id}");
+            }
+        }
+
+        await AddStatusHistoryAsync(summaryReport.Id, ReportStatus.Draft, ReportStatus.Draft, userId,
+            $"Summary created from {sourceReportIds.Count} source report(s)");
+
+        _logger.LogInformation("Summary report '{Title}' (ID: {Id}) created from {Count} sources by user {UserId}",
+            summaryReport.Title, summaryReport.Id, sourceReportIds.Count, userId);
+
+        return summaryReport;
+    }
+
+    /// <summary>
+    /// Gets reports available to be summarized: approved/submitted reports from
+    /// the specified committee and its sub-committees.
+    /// </summary>
+    public async Task<List<Report>> GetSummarizableReportsAsync(int committeeId)
+    {
+        var committeeIds = await GetDescendantCommitteeIdsAsync(committeeId);
+        committeeIds.Add(committeeId);
+
+        return await _context.Reports
+            .Include(r => r.Author)
+            .Include(r => r.Committee)
+            .Where(r => committeeIds.Contains(r.CommitteeId)
+                     && (r.Status == ReportStatus.Approved || r.Status == ReportStatus.Submitted)
+                     && r.ReportType == ReportType.Detailed)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Gets the full drill-down chain: starting from a summary, walks down
+    /// through all source links to build an expandable tree.
+    /// </summary>
+    public async Task<DrillDownNode> GetDrillDownTreeAsync(int reportId)
+    {
+        var report = await _context.Reports
+            .Include(r => r.Author)
+            .Include(r => r.Committee)
+            .Include(r => r.SourceLinks).ThenInclude(sl => sl.SourceReport).ThenInclude(r => r.Author)
+            .Include(r => r.SourceLinks).ThenInclude(sl => sl.SourceReport).ThenInclude(r => r.Committee)
+            .FirstOrDefaultAsync(r => r.Id == reportId);
+
+        if (report == null)
+            return new DrillDownNode { Report = new Report { Title = "Not Found" } };
+
+        return await BuildDrillDownNodeAsync(report, 0);
+    }
+
+    private async Task<DrillDownNode> BuildDrillDownNodeAsync(Report report, int depth)
+    {
+        var node = new DrillDownNode
+        {
+            Report = report,
+            Depth = depth
+        };
+
+        // Load source links if not already loaded
+        if (!report.SourceLinks.Any())
+        {
+            await _context.Entry(report).Collection(r => r.SourceLinks).LoadAsync();
+            foreach (var link in report.SourceLinks)
+            {
+                await _context.Entry(link).Reference(l => l.SourceReport).LoadAsync();
+                await _context.Entry(link.SourceReport).Reference(r => r.Author).LoadAsync();
+                await _context.Entry(link.SourceReport).Reference(r => r.Committee).LoadAsync();
+            }
+        }
+
+        foreach (var link in report.SourceLinks)
+        {
+            var childNode = await BuildDrillDownNodeAsync(link.SourceReport, depth + 1);
+            childNode.Annotation = link.Annotation;
+            node.Children.Add(childNode);
+        }
+
+        return node;
+    }
+
+    /// <summary>
+    /// Gets all summaries that reference this report (upward chain).
+    /// </summary>
+    public async Task<List<Report>> GetSummariesOfReportAsync(int reportId)
+    {
+        return await _context.ReportSourceLinks
+            .Include(l => l.SummaryReport).ThenInclude(r => r.Author)
+            .Include(l => l.SummaryReport).ThenInclude(r => r.Committee)
+            .Where(l => l.SourceReportId == reportId)
+            .Select(l => l.SummaryReport)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Gets source reports linked to a summary.
+    /// </summary>
+    public async Task<List<ReportSourceLink>> GetSourceLinksAsync(int summaryReportId)
+    {
+        return await _context.ReportSourceLinks
+            .Include(l => l.SourceReport).ThenInclude(r => r.Author)
+            .Include(l => l.SourceReport).ThenInclude(r => r.Committee)
+            .Where(l => l.SummaryReportId == summaryReportId)
+            .OrderBy(l => l.SourceReport.Committee.HierarchyLevel)
+            .ThenBy(l => l.SourceReport.CreatedAt)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Computes how many levels deep this report is in the summarization chain.
+    /// 0 = raw report, 1 = summary of raw reports, 2 = summary of summaries, etc.
+    /// </summary>
+    public async Task<int> GetSummarizationDepthAsync(int reportId)
+    {
+        var hasSourceLinks = await _context.ReportSourceLinks
+            .AnyAsync(l => l.SummaryReportId == reportId);
+
+        if (!hasSourceLinks) return 0;
+
+        var sourceIds = await _context.ReportSourceLinks
+            .Where(l => l.SummaryReportId == reportId)
+            .Select(l => l.SourceReportId)
+            .ToListAsync();
+
+        int maxChildDepth = 0;
+        foreach (var sourceId in sourceIds)
+        {
+            var childDepth = await GetSummarizationDepthAsync(sourceId);
+            if (childDepth > maxChildDepth) maxChildDepth = childDepth;
+        }
+
+        return maxChildDepth + 1;
+    }
+
     // ── Helpers ──
 
     private async Task AddStatusHistoryAsync(int reportId, ReportStatus oldStatus,
@@ -360,4 +532,15 @@ public class ReportService
         }
         return result;
     }
+}
+
+/// <summary>
+/// Tree node for drill-down visualization.
+/// </summary>
+public class DrillDownNode
+{
+    public Report Report { get; set; } = null!;
+    public int Depth { get; set; }
+    public string? Annotation { get; set; }
+    public List<DrillDownNode> Children { get; set; } = new();
 }

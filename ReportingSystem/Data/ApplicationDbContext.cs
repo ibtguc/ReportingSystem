@@ -23,6 +23,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Report> Reports { get; set; }
     public DbSet<Attachment> Attachments { get; set; }
     public DbSet<ReportStatusHistory> ReportStatusHistories { get; set; }
+    public DbSet<ReportSourceLink> ReportSourceLinks { get; set; }
 
     // Notifications
     public DbSet<Notification> Notifications { get; set; }
@@ -157,6 +158,22 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.ChangedBy)
                 .WithMany()
                 .HasForeignKey(e => e.ChangedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ReportSourceLink
+        modelBuilder.Entity<ReportSourceLink>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.SummaryReportId, e.SourceReportId }).IsUnique();
+            entity.HasIndex(e => e.SourceReportId);
+            entity.HasOne(e => e.SummaryReport)
+                .WithMany(r => r.SourceLinks)
+                .HasForeignKey(e => e.SummaryReportId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.SourceReport)
+                .WithMany(r => r.SummaryLinks)
+                .HasForeignKey(e => e.SourceReportId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
