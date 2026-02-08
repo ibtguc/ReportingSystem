@@ -16,4 +16,8 @@
     <PackageReference Include="Microsoft.Graph" Version="5.62.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="db\" />
+  </ItemGroup>
+
 </Project>
