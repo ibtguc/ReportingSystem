@@ -26,7 +26,23 @@ dotnet run --project ReportingSystem/ReportingSystem.csproj
 # Dev URL: http://localhost:5296
 ```
 
-**Note**: NuGet package restore requires network access to nuget.org. In sandboxed environments where nuget.org is blocked, build will fail at restore. A SessionStart hook in `.claude/hooks/session-start.sh` auto-installs the .NET SDK and attempts restore.
+**Sandboxed Environment Setup** (run these before building if .NET SDK is not installed):
+
+```bash
+# 1. Install .NET SDK 8.0
+apt-get update -qq && apt-get install -y -qq dotnet-sdk-8.0
+
+# 2. Fix DNS resolution (resolv.conf may be missing in sandboxed environments)
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+
+# 3. Bypass proxy for NuGet (https_proxy env var may interfere with NuGet restore)
+export no_proxy="${no_proxy:+$no_proxy,}api.nuget.org,nuget.org,www.nuget.org"
+
+# 4. Now build
+dotnet build ReportingSystem/ReportingSystem.csproj
+```
+
+**Important**: After schema changes (new models/DbSets), delete the existing SQLite DB file (`ReportingSystem/db/reporting.db`) before running — `EnsureCreatedAsync()` won't add new tables to an existing database.
 
 ## SRS Reference
 
@@ -327,8 +343,8 @@ OrganizationSeeder seeds the full ORS_Test_Data.md dataset:
 
 ## Git
 
-- **Branch**: `claude/reporting-system-phase1-85jSi`
-- **Push command**: `git push -u origin claude/reporting-system-phase1-85jSi`
+- **Branch**: `claude/ors-development-continued-1LlZI`
+- **Push command**: `git push -u origin claude/ors-development-continued-1LlZI`
 
 ---
 
@@ -340,13 +356,21 @@ Use this prompt when starting a new Claude Code session to resume work on this p
 You are continuing development of the ORS (Organizational Reporting System) — an ASP.NET Core 8.0 Razor Pages web app for hierarchical organizational reporting.
 
 CRITICAL CONTEXT:
-- Branch: claude/reporting-system-phase1-85jSi
+- Branch: claude/ors-development-continued-1LlZI
 - This is Razor Pages (NOT MVC). Pages live in /Pages/, not /Controllers/.
 - EF Core 8.0 with SQLite (dev). No migrations — uses EnsureCreatedAsync().
+- IMPORTANT: After adding new models/DbSets, delete `ReportingSystem/db/reporting.db` before running — EnsureCreatedAsync() won't alter existing DBs.
 - File-scoped namespaces: `namespace X;`
 - Int auto-increment PKs (NOT GUIDs)
 - All DB ops are async/await
 - [BindProperty] for form binding, TempData for flash messages
+- ModelState.Remove() for navigation properties in POST handlers
+
+ENVIRONMENT SETUP (sandboxed — run if .NET SDK not installed):
+  apt-get update -qq && apt-get install -y -qq dotnet-sdk-8.0
+  echo "nameserver 8.8.8.8" > /etc/resolv.conf
+  export no_proxy="${no_proxy:+$no_proxy,}api.nuget.org,nuget.org,www.nuget.org"
+  dotnet build ReportingSystem/ReportingSystem.csproj
 
 COMPLETED PHASES:
 - Phase 1 (Infrastructure): Auth (magic link), backup, notifications, user CRUD
