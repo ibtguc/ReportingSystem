@@ -11,10 +11,12 @@ namespace ReportingSystem.Pages.Directives;
 public class IndexModel : PageModel
 {
     private readonly DirectiveService _directiveService;
+    private readonly ConfidentialityService _confidentialityService;
 
-    public IndexModel(DirectiveService directiveService)
+    public IndexModel(DirectiveService directiveService, ConfidentialityService confidentialityService)
     {
         _directiveService = directiveService;
+        _confidentialityService = confidentialityService;
     }
 
     public List<Directive> Directives { get; set; } = new();
@@ -62,6 +64,9 @@ public class IndexModel : PageModel
             allDirectives = allDirectives.Where(d => d.Status == Status.Value).ToList();
         if (ShowMine && Priority.HasValue)
             allDirectives = allDirectives.Where(d => d.Priority == Priority.Value).ToList();
+
+        // Filter out confidential items the user cannot access
+        allDirectives = await _confidentialityService.FilterAccessibleDirectivesAsync(allDirectives, userId);
 
         Directives = allDirectives;
 

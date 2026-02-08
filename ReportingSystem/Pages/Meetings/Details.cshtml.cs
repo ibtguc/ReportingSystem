@@ -13,11 +13,13 @@ namespace ReportingSystem.Pages.Meetings;
 public class DetailsModel : PageModel
 {
     private readonly MeetingService _meetingService;
+    private readonly ConfidentialityService _confidentialityService;
     private readonly ApplicationDbContext _context;
 
-    public DetailsModel(MeetingService meetingService, ApplicationDbContext context)
+    public DetailsModel(MeetingService meetingService, ConfidentialityService confidentialityService, ApplicationDbContext context)
     {
         _meetingService = meetingService;
+        _confidentialityService = confidentialityService;
         _context = context;
     }
 
@@ -54,6 +56,18 @@ public class DetailsModel : PageModel
     {
         var meeting = await _meetingService.GetMeetingByIdAsync(id);
         if (meeting == null) return NotFound();
+
+        // Confidentiality access check
+        if (meeting.IsConfidential)
+        {
+            var checkUserId = GetUserId();
+            if (!await _confidentialityService.CanUserAccessConfidentialItemAsync(
+                ConfidentialItemType.Meeting, id, checkUserId))
+            {
+                TempData["ErrorMessage"] = "You do not have access to this confidential meeting.";
+                return RedirectToPage("Index");
+            }
+        }
 
         Meeting = meeting;
         var userId = GetUserId();

@@ -82,6 +82,8 @@ public class Directive
 
     public DateTime? Deadline { get; set; }
 
+    public bool IsConfidential { get; set; } = false;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }

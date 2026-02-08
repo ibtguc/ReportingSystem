@@ -11,10 +11,12 @@ namespace ReportingSystem.Pages.Directives;
 public class DetailsModel : PageModel
 {
     private readonly DirectiveService _directiveService;
+    private readonly ConfidentialityService _confidentialityService;
 
-    public DetailsModel(DirectiveService directiveService)
+    public DetailsModel(DirectiveService directiveService, ConfidentialityService confidentialityService)
     {
         _directiveService = directiveService;
+        _confidentialityService = confidentialityService;
     }
 
     public Directive Directive { get; set; } = null!;
@@ -37,6 +39,18 @@ public class DetailsModel : PageModel
     {
         var directive = await _directiveService.GetDirectiveByIdAsync(id);
         if (directive == null) return NotFound();
+
+        // Confidentiality access check
+        if (directive.IsConfidential)
+        {
+            var userId = GetUserId();
+            if (!await _confidentialityService.CanUserAccessConfidentialItemAsync(
+                ConfidentialItemType.Directive, id, userId))
+            {
+                TempData["ErrorMessage"] = "You do not have access to this confidential directive.";
+                return RedirectToPage("Index");
+            }
+        }
 
         Directive = directive;
         await ComputePermissions();

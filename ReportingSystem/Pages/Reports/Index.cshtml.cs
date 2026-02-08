@@ -7,14 +7,18 @@ using ReportingSystem.Services;
 
 namespace ReportingSystem.Pages.Reports;
 
+// Confidentiality filtering applied via ConfidentialityService
+
 [Authorize]
 public class IndexModel : PageModel
 {
     private readonly ReportService _reportService;
+    private readonly ConfidentialityService _confidentialityService;
 
-    public IndexModel(ReportService reportService)
+    public IndexModel(ReportService reportService, ConfidentialityService confidentialityService)
     {
         _reportService = reportService;
+        _confidentialityService = confidentialityService;
     }
 
     public List<Report> Reports { get; set; } = new();
@@ -50,5 +54,8 @@ public class IndexModel : PageModel
             status: Status,
             reportType: ReportType,
             includeArchived: IncludeArchived);
+
+        // Filter out confidential items the user cannot access
+        Reports = await _confidentialityService.FilterAccessibleReportsAsync(Reports, userId);
     }
 }

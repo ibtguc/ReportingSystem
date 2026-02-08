@@ -10,10 +10,12 @@ namespace ReportingSystem.Pages.Meetings;
 public class IndexModel : PageModel
 {
     private readonly MeetingService _meetingService;
+    private readonly ConfidentialityService _confidentialityService;
 
-    public IndexModel(MeetingService meetingService)
+    public IndexModel(MeetingService meetingService, ConfidentialityService confidentialityService)
     {
         _meetingService = meetingService;
+        _confidentialityService = confidentialityService;
     }
 
     public List<Meeting> Meetings { get; set; } = new();
@@ -56,6 +58,9 @@ public class IndexModel : PageModel
 
         if (ShowMine && Status.HasValue)
             Meetings = Meetings.Where(m => m.Status == Status.Value).ToList();
+
+        // Filter out confidential items the user cannot access
+        Meetings = await _confidentialityService.FilterAccessibleMeetingsAsync(Meetings, userId);
 
         var stats = await _meetingService.GetMeetingStatsAsync();
         ScheduledCount = stats.scheduled;

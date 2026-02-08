@@ -46,6 +46,10 @@
                 }
                 <span class="badge @statusBadge fs-6">@meeting.Status</span>
                 <span class="badge bg-secondary fs-6">@meeting.MeetingType</span>
+                @if (meeting.IsConfidential)
+                {
+                    <span class="badge bg-danger fs-6"><i class="bi bi-lock-fill"></i> Confidential</span>
+                }
             </h2>
             <p class="text-muted mb-0">
                 <i class="bi bi-people"></i> @meeting.Committee.Name |
@@ -533,6 +537,34 @@
                     </div>
                 }
             </div>
+
+            <!-- Confidentiality -->
+            @if (Model.IsModerator || User.IsInRole("SystemAdmin"))
+            {
+                <div class="card mb-4">
+                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-shield-lock"></i> Confidentiality</h5></div>
+                    <div class="card-body d-grid gap-2">
+                        @if (meeting.IsConfidential)
+                        {
+                            <a asp-page="/Confidentiality/Mark" asp-route-itemType="Meeting" asp-route-itemId="@meeting.Id"
+                               class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-shield-x"></i> Manage Confidentiality
+                            </a>
+                            <a asp-page="/Confidentiality/AccessGrants" asp-route-itemType="Meeting" asp-route-itemId="@meeting.Id"
+                               class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-person-lock"></i> Access Grants & Audit
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-page="/Confidentiality/Mark" asp-route-itemType="Meeting" asp-route-itemId="@meeting.Id"
+                               class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-shield-lock-fill"></i> Mark as Confidential
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
 
             <!-- Confirmation Progress (MinutesReview) -->
             @if (isMinutesReview)

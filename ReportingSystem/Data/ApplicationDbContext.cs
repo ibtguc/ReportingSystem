@@ -36,6 +36,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<MeetingDecision> MeetingDecisions { get; set; }
     public DbSet<ActionItem> ActionItems { get; set; }
 
+    // Confidentiality
+    public DbSet<ConfidentialityMarking> ConfidentialityMarkings { get; set; }
+    public DbSet<AccessGrant> AccessGrants { get; set; }
+
     // Notifications
     public DbSet<Notification> Notifications { get; set; }
 
@@ -198,6 +202,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Priority);
             entity.HasIndex(e => e.Deadline);
             entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.IsConfidential);
             entity.HasOne(e => e.Issuer)
                 .WithMany()
                 .HasForeignKey(e => e.IssuerId)
@@ -244,6 +249,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.ScheduledAt);
             entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.IsConfidential);
             entity.HasOne(e => e.Committee)
                 .WithMany()
                 .HasForeignKey(e => e.CommitteeId)
@@ -327,6 +333,47 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.AssignedBy)
                 .WithMany()
                 .HasForeignKey(e => e.AssignedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ConfidentialityMarking
+        modelBuilder.Entity<ConfidentialityMarking>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ItemType, e.ItemId, e.IsActive });
+            entity.HasIndex(e => e.MarkedById);
+            entity.HasIndex(e => e.MarkedAt);
+            entity.HasOne(e => e.MarkedBy)
+                .WithMany()
+                .HasForeignKey(e => e.MarkedById)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.MarkerCommittee)
+                .WithMany()
+                .HasForeignKey(e => e.MarkerCommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.UnmarkedBy)
+                .WithMany()
+                .HasForeignKey(e => e.UnmarkedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure AccessGrant
+        modelBuilder.Entity<AccessGrant>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ItemType, e.ItemId, e.GrantedToUserId, e.IsActive });
+            entity.HasIndex(e => e.GrantedToUserId);
+            entity.HasOne(e => e.GrantedTo)
+                .WithMany()
+                .HasForeignKey(e => e.GrantedToUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.GrantedBy)
+                .WithMany()
+                .HasForeignKey(e => e.GrantedById)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.RevokedBy)
+                .WithMany()
+                .HasForeignKey(e => e.RevokedById)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

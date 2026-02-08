@@ -10,11 +10,13 @@ namespace ReportingSystem.Pages.Reports;
 public class DetailsModel : PageModel
 {
     private readonly ReportService _reportService;
+    private readonly ConfidentialityService _confidentialityService;
     private readonly IWebHostEnvironment _env;
 
-    public DetailsModel(ReportService reportService, IWebHostEnvironment env)
+    public DetailsModel(ReportService reportService, ConfidentialityService confidentialityService, IWebHostEnvironment env)
     {
         _reportService = reportService;
+        _confidentialityService = confidentialityService;
         _env = env;
     }
 
@@ -37,6 +39,18 @@ public class DetailsModel : PageModel
     {
         var report = await _reportService.GetReportByIdAsync(id);
         if (report == null) return NotFound();
+
+        // Confidentiality access check
+        if (report.IsConfidential)
+        {
+            var userId = GetUserId();
+            if (!await _confidentialityService.CanUserAccessConfidentialItemAsync(
+                Models.ConfidentialItemType.Report, id, userId))
+            {
+                TempData["ErrorMessage"] = "You do not have access to this confidential report.";
+                return RedirectToPage("Index");
+            }
+        }
 
         Report = report;
         await ComputePermissions();

@@ -4,7 +4,7 @@
 
 ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows, structured meeting management, confidentiality controls, and full audit trail.
 
-**Current Status**: Phases 1-6 Complete — Phase 7 (Confidentiality & Access Control) is NEXT
+**Current Status**: Phases 1-7 Complete — Phase 8 (Search, Archives & Audit) is NEXT
 
 ## Tech Stack
 
@@ -57,12 +57,13 @@ dotnet build ReportingSystem/ReportingSystem.csproj
 ```
 ReportingSystem/
 ├── Data/
-│   ├── ApplicationDbContext.cs      # EF Core DbContext (~330 lines)
+│   ├── ApplicationDbContext.cs      # EF Core DbContext (~400 lines)
 │   │                                 # DbSets: Users, MagicLinks, Committees, CommitteeMemberships,
 │   │                                 # ShadowAssignments, Reports, Attachments, ReportStatusHistories,
 │   │                                 # ReportSourceLinks, Directives, DirectiveStatusHistories,
 │   │                                 # Meetings, MeetingAgendaItems, MeetingAttendees,
-│   │                                 # MeetingDecisions, ActionItems, Notifications, DatabaseBackups
+│   │                                 # MeetingDecisions, ActionItems, ConfidentialityMarkings,
+│   │                                 # AccessGrants, Notifications, DatabaseBackups
 │   ├── SeedData.cs                  # Placeholder for domain seeding
 │   ├── UserSeeder.cs                # Seeds 3 admin users
 │   └── OrganizationSeeder.cs        # Seeds ~155 users, ~185 committees, memberships (853 lines)
@@ -84,6 +85,8 @@ ReportingSystem/
 │   ├── MeetingAttendee.cs           # Attendees with RSVP + minutes confirmation (Phase 6)
 │   ├── MeetingDecision.cs           # Formal decisions + DecisionType enum (Phase 6)
 │   ├── ActionItem.cs                # Trackable action items + ActionItemStatus enum (Phase 6)
+│   ├── ConfidentialityMarking.cs    # Confidentiality markings with hierarchy-based access (Phase 7)
+│   ├── AccessGrant.cs               # Explicit access grants for confidential items (Phase 7)
 │   ├── Notification.cs              # In-app notifications
 │   └── DatabaseBackup.cs            # Backup records
 ├── Pages/
@@ -118,6 +121,9 @@ ReportingSystem/
 │   │   ├── Details                  # Full view + agenda + attendees + RSVP + decisions + action items
 │   │   ├── Minutes                  # Minutes entry (per-agenda-item notes + overall summary)
 │   │   └── ActionItems              # Consolidated action items dashboard with status transitions
+│   ├── Confidentiality/
+│   │   ├── Mark                     # Mark/unmark confidential with impact preview (Phase 7)
+│   │   └── AccessGrants             # Explicit access grants + audit trail (Phase 7)
 │   ├── Shared/_Layout.cshtml        # Nav: Home, Organization, Reports, Directives, Meetings, Administration, User
 │   ├── Index.cshtml                 # Landing → redirects to Dashboard or Login
 │   └── Error.cshtml
@@ -130,7 +136,8 @@ ReportingSystem/
 │   ├── OrganizationService.cs       # Committee/membership/shadow CRUD (235 lines)
 │   ├── ReportService.cs             # Reports, status workflow, summarization, drill-down (547 lines)
 │   ├── DirectiveService.cs          # Directives, status transitions, propagation, overdue (~340 lines)
-│   └── MeetingService.cs            # Meetings, agenda, attendees, RSVP, minutes, decisions, action items (~420 lines)
+│   ├── MeetingService.cs            # Meetings, agenda, attendees, RSVP, minutes, decisions, action items (~420 lines)
+│   └── ConfidentialityService.cs    # Confidentiality marking, access control, impact preview, explicit grants (~350 lines)
 ├── wwwroot/                         # Static files (Bootstrap, jQuery, uploads/)
 ├── Program.cs                       # App configuration & DI (~140 lines)
 ├── appsettings.json                 # Production config
@@ -224,12 +231,21 @@ Chairman/CEO
 - [x] Dashboard updated with meeting statistics (total, scheduled, awaiting confirmation, overdue actions)
 - [x] Layout nav: Meetings dropdown (All Meetings, Schedule Meeting, Action Items)
 
-### Phase 7: Confidentiality & Access Control [NEXT]
-**Goal**: Hierarchy-based access control and confidentiality marking (SRS 4.5)
+### Phase 7: Confidentiality & Access Control [COMPLETE]
+- [x] Models: ConfidentialityMarking (ItemType, ItemId, MarkerCommitteeLevel, MinChairmanOfficeRank, IsActive, audit trail), AccessGrant (explicit sharing)
+- [x] Added IsConfidential boolean to Directive and Meeting models (Report already had it)
+- [x] ConfidentialityService: mark/unmark, access control checks, impact preview, explicit access grants, filtering helpers
+- [x] Access rules (FR-4.5.1): higher hierarchy levels access confidential items, Chairman always access, shadows excluded
+- [x] Chairman's Office rank-based access (FR-4.5.2): users with equal/higher rank (lower number) retain access
+- [x] Explicit sharing (FR-4.5.3.4): GrantAccessAsync/RevokeAccessAsync with audit
+- [x] Reversible markings (FR-4.5.1.7): original marker or SystemAdmin can remove
+- [x] Access impact preview (FR-4.5.1.2): shows who will retain/lose access before marking
+- [x] Pages: Confidentiality/Mark (mark/unmark with preview), Confidentiality/AccessGrants (grants + audit trail)
+- [x] Confidentiality indicators on all Detail pages (Reports, Directives, Meetings) with badge + management links
+- [x] Access enforcement: list pages filter inaccessible items, detail pages block unauthorized access
+- [x] DbContext: 2 new DbSets (ConfidentialityMarkings, AccessGrants) with indexes and FK configs
 
-**Model**: ConfidentialityMarking — per-item marking with rank-based Chairman's Office access, shadow exclusion, reversible
-
-### Phase 8: Search, Archives & Audit
+### Phase 8: Search, Archives & Audit [NEXT]
 **Goal**: Full-text search, archive management, comprehensive audit logging (SRS 4.6, 4.8)
 
 **Model**: AuditLog — append-only, unified search across all content types
@@ -265,6 +281,8 @@ Chairman/CEO
 | `MeetingAttendee` | 6 | MeetingId, UserId, RsvpStatus, RsvpComment, RsvpAt, ConfirmationStatus, ConfirmationComment, ConfirmedAt | → Meeting, User |
 | `MeetingDecision` | 6 | MeetingId, AgendaItemId, DecisionText, DecisionType, Deadline | → Meeting, AgendaItem, ActionItems |
 | `ActionItem` | 6 | MeetingId, MeetingDecisionId, Title, Description, AssignedToId, AssignedById, Status, Deadline, CompletedAt, VerifiedAt | → Meeting, MeetingDecision, AssignedTo, AssignedBy |
+| `ConfidentialityMarking` | 7 | ItemType, ItemId, MarkedById, MarkerCommitteeLevel, MarkerCommitteeId, MinChairmanOfficeRank, IsActive, Reason, MarkedAt, UnmarkedAt, UnmarkedById | → MarkedBy, MarkerCommittee, UnmarkedBy |
+| `AccessGrant` | 7 | ItemType, ItemId, GrantedToUserId, GrantedById, Reason, IsActive, GrantedAt, RevokedAt, RevokedById | → GrantedTo, GrantedBy, RevokedBy |
 | `Notification` | 1 | UserId, Type, Title, Message, IsRead, Priority | — |
 | `DatabaseBackup` | 1 | Name, FileName, FilePath, Type, CreatedBy | — |
 
@@ -284,6 +302,7 @@ Chairman/CEO
 - `ConfirmationStatus`: Pending, Confirmed, RevisionRequested, Abstained
 - `DecisionType`: Approval, Direction, Resolution, Deferral
 - `ActionItemStatus`: Assigned, InProgress, Completed, Verified
+- `ConfidentialItemType`: Report, Directive, Meeting
 
 ## Services (with key methods)
 
@@ -298,6 +317,7 @@ Chairman/CEO
 | `ReportService` | GetReportsAsync, CreateReportAsync, UpdateReportAsync, SubmitReportAsync, StartReviewAsync, RequestFeedbackAsync, ReviseReportAsync, ApproveReportAsync, ArchiveReportAsync, AddAttachmentAsync, CreateSummaryAsync, GetDrillDownTreeAsync, GetSummarizableReportsAsync, GetSummarizationDepthAsync, CanUserReviewReportAsync, GetReportStatsAsync |
 | `DirectiveService` | GetDirectivesAsync, GetDirectiveByIdAsync, GetDirectivesForUserAsync, CreateDirectiveAsync, ForwardDirectiveAsync, MarkDeliveredAsync, AcknowledgeAsync, StartProgressAsync, MarkImplementedAsync, VerifyAsync, CloseAsync, GetPropagationTreeAsync, GetOverdueDirectivesAsync, GetApproachingDeadlineDirectivesAsync, CanUserIssueDirectivesAsync, IsUserTargetOfDirectiveAsync, GetTargetableCommitteesAsync, GetForwardableCommitteesAsync, GetDirectiveStatsAsync |
 | `MeetingService` | GetMeetingsAsync, GetMeetingByIdAsync, GetMeetingsForUserAsync, CreateMeetingAsync, UpdateMeetingAsync, CancelMeetingAsync, StartMeetingAsync, BeginMinutesEntryAsync, SubmitMinutesAsync, TryFinalizeMinutesAsync, AddAttendeeAsync, AddAttendeesFromCommitteeAsync, RemoveAttendeeAsync, UpdateRsvpAsync, UpdateConfirmationAsync, AddAgendaItemAsync, UpdateAgendaItemAsync, RemoveAgendaItemAsync, UpdateAgendaDiscussionNotesAsync, AddDecisionAsync, RemoveDecisionAsync, CreateActionItemAsync, StartActionItemAsync, CompleteActionItemAsync, VerifyActionItemAsync, GetActionItemsForUserAsync, GetAllActionItemsAsync, GetOverdueActionItemsAsync, CanUserScheduleMeetingAsync, IsUserModeratorAsync, IsUserAttendeeAsync, GetSchedulableCommitteesAsync, GetMeetingStatsAsync, GetUpcomingMeetingsAsync |
+| `ConfidentialityService` | MarkAsConfidentialAsync, RemoveConfidentialMarkingAsync, GetActiveMarkingAsync, GetMarkingHistoryAsync, CanUserAccessConfidentialItemAsync, GetAccessImpactPreviewAsync, GrantAccessAsync, RevokeAccessAsync, GetAccessGrantsAsync, FilterAccessibleReportsAsync, FilterAccessibleDirectivesAsync, FilterAccessibleMeetingsAsync, CanUserMarkConfidentialAsync, GetItemCommitteeAsync |
 
 ## Pages (Route Map)
 
@@ -335,10 +355,12 @@ Chairman/CEO
 | Meeting Details | `/Meetings/Details/{id}` | GET, POST:StartMeeting/BeginMinutes/CancelMeeting/AddAttendee/RemoveAttendee/AddCommitteeMembers/RsvpAccept/RsvpDecline/RsvpTentative/AddAgendaItem/RemoveAgendaItem/AddDecision/RemoveDecision/AddActionItem/ConfirmMinutes/RequestRevision/Abstain |
 | Meeting Minutes | `/Meetings/Minutes/{id}` | GET, POST:Save/Submit (per-agenda-item notes + overall minutes) |
 | Action Items | `/Meetings/ActionItems` | GET (Status, ShowMine), POST:Start/Complete/Verify |
+| Confidentiality Mark | `/Confidentiality/Mark?ItemType=&ItemId=` | GET (impact preview), POST:Mark/Unmark |
+| Access Grants | `/Confidentiality/AccessGrants?ItemType=&ItemId=` | GET, POST:Grant/Revoke |
 
 ## Authorization
 
-- `/Admin/*`, `/Reports/*`, `/Directives/*`, and `/Meetings/*` → `[Authorize]` (any authenticated user)
+- `/Admin/*`, `/Reports/*`, `/Directives/*`, `/Meetings/*`, and `/Confidentiality/*` → `[Authorize]` (any authenticated user)
 - `/Admin/Backup/*` → `SystemAdminOnly` policy
 - `/Auth/*` and `/` → `[AllowAnonymous]`
 - Report actions: committee membership checks (submit), head-of-committee/parent checks (review)
@@ -348,6 +370,10 @@ Chairman/CEO
 - Meeting minutes: only moderator can enter/edit/submit minutes
 - Minutes confirmation: only attendees can confirm/request revision/abstain
 - Action item transitions: assignee can start/complete; moderator/head can verify
+- Confidentiality: item owner (author/issuer/moderator) or SystemAdmin can mark/unmark
+- Confidential access: Chairman always, SystemAdmin always, same-committee members, higher hierarchy users; shadows excluded
+- Chairman's Office: rank-based (MinChairmanOfficeRank, 1=senior, lower number = more access)
+- Explicit grants: item owner or SystemAdmin can grant/revoke access to specific users
 
 ## Configuration
 
@@ -422,16 +448,18 @@ COMPLETED PHASES:
 - Phase 4 (Summarization): ReportSourceLink model, summary creation linking to sources, recursive drill-down tree visualization, bidirectional chain navigation
 - Phase 5 (Directives): Directive model (7 statuses, 5 types, 3 priorities), propagation chain via ParentDirectiveId, forwarding with annotations, overdue tracking, status pipeline view
 - Phase 6 (Meetings): Meeting scheduling, structured agenda, RSVP, minutes entry with per-agenda-item notes, attendee confirmation workflow (all must Confirm/Abstain to finalize), decisions with DecisionType, action items (Assigned→InProgress→Completed→Verified), overdue action item tracking
+- Phase 7 (Confidentiality): ConfidentialityMarking + AccessGrant models, hierarchy-based access control, Chairman's Office rank-based access, shadow exclusion, explicit sharing, access impact preview, reversible markings, confidentiality indicators on all Detail pages, list-level filtering
 
 CURRENT STATE:
-- 18 model classes, 9 services, 28 page models, 34+ Razor views
+- 20 model classes, 10 services, 30 page models, 38+ Razor views
+- ConfidentialityService.cs (~350 lines) handles: mark/unmark, access checks, impact preview, explicit grants, filtering
 - MeetingService.cs (~420 lines) handles: meeting lifecycle, agenda, RSVP, minutes, confirmation, decisions, action items, overdue tracking
 - DirectiveService.cs (~340 lines) handles: directive CRUD, 7-status workflow, propagation tree, forwarding, overdue tracking, access control
 - ReportService.cs (547 lines) handles: report CRUD, status transitions, file attachments, summary creation, recursive drill-down tree building, access control checks
-- ApplicationDbContext.cs (~330 lines) with 18 DbSets and full relationship configuration
+- ApplicationDbContext.cs (~400 lines) with 20 DbSets and full relationship configuration
 - OrganizationSeeder.cs (853 lines) seeds entire test dataset
 
-NEXT: Phase 7 — Confidentiality & Access Control (hierarchy-based access, confidentiality marking, SRS 4.5)
+NEXT: Phase 8 — Search, Archives & Audit (full-text search, archive management, comprehensive audit logging, SRS 4.6, 4.8)
 
 Read claude.md for full roadmap, model definitions, service methods, and page routes.
 ```
