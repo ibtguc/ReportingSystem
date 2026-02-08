@@ -4,7 +4,7 @@
 
 ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows, structured meeting management, confidentiality controls, and full audit trail.
 
-**Current Status**: Phase 1 Infrastructure Complete — Phase 2 (Organization & Hierarchy) next
+**Current Status**: Phase 2 Organization & Hierarchy Complete — Phase 3 (Report Lifecycle) next
 
 ## Tech Stack
 
@@ -18,30 +18,43 @@ ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational rep
 ## Quick Start
 
 ```bash
+# Install .NET SDK if not present (needed in sandboxed environments)
+apt-get update -qq && apt-get install -y -qq dotnet-sdk-8.0
+
 dotnet build ReportingSystem/ReportingSystem.csproj
 dotnet run --project ReportingSystem/ReportingSystem.csproj
 # Dev URL: http://localhost:5296
 ```
+
+**Note**: NuGet package restore requires network access to nuget.org. In sandboxed environments where nuget.org is blocked, build will fail at restore.
 
 ## Project Structure
 
 ```
 ReportingSystem/
 ├── Data/
-│   ├── ApplicationDbContext.cs    # EF Core DbContext
+│   ├── ApplicationDbContext.cs    # EF Core DbContext (Users, Committees, Memberships, Shadows)
 │   ├── SeedData.cs                # Placeholder for domain seeding
-│   └── UserSeeder.cs              # Seeds 3 admin users
+│   ├── UserSeeder.cs              # Seeds admin user
+│   └── OrganizationSeeder.cs      # Seeds ~155 users, ~185 committees, memberships (Phase 2)
 ├── Filters/
 │   └── AutomaticBackupFilter.cs   # Pre-POST/PUT/DELETE backup trigger
 ├── Models/
-│   ├── User.cs                    # User + MagicLink models
+│   ├── User.cs                    # User + MagicLink + SystemRole enum
+│   ├── Committee.cs               # Committee + HierarchyLevel enum (Phase 2)
+│   ├── CommitteeMembership.cs     # Membership + CommitteeRole enum (Phase 2)
+│   ├── ShadowAssignment.cs        # Shadow/backup assignments (Phase 2)
 │   ├── Notification.cs            # In-app notifications
 │   └── DatabaseBackup.cs          # Backup records
 ├── Pages/
 │   ├── Admin/                     # [Authorize] - requires login
 │   │   ├── Backup/Index           # Backup management UI
 │   │   ├── Users/                 # CRUD for users
-│   │   └── Dashboard              # Admin home (placeholder)
+│   │   ├── Organization/          # Org tree + committee CRUD (Phase 2)
+│   │   │   ├── Index              # Org tree visualization
+│   │   │   ├── _CommitteeTreeNode # Recursive tree partial
+│   │   │   └── Committees/        # Create|Edit|Details|Delete
+│   │   └── Dashboard              # Admin home with org stats
 │   ├── Auth/                      # [AllowAnonymous]
 │   │   ├── Login                  # Magic link request
 │   │   ├── Verify                 # Token verification
@@ -54,7 +67,8 @@ ReportingSystem/
 │   ├── EmailService.cs            # Microsoft Graph email
 │   ├── NotificationService.cs     # In-app notifications CRUD
 │   ├── DatabaseBackupService.cs   # Backup create/restore/delete
-│   └── DailyBackupHostedService.cs # Background backup scheduler
+│   ├── DailyBackupHostedService.cs # Background backup scheduler
+│   └── OrganizationService.cs     # Committee/membership/shadow CRUD (Phase 2)
 ├── wwwroot/                       # Static files (Bootstrap, jQuery)
 ├── Program.cs                     # App configuration & DI
 ├── appsettings.json               # Production config
@@ -112,7 +126,7 @@ Chairman/CEO
 - [x] AutomaticBackupFilter, Data Protection keys
 - [x] 3 seeded admin users
 
-### Phase 2: Organization & Hierarchy Model [NEXT]
+### Phase 2: Organization & Hierarchy Model [COMPLETE]
 **Goal**: Model the complete organizational structure from SRS Section 3 & 4.1
 
 **Models to create**:
@@ -139,7 +153,7 @@ Chairman/CEO
 - Support cross-committee memberships
 - Shadow access inheritance (Phase 7 enforces confidentiality exceptions)
 
-### Phase 3: Report Lifecycle
+### Phase 3: Report Lifecycle [NEXT]
 **Goal**: Core report submission and lifecycle management (SRS 4.2.1, 4.2.2)
 
 **Models to create**:
@@ -297,24 +311,74 @@ Chairman/CEO
 
 ---
 
-## Current Models (Phase 1)
+## Current Models
 
-### User
+### User (Phase 1 + Phase 2)
 ```csharp
+public enum SystemRole { SystemAdmin, Chairman, ChairmanOffice, CommitteeUser }
 public class User
 {
     public int Id { get; set; }
     public string Email { get; set; }           // Unique
     public string Name { get; set; }
-    public string Role { get; set; }            // "Administrator" only for now
+    public SystemRole SystemRole { get; set; }  // Replaced string Role in Phase 2
+    public string? Title { get; set; }          // Phase 2
+    public string? Phone { get; set; }          // Phase 2
+    public int? ChairmanOfficeRank { get; set; } // Phase 2: 1=senior, 4=junior
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public ICollection<MagicLink> MagicLinks { get; set; }
+    public ICollection<CommitteeMembership> CommitteeMemberships { get; set; } // Phase 2
 }
 ```
 
-### MagicLink
+### Committee (Phase 2)
+```csharp
+public enum HierarchyLevel { TopLevel=0, Directors=1, Functions=2, Processes=3, Tasks=4 }
+public class Committee
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public HierarchyLevel HierarchyLevel { get; set; }
+    public int? ParentCommitteeId { get; set; } // Self-ref FK, tree topology
+    public string? Description { get; set; }
+    public string? Sector { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+    // Nav: ParentCommittee, SubCommittees, Memberships, ShadowAssignments
+}
+```
+
+### CommitteeMembership (Phase 2)
+```csharp
+public enum CommitteeRole { Head, Member }
+public class CommitteeMembership
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public int CommitteeId { get; set; }
+    public CommitteeRole Role { get; set; }
+    public DateTime EffectiveFrom { get; set; }
+    public DateTime? EffectiveTo { get; set; }  // Soft-delete
+}
+```
+
+### ShadowAssignment (Phase 2)
+```csharp
+public class ShadowAssignment
+{
+    public int Id { get; set; }
+    public int PrincipalUserId { get; set; }
+    public int ShadowUserId { get; set; }
+    public int CommitteeId { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime EffectiveFrom { get; set; }
+    public DateTime? EffectiveTo { get; set; }
+}
+```
+
+### MagicLink (Phase 1)
 ```csharp
 public class MagicLink
 {
@@ -329,7 +393,7 @@ public class MagicLink
 }
 ```
 
-### Notification
+### Notification (Phase 1)
 ```csharp
 public class Notification
 {
@@ -347,7 +411,7 @@ public class Notification
 }
 ```
 
-### DatabaseBackup
+### DatabaseBackup (Phase 1)
 ```csharp
 public class DatabaseBackup
 {
@@ -373,6 +437,7 @@ public class DatabaseBackup
 | `NotificationService` | Create, list, mark read, cleanup old notifications |
 | `DatabaseBackupService` | Create manual/auto backups, restore, WAL checkpoint |
 | `DailyBackupHostedService` | Background service, checks hourly, creates backup every 12h |
+| `OrganizationService` | Committee/membership/shadow CRUD, hierarchy tree, stats (Phase 2) |
 
 ## Configuration
 
@@ -399,15 +464,18 @@ public class DatabaseBackup
 }
 ```
 
-## Seeded Data (Phase 1)
+## Seeded Data (Phase 2)
 
-| Email | Name | Role |
-|-------|------|------|
-| admin@reporting.com | System Administrator | Administrator |
-| admin1@reporting.com | Administrator One | Administrator |
-| admin2@reporting.com | Administrator Two | Administrator |
-
-Phase 2 will replace/extend this with the full ORS_Test_Data.md dataset (~155 users).
+OrganizationSeeder seeds the full ORS_Test_Data.md dataset:
+- 1 System Admin (admin@org.edu)
+- 1 Chairman, 4 Chairman's Office members (ranked 1-4)
+- 5 L0 General Secretaries + 5 shadows
+- 19 L1 Directorates across 5 sectors
+- ~65 L2 Function committees
+- ~100 L3 Process committees
+- ~500+ memberships (heads + members)
+- 5 shadow assignments at L0
+- Cross-committee memberships for multi-role users
 
 ## Development Patterns
 
