@@ -9,8 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages(options =>
 {
-    // Require authentication for all Admin pages
+    // Require authentication for all Admin and Reports pages
     options.Conventions.AuthorizeFolder("/Admin");
+    options.Conventions.AuthorizeFolder("/Reports");
 
     // Allow anonymous access to Auth pages (login, verify, logout)
     options.Conventions.AllowAnonymousToFolder("/Auth");
@@ -30,6 +31,7 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<MagicLinkService>();
 builder.Services.AddScoped<DatabaseBackupService>();
 builder.Services.AddScoped<OrganizationService>();
+builder.Services.AddScoped<ReportService>();
 
 // Register background service for daily automatic backups
 builder.Services.AddHostedService<DailyBackupHostedService>();

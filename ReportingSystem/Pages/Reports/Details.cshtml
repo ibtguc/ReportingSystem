@@ -1,0 +1,321 @@
+@page "{id:int}"
+@model ReportingSystem.Pages.Reports.DetailsModel
+@{
+    ViewData["Title"] = Model.Report.Title;
+}
+
+<div class="mt-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h2 class="mb-1">
+                @Model.Report.Title
+                @if (Model.Report.IsConfidential)
+                {
+                    <span class="badge bg-danger"><i class="bi bi-lock-fill"></i> Confidential</span>
+                }
+            </h2>
+            <div class="text-muted">
+                <span class="me-3"><i class="bi bi-people"></i> @Model.Report.Committee.Name</span>
+                <span class="me-3"><i class="bi bi-person"></i> @Model.Report.Author.Name</span>
+                <span class="me-3"><i class="bi bi-calendar"></i> @Model.Report.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
+                <span class="me-3">v@(Model.Report.Version)</span>
+            </div>
+        </div>
+        <div>
+            <a asp-page="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Status & Type Badges -->
+    <div class="mb-3">
+        @{
+            var statusClass = Model.Report.Status switch
+            {
+                ReportingSystem.Models.ReportStatus.Draft => "bg-secondary",
+                ReportingSystem.Models.ReportStatus.Submitted => "bg-primary",
+                ReportingSystem.Models.ReportStatus.UnderReview => "bg-warning text-dark",
+                ReportingSystem.Models.ReportStatus.FeedbackRequested => "bg-danger",
+                ReportingSystem.Models.ReportStatus.Revised => "bg-info",
+                ReportingSystem.Models.ReportStatus.Approved => "bg-success",
+                ReportingSystem.Models.ReportStatus.Archived => "bg-dark",
+                _ => "bg-secondary"
+            };
+            var typeClass = Model.Report.ReportType switch
+            {
+                ReportingSystem.Models.ReportType.Detailed => "bg-info",
+                ReportingSystem.Models.ReportType.Summary => "bg-warning text-dark",
+                ReportingSystem.Models.ReportType.ExecutiveSummary => "bg-dark",
+                _ => "bg-secondary"
+            };
+        }
+        <span class="badge @statusClass fs-6">@Model.Report.Status</span>
+        <span class="badge @typeClass fs-6">@Model.Report.ReportType</span>
+        @if (Model.Report.SubmittedAt.HasValue)
+        {
+            <span class="text-muted ms-2 small">Submitted: @Model.Report.SubmittedAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+        }
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Report Body -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header"><h5 class="mb-0">Report Content</h5></div>
+                <div class="card-body">
+                    <div class="report-body">@Html.Raw(Model.Report.BodyContent)</div>
+                </div>
+            </div>
+
+            <!-- Optional Sections -->
+            @if (!string.IsNullOrEmpty(Model.Report.SuggestedAction) || !string.IsNullOrEmpty(Model.Report.NeededResources)
+                || !string.IsNullOrEmpty(Model.Report.NeededSupport) || !string.IsNullOrEmpty(Model.Report.SpecialRemarks))
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header"><h5 class="mb-0">Additional Sections</h5></div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.Report.SuggestedAction))
+                        {
+                            <h6 class="text-primary">Suggested Action</h6>
+                            <p>@Model.Report.SuggestedAction</p>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Report.NeededResources))
+                        {
+                            <h6 class="text-primary">Needed Resources</h6>
+                            <p>@Model.Report.NeededResources</p>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Report.NeededSupport))
+                        {
+                            <h6 class="text-primary">Needed Support</h6>
+                            <p>@Model.Report.NeededSupport</p>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Report.SpecialRemarks))
+                        {
+                            <h6 class="text-primary">Special Remarks</h6>
+                            <p>@Model.Report.SpecialRemarks</p>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Attachments -->
+            @if (Model.Report.Attachments.Any())
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-paperclip"></i> Attachments (@Model.Report.Attachments.Count)</h5></div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>File</th>
+                                    <th>Size</th>
+                                    <th>Uploaded By</th>
+                                    <th>Date</th>
+                                    @if (Model.CanEdit)
+                                    {
+                                        <th></th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var att in Model.Report.Attachments)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a href="~/@att.StoragePath" target="_blank" class="text-decoration-none">
+                                                <i class="bi bi-file-earmark"></i> @att.FileName
+                                            </a>
+                                        </td>
+                                        <td class="small">@FormatFileSize(att.FileSizeBytes)</td>
+                                        <td class="small">@att.UploadedBy.Name</td>
+                                        <td class="small">@att.UploadedAt.ToString("yyyy-MM-dd")</td>
+                                        @if (Model.CanEdit)
+                                        {
+                                            <td>
+                                                <form method="post" asp-page-handler="RemoveAttachment"
+                                                      asp-route-id="@Model.Report.Id" asp-route-attachmentId="@att.Id"
+                                                      onsubmit="return confirm('Remove this attachment?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            <!-- Version History -->
+            @if (Model.Report.OriginalReport != null || Model.Report.Revisions.Any())
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-clock-history"></i> Version History</h5></div>
+                    <div class="card-body">
+                        @if (Model.Report.OriginalReport != null)
+                        {
+                            <div class="mb-2">
+                                <i class="bi bi-arrow-return-left"></i> Original:
+                                <a asp-page="Details" asp-route-id="@Model.Report.OriginalReport.Id">
+                                    @Model.Report.OriginalReport.Title (v@(Model.Report.OriginalReport.Version))
+                                </a>
+                            </div>
+                        }
+                        @foreach (var rev in Model.Report.Revisions.OrderBy(r => r.Version))
+                        {
+                            <div class="mb-1">
+                                <i class="bi bi-arrow-return-right"></i> Revision:
+                                <a asp-page="Details" asp-route-id="@rev.Id">v@(rev.Version)</a>
+                                <span class="text-muted small">— @rev.CreatedAt.ToString("yyyy-MM-dd")</span>
+                                <span class="badge @(rev.Status == ReportingSystem.Models.ReportStatus.Approved ? "bg-success" : "bg-secondary")">@rev.Status</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar: Actions & Status History -->
+        <div class="col-lg-4">
+            <!-- Actions Card -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header"><h5 class="mb-0"><i class="bi bi-lightning"></i> Actions</h5></div>
+                <div class="card-body d-grid gap-2">
+                    @if (Model.CanEdit)
+                    {
+                        <a asp-page="Edit" asp-route-id="@Model.Report.Id" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Edit Report
+                        </a>
+                    }
+                    @if (Model.CanSubmit)
+                    {
+                        <form method="post" asp-page-handler="Submit" asp-route-id="@Model.Report.Id">
+                            <button type="submit" class="btn btn-primary w-100"
+                                    onclick="return confirm('Submit this report for review?');">
+                                <i class="bi bi-send"></i> Submit for Review
+                            </button>
+                        </form>
+                    }
+                    @if (Model.CanReview && Model.Report.Status == ReportingSystem.Models.ReportStatus.Submitted)
+                    {
+                        <form method="post" asp-page-handler="StartReview" asp-route-id="@Model.Report.Id">
+                            <button type="submit" class="btn btn-warning w-100">
+                                <i class="bi bi-search"></i> Start Review
+                            </button>
+                        </form>
+                    }
+                    @if (Model.CanReview && Model.Report.Status == ReportingSystem.Models.ReportStatus.UnderReview)
+                    {
+                        <!-- Request Feedback -->
+                        <div class="border rounded p-2">
+                            <form method="post" asp-page-handler="RequestFeedback" asp-route-id="@Model.Report.Id">
+                                <label class="form-label small fw-semibold">Request Feedback</label>
+                                <textarea asp-for="FeedbackComments" class="form-control form-control-sm mb-2" rows="2"
+                                          placeholder="Describe what needs revision..."></textarea>
+                                <button type="submit" class="btn btn-danger btn-sm w-100">
+                                    <i class="bi bi-arrow-return-left"></i> Request Revision
+                                </button>
+                            </form>
+                        </div>
+                        <!-- Approve -->
+                        <div class="border rounded p-2">
+                            <form method="post" asp-page-handler="Approve" asp-route-id="@Model.Report.Id">
+                                <label class="form-label small fw-semibold">Approve Report</label>
+                                <textarea asp-for="ApprovalComments" class="form-control form-control-sm mb-2" rows="2"
+                                          placeholder="Optional comments..."></textarea>
+                                <button type="submit" class="btn btn-success btn-sm w-100"
+                                        onclick="return confirm('Approve this report?');">
+                                    <i class="bi bi-check-circle"></i> Approve
+                                </button>
+                            </form>
+                        </div>
+                    }
+                    @if (Model.IsAuthor && Model.Report.Status == ReportingSystem.Models.ReportStatus.FeedbackRequested)
+                    {
+                        <a asp-page="Edit" asp-route-id="@Model.Report.Id" asp-route-revise="true" class="btn btn-info">
+                            <i class="bi bi-pencil-square"></i> Create Revision
+                        </a>
+                    }
+                    @if (Model.CanReview && Model.Report.Status == ReportingSystem.Models.ReportStatus.Approved)
+                    {
+                        <form method="post" asp-page-handler="Archive" asp-route-id="@Model.Report.Id">
+                            <button type="submit" class="btn btn-dark btn-sm w-100"
+                                    onclick="return confirm('Archive this report?');">
+                                <i class="bi bi-archive"></i> Archive
+                            </button>
+                        </form>
+                    }
+                    @if (!Model.CanEdit && !Model.CanSubmit && !Model.CanReview && Model.Report.Status != ReportingSystem.Models.ReportStatus.FeedbackRequested)
+                    {
+                        <p class="text-muted small mb-0">No actions available for this report in its current state.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Status History -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header"><h5 class="mb-0"><i class="bi bi-clock-history"></i> Status History</h5></div>
+                <div class="card-body p-0">
+                    @if (Model.Report.StatusHistory.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var entry in Model.Report.StatusHistory.OrderByDescending(h => h.ChangedAt))
+                            {
+                                <div class="list-group-item py-2">
+                                    <div class="d-flex justify-content-between">
+                                        <strong class="small">
+                                            <span class="badge bg-secondary">@entry.OldStatus</span>
+                                            <i class="bi bi-arrow-right"></i>
+                                            <span class="badge bg-primary">@entry.NewStatus</span>
+                                        </strong>
+                                    </div>
+                                    <div class="small text-muted">
+                                        @entry.ChangedBy.Name — @entry.ChangedAt.ToString("yyyy-MM-dd HH:mm")
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(entry.Comments))
+                                    {
+                                        <div class="small fst-italic mt-1">@entry.Comments</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-3 text-muted small">No status changes recorded.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+}

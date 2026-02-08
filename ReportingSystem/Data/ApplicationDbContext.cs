@@ -19,6 +19,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<CommitteeMembership> CommitteeMemberships { get; set; }
     public DbSet<ShadowAssignment> ShadowAssignments { get; set; }
 
+    // Reporting
+    public DbSet<Report> Reports { get; set; }
+    public DbSet<Attachment> Attachments { get; set; }
+    public DbSet<ReportStatusHistory> ReportStatusHistories { get; set; }
+
     // Notifications
     public DbSet<Notification> Notifications { get; set; }
 
@@ -98,6 +103,60 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Committee)
                 .WithMany(c => c.ShadowAssignments)
                 .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Report
+        modelBuilder.Entity<Report>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.CommitteeId, e.Status });
+            entity.HasIndex(e => new { e.AuthorId, e.Status });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.IsConfidential);
+            entity.HasOne(e => e.Author)
+                .WithMany()
+                .HasForeignKey(e => e.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Committee)
+                .WithMany()
+                .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.OriginalReport)
+                .WithMany(r => r.Revisions)
+                .HasForeignKey(e => e.OriginalReportId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Attachment
+        modelBuilder.Entity<Attachment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.Attachments)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.UploadedBy)
+                .WithMany()
+                .HasForeignKey(e => e.UploadedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ReportStatusHistory
+        modelBuilder.Entity<ReportStatusHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportId);
+            entity.HasIndex(e => e.ChangedAt);
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.StatusHistory)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ChangedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ChangedById)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

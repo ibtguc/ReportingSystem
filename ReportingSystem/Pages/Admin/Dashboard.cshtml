@@ -18,7 +18,7 @@
             <div class="card text-bg-primary shadow-sm">
                 <div class="card-body text-center">
                     <i class="bi bi-diagram-3 fs-3"></i>
-                    <h3 class="mb-0">@Model.Stats.committees</h3>
+                    <h3 class="mb-0">@Model.OrgStats.committees</h3>
                     <small>Committees</small>
                 </div>
             </div>
@@ -27,7 +27,7 @@
             <div class="card text-bg-success shadow-sm">
                 <div class="card-body text-center">
                     <i class="bi bi-people fs-3"></i>
-                    <h3 class="mb-0">@Model.Stats.users</h3>
+                    <h3 class="mb-0">@Model.OrgStats.users</h3>
                     <small>Users</small>
                 </div>
             </div>
@@ -36,7 +36,7 @@
             <div class="card text-bg-info shadow-sm">
                 <div class="card-body text-center">
                     <i class="bi bi-person-check fs-3"></i>
-                    <h3 class="mb-0">@Model.Stats.memberships</h3>
+                    <h3 class="mb-0">@Model.OrgStats.memberships</h3>
                     <small>Memberships</small>
                 </div>
             </div>
@@ -45,7 +45,7 @@
             <div class="card text-bg-warning shadow-sm">
                 <div class="card-body text-center">
                     <i class="bi bi-person-badge fs-3"></i>
-                    <h3 class="mb-0">@Model.Stats.shadows</h3>
+                    <h3 class="mb-0">@Model.OrgStats.shadows</h3>
                     <small>Shadow Assignments</small>
                 </div>
             </div>
@@ -85,6 +85,46 @@
         </div>
     </div>
 
+    <!-- Report Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-primary shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-file-earmark-text fs-3 text-primary"></i>
+                    <h3 class="mb-0">@Model.ReportStats.total</h3>
+                    <small class="text-muted">Active Reports</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-info shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-send fs-3 text-info"></i>
+                    <h3 class="mb-0">@Model.ReportStats.submitted</h3>
+                    <small class="text-muted">Submitted</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-warning shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-search fs-3 text-warning"></i>
+                    <h3 class="mb-0">@Model.ReportStats.underReview</h3>
+                    <small class="text-muted">Under Review</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-success shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle fs-3 text-success"></i>
+                    <h3 class="mb-0">@Model.ReportStats.approved</h3>
+                    <small class="text-muted">Approved</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Reporting Section -->
     <div class="row mb-4">
         <div class="col-12">
@@ -95,25 +135,22 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <div class="btn btn-outline-secondary btn-lg w-100 py-3 disabled">
+                            <a asp-page="/Reports/Create" class="btn btn-outline-primary btn-lg w-100 py-3">
+                                <i class="bi bi-file-earmark-plus d-block mb-2" style="font-size: 2rem;"></i>
+                                New Report
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a asp-page="/Reports/Index" class="btn btn-outline-secondary btn-lg w-100 py-3">
                                 <i class="bi bi-file-earmark-text d-block mb-2" style="font-size: 2rem;"></i>
-                                Submit Report
-                                <br /><small class="text-muted">Coming in Phase 3</small>
-                            </div>
+                                All Reports
+                            </a>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <div class="btn btn-outline-secondary btn-lg w-100 py-3 disabled">
-                                <i class="bi bi-check2-square d-block mb-2" style="font-size: 2rem;"></i>
-                                Review Reports
-                                <br /><small class="text-muted">Coming in Phase 3</small>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="btn btn-outline-secondary btn-lg w-100 py-3 disabled">
-                                <i class="bi bi-bar-chart d-block mb-2" style="font-size: 2rem;"></i>
-                                Analytics
-                                <br /><small class="text-muted">Coming later</small>
-                            </div>
+                            <a asp-page="/Reports/Index" asp-route-Status="Submitted" class="btn btn-outline-warning btn-lg w-100 py-3">
+                                <i class="bi bi-hourglass-split d-block mb-2" style="font-size: 2rem;"></i>
+                                Pending Review
+                            </a>
                         </div>
                     </div>
                 </div>
