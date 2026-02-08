@@ -1,0 +1,73 @@
+@page
+@model SchedulingSystem.Pages.Admin.Teachers.DeleteModel
+@{
+    ViewData["Title"] = "Delete Teacher";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Delete Teacher</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>Warning!</strong> Are you sure you want to delete this teacher?
+                        @if (Model.LessonCount > 0)
+                        {
+                            <br /><strong class="text-danger">This teacher has @Model.LessonCount lesson(s) assigned! Deleting will remove them from all lessons.</strong>
+                        }
+                    </div>
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8"><strong>@Model.Teacher.FullName</strong></dd>
+
+                        <dt class="col-sm-4">Email</dt>
+                        <dd class="col-sm-8">@(Model.Teacher.Email ?? "-")</dd>
+
+                        <dt class="col-sm-4">Phone</dt>
+                        <dd class="col-sm-8">@(Model.Teacher.PhoneNumber ?? "-")</dd>
+
+                        <dt class="col-sm-4">Department</dt>
+                        <dd class="col-sm-8">@(Model.Teacher.Department?.Name ?? "-")</dd>
+
+                        <dt class="col-sm-4">Weekly Quota</dt>
+                        <dd class="col-sm-8">@(Model.Teacher.WeeklyQuota?.ToString() ?? "-") hours</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Teacher.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Assigned Lessons</dt>
+                        <dd class="col-sm-8">@Model.LessonCount</dd>
+
+                        <dt class="col-sm-4">Availability Constraints</dt>
+                        <dd class="col-sm-8">@Model.AvailabilityCount</dd>
+                    </dl>
+
+                    <form method="post">
+                        <input type="hidden" asp-for="Teacher.Id" />
+                        <div class="d-flex justify-content-between">
+                            <a asp-page="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete Teacher
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,180 @@
+@page
+@using SchedulingSystem.Models
+@model SchedulingSystem.Pages.Admin.Subjects.ManageAvailabilityModel
+@{
+    ViewData["Title"] = "Manage Subject Availability";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-clock-history"></i> Manage Subject Availability</h2>
+            <p class="text-muted">Subject: <strong>@Model.Subject.Name</strong> (@Model.Subject.Code)</p>
+        </div>
+        <div class="col-auto">
+            <a asp-page="Index" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Subjects
+            </a>
+        </div>
+    </div>
+
+    <!-- Add New Availability Constraint -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add Availability Constraint</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-page-handler="Add" asp-route-id="@Model.Subject.Id">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label asp-for="NewAvailability.DayOfWeek" class="form-label">Day of Week</label>
+                        <select asp-for="NewAvailability.DayOfWeek" class="form-select" asp-items="Model.DayList" required>
+                            <option value="">-- Select Day --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="NewAvailability.PeriodId" class="form-label">Period</label>
+                        <select asp-for="NewAvailability.PeriodId" class="form-select" asp-items="Model.PeriodList" required>
+                            <option value="">-- Select Period --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label asp-for="NewAvailability.Importance" class="form-label">Constraint Level</label>
+                        <select asp-for="NewAvailability.Importance" class="form-select" required>
+                            <option value="3">Try +3 (strongest)</option>
+                            <option value="2">Try +2</option>
+                            <option value="1">Try +1</option>
+                            <option value="0" selected>Neutral (0)</option>
+                            <option value="-1">Avoid -1</option>
+                            <option value="-2">Avoid -2</option>
+                            <option value="-3">Avoid -3 (strongest)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="NewAvailability.Reason" class="form-label">Reason</label>
+                        <input asp-for="NewAvailability.Reason" class="form-control" placeholder="e.g., Best in morning">
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add Constraint
+                        </button>
+                    </div>
+                </div>
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mt-2"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Weekly Schedule Grid -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Weekly Availability Schedule</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Period</th>
+                            <th>Sunday</th>
+                            <th>Monday</th>
+                            <th>Tuesday</th>
+                            <th>Wednesday</th>
+                            <th>Thursday</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var days = new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+                        }
+                        @foreach (var period in Model.Periods)
+                        {
+                            <tr>
+                                <td class="fw-bold">
+                                    @period.Name
+                                    <br />
+                                    <small class="text-muted">@period.StartTime.ToString(@"hh\:mm") - @period.EndTime.ToString(@"hh\:mm")</small>
+                                </td>
+                                @foreach (var day in days)
+                                {
+                                    var constraint = Model.Availabilities.FirstOrDefault(a => a.DayOfWeek == day && a.PeriodId == period.Id);
+                                    var bgClass = constraint?.Importance switch
+                                    {
+                                        3 => "table-success",
+                                        2 or 1 => "table-info",
+                                        -1 or -2 => "table-warning",
+                                        -3 => "table-danger",
+                                        _ => ""
+                                    };
+                                    <td class="text-center @bgClass">
+                                        @if (constraint != null)
+                                        {
+                                            var (badgeClass, label) = constraint.Importance switch
+                                            {
+                                                3 => ("bg-success", "+3"),
+                                                2 => ("bg-info", "+2"),
+                                                1 => ("bg-light text-dark", "+1"),
+                                                0 => ("bg-secondary", "0"),
+                                                -1 => ("bg-light text-dark border", "-1"),
+                                                -2 => ("bg-warning text-dark", "-2"),
+                                                -3 => ("bg-danger", "-3"),
+                                                _ => ("bg-secondary", "?")
+                                            };
+                                            <div>
+                                                <span class="badge @badgeClass">@label</span>
+                                                @if (!string.IsNullOrEmpty(constraint.Reason))
+                                                {
+                                                    <br /><small class="text-muted">@constraint.Reason</small>
+                                                }
+                                                <br />
+                                                <div class="btn-group btn-group-sm mt-1" role="group">
+                                                    <form method="post" asp-page-handler="ToggleCriticality" asp-route-id="@Model.Subject.Id" asp-route-availabilityId="@constraint.Id" class="d-inline">
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Cycle"><i class="bi bi-arrow-repeat"></i></button>
+                                                    </form>
+                                                    <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Subject.Id" asp-route-availabilityId="@constraint.Id" class="d-inline">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove?')" title="Delete"><i class="bi bi-trash"></i></button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">Available</small>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Try to schedule:</strong>
+                    <span class="badge bg-light text-dark">+1</span>
+                    <span class="badge bg-info">+2</span>
+                    <span class="badge bg-success">+3</span>
+                </div>
+                <div class="col-md-6">
+                    <strong>Avoid scheduling:</strong>
+                    <span class="badge bg-light text-dark border">-1</span>
+                    <span class="badge bg-warning text-dark">-2</span>
+                    <span class="badge bg-danger">-3</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

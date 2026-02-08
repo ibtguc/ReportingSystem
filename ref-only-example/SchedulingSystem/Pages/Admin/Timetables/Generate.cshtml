@@ -1,0 +1,652 @@
+@page
+@model SchedulingSystem.Pages.Admin.Timetables.GenerateModel
+@{
+    ViewData["Title"] = "Generate Timetable";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2><i class="bi bi-calendar-check"></i> Generate Timetable</h2>
+            <p class="text-muted">Automatically generate a complete timetable using the scheduling algorithm</p>
+            <hr />
+        </div>
+    </div>
+
+    @* Success message *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @* Error message *@
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @* Pre-Generation Validation Checklist *@
+    <div class="card mb-4 @(Model.Checklist.IsComplete ? "border-success" : "border-warning")">
+        <div class="card-header @(Model.Checklist.IsComplete ? "bg-success text-white" : "bg-warning text-dark")">
+            <h5>
+                <i class="bi bi-@(Model.Checklist.IsComplete ? "check-circle-fill" : "exclamation-triangle-fill")"></i>
+                Pre-Generation Checklist
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Checklist.IsComplete)
+            {
+                <div class="alert alert-success mb-3">
+                    <i class="bi bi-check-circle-fill"></i> <strong>All requirements met!</strong> You're ready to generate a timetable.
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-danger mb-3">
+                    <i class="bi bi-x-circle-fill"></i> <strong>Missing required data!</strong> Please add the following before generating:
+                    <ul class="mb-0 mt-2">
+                        @foreach (var item in Model.Checklist.MissingItems)
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="fw-bold mb-3">Master Data</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-@(Model.Checklist.HasSchoolYears ? "check-circle-fill text-success" : "x-circle-fill text-danger")"></i>
+                            <strong>School Years:</strong>
+                            @if (Model.Checklist.HasSchoolYears)
+                            {
+                                <span class="text-success">✓ Available</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">✗ None found</span>
+                                <a href="/Admin/SchoolYears/Create" class="btn btn-sm btn-outline-primary ms-2">Add School Year</a>
+                            }
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-@(Model.Checklist.HasSubjects ? "check-circle-fill text-success" : "x-circle-fill text-danger")"></i>
+                            <strong>Subjects:</strong>
+                            @if (Model.Checklist.HasSubjects)
+                            {
+                                <span class="text-success">✓ @Model.TotalSubjects available</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">✗ None found</span>
+                                <a href="/Admin/Subjects/Create" class="btn btn-sm btn-outline-primary ms-2">Add Subject</a>
+                            }
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-@(Model.Checklist.HasTeachers ? "check-circle-fill text-success" : "x-circle-fill text-danger")"></i>
+                            <strong>Teachers:</strong>
+                            @if (Model.Checklist.HasTeachers)
+                            {
+                                <span class="text-success">✓ @Model.TotalTeachers available</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">✗ None found</span>
+                                <a href="/Admin/Teachers/Create" class="btn btn-sm btn-outline-primary ms-2">Add Teacher</a>
+                            }
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-@(Model.Checklist.HasClasses ? "check-circle-fill text-success" : "x-circle-fill text-danger")"></i>
+                            <strong>Classes:</strong>
+                            @if (Model.Checklist.HasClasses)
+                            {
+                                <span class="text-success">✓ @Model.TotalClasses available</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">✗ None found</span>
+                                <a href="/Admin/Classes/Create" class="btn btn-sm btn-outline-primary ms-2">Add Class</a>
+                            }
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold mb-3">Scheduling Data</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-@(Model.Checklist.HasRooms ? "check-circle-fill text-success" : "x-circle-fill text-danger")"></i>
+                            <strong>Rooms:</strong>
+                            @if (Model.Checklist.HasRooms)
+                            {
+                                <span class="text-success">✓ @Model.TotalRooms total</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">✗ None found</span>
+                                <a href="/Admin/Rooms/Create" class="btn btn-sm btn-outline-primary ms-2">Add Room</a>
+                            }
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-@(Model.Checklist.HasActiveRooms ? "check-circle-fill text-success" : "x-circle-fill text-danger")"></i>
+                            <strong>Active Rooms:</strong>
+                            @if (Model.Checklist.HasActiveRooms)
+                            {
+                                <span class="text-success">✓ Available</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">✗ No active rooms</span>
+                                <a href="/Admin/Rooms" class="btn btn-sm btn-outline-primary ms-2">Activate Rooms</a>
+                            }
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-@(Model.Checklist.HasPeriods ? "check-circle-fill text-success" : "x-circle-fill text-danger")"></i>
+                            <strong>Periods:</strong>
+                            @if (Model.Checklist.HasPeriods)
+                            {
+                                <span class="text-success">✓ Configured</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">✗ None configured</span>
+                                <a href="/Admin/Periods/Create" class="btn btn-sm btn-outline-primary ms-2">Add Period</a>
+                            }
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-@(Model.Checklist.HasNonBreakPeriods ? "check-circle-fill text-success" : "x-circle-fill text-danger")"></i>
+                            <strong>Teaching Periods:</strong>
+                            @if (Model.Checklist.HasNonBreakPeriods)
+                            {
+                                <span class="text-success">✓ @Model.TotalPeriods available</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">✗ All periods are breaks</span>
+                                <a href="/Admin/Periods" class="btn btn-sm btn-outline-primary ms-2">Configure Periods</a>
+                            }
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-@(Model.Checklist.HasLessons ? "check-circle-fill text-success" : "x-circle-fill text-danger")"></i>
+                            <strong>Active Lessons:</strong>
+                            @if (Model.Checklist.HasLessons)
+                            {
+                                <span class="text-success">✓ @Model.TotalLessons lessons (@Model.TotalInstances instances)</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">✗ None found</span>
+                                <a href="/Admin/Lessons/Create" class="btn btn-sm btn-outline-primary ms-2">Add Lesson</a>
+                            }
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Result != null)
+    {
+        @if (Model.Result.Success)
+        {
+            @if (Model.Result.ScheduledCount < Model.Result.TotalCount || Model.Result.Warnings.Any())
+            {
+                <div class="alert alert-warning" role="alert">
+                    <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> Timetable Generated with Warnings!</h4>
+                    <p><strong>Some lessons could not be scheduled.</strong> The timetable was created but it's incomplete.</p>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>Scheduled:</strong> @Model.Result.ScheduledCount out of @Model.Result.TotalCount lessons<br />
+                        <strong>Success Rate:</strong> @(Math.Round((double)Model.Result.ScheduledCount / Model.Result.TotalCount * 100, 2))%<br />
+                        <strong class="text-danger">Unscheduled Lessons:</strong> @(Model.Result.TotalCount - Model.Result.ScheduledCount)
+                    </p>
+                    <div class="mt-3">
+                        <a href="/Admin/Timetables/Edit?id=@Model.Result.TimetableId" class="btn btn-primary">
+                            <i class="bi bi-calendar-check"></i> View & Edit Timetable
+                        </a>
+                        <a href="/Admin/Timetables/Validate/@Model.Result.TimetableId" class="btn btn-info">
+                            <i class="bi bi-shield-check"></i> Validate & Check Conflicts
+                        </a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-success" role="alert">
+                    <h4 class="alert-heading"><i class="bi bi-check-circle"></i> Success!</h4>
+                    <p>Timetable generated successfully! All lessons were scheduled.</p>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>Scheduled:</strong> @Model.Result.ScheduledCount out of @Model.Result.TotalCount lessons<br />
+                        <strong>Success Rate:</strong> 100%
+                    </p>
+                    <div class="mt-3">
+                        <a href="/Admin/Timetables/Edit?id=@Model.Result.TimetableId" class="btn btn-primary">
+                            <i class="bi bi-calendar-check"></i> View & Edit Timetable
+                        </a>
+                        <a href="/Admin/Timetables/Validate/@Model.Result.TimetableId" class="btn btn-info">
+                            <i class="bi bi-shield-check"></i> Validate & Check Conflicts
+                        </a>
+                    </div>
+                </div>
+            }
+
+            @if (Model.Result.QualityMetrics != null)
+            {
+                <div class="card mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h5><i class="bi bi-graph-up"></i> Quality Metrics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="metric-box">
+                                    <h2 class="text-primary">@Model.Result.QualityMetrics.OverallScore</h2>
+                                    <p class="text-muted">Overall Score<br><small>(out of 100)</small></p>
+                                    @if (Model.Result.QualityMetrics.OverallScore >= 85)
+                                    {
+                                        <span class="badge bg-success">Excellent</span>
+                                    }
+                                    else if (Model.Result.QualityMetrics.OverallScore >= 70)
+                                    {
+                                        <span class="badge bg-warning">Good</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Needs Improvement</span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-box">
+                                    <h2 class="text-warning">@Model.Result.QualityMetrics.TotalTeacherNTPs</h2>
+                                    <p class="text-muted">Teacher Gaps<br><small>(Non-Teaching Periods)</small></p>
+                                    <small>@Model.Result.QualityMetrics.TeacherNTPs.Count teachers affected</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-box">
+                                    <h2 class="text-info">@Model.Result.QualityMetrics.TotalStudentNTPs</h2>
+                                    <p class="text-muted">Student Gaps<br><small>(Free Periods)</small></p>
+                                    <small>@Model.Result.QualityMetrics.StudentNTPs.Count classes affected</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-box">
+                                    <h2 class="text-secondary">@(Model.Result.QualityMetrics.TotalTeacherNTPs + Model.Result.QualityMetrics.TotalStudentNTPs)</h2>
+                                    <p class="text-muted">Total Gaps<br><small>(Combined)</small></p>
+                                    @{
+                                        var avgGaps = (Model.Result.QualityMetrics.TotalTeacherNTPs + Model.Result.QualityMetrics.TotalStudentNTPs) /
+                                                      Math.Max(1, Model.Result.QualityMetrics.TeacherNTPs.Count + Model.Result.QualityMetrics.StudentNTPs.Count);
+                                    }
+                                    <small>~@avgGaps gaps per person</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (Model.Result.QualityMetrics.OverallScore >= 85)
+                        {
+                            <div class="alert alert-success mt-3 mb-0">
+                                <i class="bi bi-check-circle-fill"></i> <strong>Excellent quality!</strong> This schedule has minimal gaps and optimal distribution.
+                            </div>
+                        }
+                        else if (Model.Result.QualityMetrics.OverallScore >= 70)
+                        {
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <i class="bi bi-exclamation-triangle-fill"></i> <strong>Good quality.</strong> Consider using "Aggressive" optimization for better results.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-danger mt-3 mb-0">
+                                <i class="bi bi-x-circle-fill"></i> <strong>Quality needs improvement.</strong> Try regenerating with "Enhanced" algorithm and "Aggressive" optimization.
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (Model.Result.Warnings.Any())
+            {
+                <div class="alert alert-warning mt-3" role="alert">
+                    <h5><i class="bi bi-exclamation-triangle"></i> Warnings</h5>
+                    <p>Some lessons could not be scheduled:</p>
+                    <ul>
+                        @foreach (var warning in Model.Result.Warnings)
+                        {
+                            <li>@warning</li>
+                        }
+                    </ul>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading"><i class="bi bi-x-circle"></i> Generation Failed</h4>
+                <ul>
+                    @foreach (var error in Model.Result.Errors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+    }
+
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="bi bi-gear"></i> Timetable Settings</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div class="mb-3">
+                    <label asp-for="TimetableName" class="form-label"></label>
+                    <input asp-for="TimetableName" class="form-control" placeholder="e.g., Fall 2024 Schedule" />
+                    <span asp-validation-for="TimetableName" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="SchoolYearId" class="form-label"></label>
+                    <select asp-for="SchoolYearId" class="form-select" asp-items="Model.SchoolYears">
+                        <option value="">-- Select School Year --</option>
+                    </select>
+                    <span asp-validation-for="SchoolYearId" class="text-danger"></span>
+                </div>
+
+                <div class="card mb-3 bg-light">
+                    <div class="card-body">
+                        <h6><i class="bi bi-cpu"></i> Algorithm Settings</h6>
+
+                        <div class="mb-3">
+                            <label asp-for="Algorithm" class="form-label"></label>
+                            <select asp-for="Algorithm" class="form-select" id="algorithmSelect">
+                                <option value="Basic">Basic Greedy (Fast - 60-70% Quality)</option>
+                                <option value="Enhanced" selected>Enhanced with Soft Constraints (Better - 85-95% Quality)</option>
+                                <option value="SimulatedAnnealing">Simulated Annealing (Best - 90-98% Quality, Slower)</option>
+                            </select>
+                            <div class="form-text">
+                                <strong>Basic:</strong> Fast generation, valid schedules, random quality<br>
+                                <strong>Enhanced:</strong> Optimizes for minimal gaps, even distribution, preferred times<br>
+                                <strong>Simulated Annealing:</strong> Advanced optimization using probabilistic search for highest quality schedules
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="optimizationLevelDiv">
+                            <label asp-for="OptimizationLevel" class="form-label"></label>
+                            <select asp-for="OptimizationLevel" class="form-select">
+                                <option value="Relaxed">Relaxed (Faster, Good Quality)</option>
+                                <option value="Default" selected>Default (Balanced Speed & Quality)</option>
+                                <option value="Aggressive">Aggressive (Slower, Best Quality)</option>
+                            </select>
+                            <div class="form-text">
+                                Optimization level affects how strongly soft constraints are weighted
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> How it works:</h6>
+                    <div id="basicInfo" style="display: none;">
+                        <ol>
+                            <li>Attempts to schedule all active lessons</li>
+                            <li>Respects hard constraints (no double-booking, room requirements)</li>
+                            <li>Lessons prioritized by room requirements and frequency</li>
+                            <li>Takes first valid time slot (greedy approach)</li>
+                        </ol>
+                    </div>
+                    <div id="enhancedInfo" style="display: none;">
+                        <ol>
+                            <li>Attempts to schedule all active lessons</li>
+                            <li>Respects all hard constraints (no double-booking, room requirements)</li>
+                            <li>Evaluates each time slot with soft constraints:</li>
+                            <ul>
+                                <li><strong>Minimize gaps</strong> in teacher and student schedules</li>
+                                <li><strong>Even distribution</strong> of lessons across the week</li>
+                                <li><strong>Preferred times</strong> (Math in morning, Arts in afternoon)</li>
+                                <li><strong>Minimize room changes</strong> for teachers</li>
+                                <li><strong>Balanced workload</strong> across days</li>
+                                <li><strong>Block scheduling</strong> for consecutive periods</li>
+                            </ul>
+                            <li>Selects time slot with highest quality score</li>
+                        </ol>
+                    </div>
+                    <div id="saInfo">
+                        <ol>
+                            <li>Generates initial valid schedule using greedy algorithm</li>
+                            <li>Iteratively improves schedule through optimization:</li>
+                            <ul>
+                                <li><strong>Energy function:</strong> Calculates cost based on all soft constraints</li>
+                                <li><strong>Neighbor generation:</strong> Makes small random changes (swap lessons, move times, change rooms)</li>
+                                <li><strong>Acceptance probability:</strong> Always accepts better solutions, sometimes accepts worse ones to escape local optima</li>
+                                <li><strong>Temperature cooling:</strong> Gradually reduces acceptance of worse solutions</li>
+                            </ul>
+                            <li>Continues until optimal solution found or maximum iterations reached</li>
+                            <li>Returns best solution discovered during search</li>
+                        </ol>
+                        <div class="alert alert-warning mt-2 mb-0">
+                            <small><i class="bi bi-clock"></i> <strong>Note:</strong> Simulated Annealing takes longer (1-5 minutes) but produces higher quality schedules with fewer gaps and better distribution.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h6>Current Statistics:</h6>
+                    <ul>
+                        <li><strong>Active Lessons:</strong> @Model.TotalLessons</li>
+                        <li><strong>Total Instances to Schedule:</strong> @Model.TotalInstances (based on frequency per week)</li>
+                        <li><strong>Available Periods:</strong> @Model.TotalPeriods per day</li>
+                        <li><strong>Available Rooms:</strong> @Model.TotalRooms</li>
+                    </ul>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-lg" id="generateBtn" @(!Model.Checklist.IsComplete ? "disabled" : "")>
+                    <i class="bi bi-play-circle"></i> Generate Timetable
+                </button>
+                @if (!Model.Checklist.IsComplete)
+                {
+                    <div class="text-danger mt-2">
+                        <small><i class="bi bi-exclamation-circle"></i> Please complete the checklist above before generating</small>
+                    </div>
+                }
+                <a href="/Admin/Dashboard" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </form>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-list-check"></i> Existing Timetables</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.ExistingTimetables.Any())
+                {
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>School Year</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Duration</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tt in Model.ExistingTimetables)
+                            {
+                                <tr>
+                                    <td>@tt.Name</td>
+                                    <td>@tt.SchoolYear?.Name</td>
+                                    <td>
+                                        @if (tt.Status == SchedulingSystem.Models.TimetableStatus.Published)
+                                        {
+                                            <span class="badge bg-success">Published</span>
+                                        }
+                                        else if (tt.Status == SchedulingSystem.Models.TimetableStatus.Draft)
+                                        {
+                                            <span class="badge bg-warning">Draft</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Archived</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div>@tt.CreatedDate.ToString("yyyy-MM-dd")</div>
+                                        <small class="text-muted">@tt.CreatedDate.ToString("HH:mm:ss")</small>
+                                    </td>
+                                    <td>
+                                        @if (tt.GenerationDurationMs.HasValue)
+                                        {
+                                            var duration = tt.GenerationDurationMs.Value;
+                                            if (duration < 1000)
+                                            {
+                                                <span>@(duration)ms</span>
+                                            }
+                                            else if (duration < 60000)
+                                            {
+                                                <span>@((duration / 1000.0).ToString("F2"))s</span>
+                                            }
+                                            else
+                                            {
+                                                var minutes = duration / 60000;
+                                                var seconds = (duration % 60000) / 1000.0;
+                                                <span>@(minutes)m @(seconds.ToString("F0"))s</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a href="/Admin/Timetables/Edit?id=@tt.Id" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-calendar-check"></i> View/Edit
+                                        </a>
+                                        <a href="/Admin/Timetables/Validate/@tt.Id" class="btn btn-sm btn-info">
+                                            <i class="bi bi-shield-check"></i> Validate
+                                        </a>
+                                        @if (tt.Status == SchedulingSystem.Models.TimetableStatus.Draft)
+                                        {
+                                            <form method="post" asp-page-handler="Publish" asp-route-id="@tt.Id" style="display: inline;">
+                                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Are you sure you want to publish this timetable? This will make it visible to all users.');">
+                                                    <i class="bi bi-check-circle"></i> Publish
+                                                </button>
+                                            </form>
+                                        }
+                                        <a href="/Admin/Timetables/Delete/@tt.Id" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted">No timetables created yet.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Toggle optimization level visibility based on algorithm
+        document.getElementById('algorithmSelect').addEventListener('change', function() {
+            var optimizationDiv = document.getElementById('optimizationLevelDiv');
+            var basicInfo = document.getElementById('basicInfo');
+            var enhancedInfo = document.getElementById('enhancedInfo');
+            var saInfo = document.getElementById('saInfo');
+
+            if (this.value === 'Enhanced') {
+                optimizationDiv.style.display = 'block';
+                basicInfo.style.display = 'none';
+                enhancedInfo.style.display = 'block';
+                saInfo.style.display = 'none';
+            } else if (this.value === 'SimulatedAnnealing') {
+                optimizationDiv.style.display = 'block';
+                basicInfo.style.display = 'none';
+                enhancedInfo.style.display = 'none';
+                saInfo.style.display = 'block';
+            } else {
+                optimizationDiv.style.display = 'none';
+                basicInfo.style.display = 'block';
+                enhancedInfo.style.display = 'none';
+                saInfo.style.display = 'none';
+            }
+        });
+
+        // Show loading state on form submit
+        var generateForm = document.querySelector('form');
+        generateForm.addEventListener('submit', function(e) {
+            var btn = document.getElementById('generateBtn');
+            if (!btn.disabled) {
+                // Show loading overlay
+                var loadingHtml = `
+                    <div id="loadingOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                         background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                        <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 500px;">
+                            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h4 class="mt-3">Generating Timetable...</h4>
+                            <p class="text-muted">This may take 10-60 seconds depending on the algorithm.<br>Please do not close this window.</p>
+                            <div class="progress mt-3" style="height: 25px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                                     style="width: 100%">Processing...</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', loadingHtml);
+
+                // Update button
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
+                btn.disabled = true;
+            }
+            // Allow form to submit
+            return true;
+        });
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('algorithmSelect').dispatchEvent(new Event('change'));
+        });
+    </script>
+
+    <style>
+        .metric-box {
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .metric-box h2 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-box p {
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-box small {
+            color: #6c757d;
+        }
+    </style>
+}

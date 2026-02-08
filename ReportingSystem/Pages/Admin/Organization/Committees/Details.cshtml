@@ -1,0 +1,264 @@
+@page "{id:int}"
+@model ReportingSystem.Pages.Admin.Organization.Committees.DetailsModel
+@{
+    ViewData["Title"] = $"Committee: {Model.Committee.Name}";
+    var levelBadge = Model.Committee.HierarchyLevel switch {
+        ReportingSystem.Models.HierarchyLevel.TopLevel => "bg-danger",
+        ReportingSystem.Models.HierarchyLevel.Directors => "bg-warning text-dark",
+        ReportingSystem.Models.HierarchyLevel.Functions => "bg-info",
+        ReportingSystem.Models.HierarchyLevel.Processes => "bg-success",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container mt-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Committee Info -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-diagram-3"></i>
+                <span class="badge @levelBadge me-1">@Model.Committee.HierarchyLevel</span>
+                @Model.Committee.Name
+            </span>
+            <div>
+                <a asp-page="Edit" asp-route-id="@Model.Committee.Id" class="btn btn-sm btn-light">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+                <a asp-page="../Index" class="btn btn-sm btn-outline-light ms-1">
+                    <i class="bi bi-diagram-3"></i> Org Tree
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Sector</dt>
+                <dd class="col-sm-9">@(Model.Committee.Sector ?? "-")</dd>
+
+                <dt class="col-sm-3">Parent</dt>
+                <dd class="col-sm-9">
+                    @if (Model.Committee.ParentCommittee != null)
+                    {
+                        <a asp-page="Details" asp-route-id="@Model.Committee.ParentCommittee.Id">
+                            @Model.Committee.ParentCommittee.Name
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="text-muted">(Root)</span>
+                    }
+                </dd>
+
+                @if (!string.IsNullOrEmpty(Model.Committee.Description))
+                {
+                    <dt class="col-sm-3">Description</dt>
+                    <dd class="col-sm-9">@Model.Committee.Description</dd>
+                }
+
+                <dt class="col-sm-3">Status</dt>
+                <dd class="col-sm-9">
+                    @if (Model.Committee.IsActive)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactive</span>
+                    }
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Members -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-info text-white">
+                    <i class="bi bi-people"></i> Members (@(Model.Heads.Count + Model.Members.Count))
+                </div>
+                <div class="card-body">
+                    @if (Model.Heads.Any())
+                    {
+                        <h6><i class="bi bi-person-fill-gear"></i> Committee Head(s)</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-3">
+                                <tbody>
+                                    @foreach (var head in Model.Heads)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@head.User.Name</strong>
+                                                <br /><small class="text-muted">@head.User.Title &mdash; @head.User.Email</small>
+                                            </td>
+                                            <td class="text-end">
+                                                <form method="post" asp-page-handler="ToggleRole" asp-route-id="@Model.Committee.Id" class="d-inline">
+                                                    <input type="hidden" name="membershipId" value="@head.Id" />
+                                                    <input type="hidden" name="newRole" value="@ReportingSystem.Models.CommitteeRole.Member" />
+                                                    <button class="btn btn-outline-secondary btn-sm" title="Demote to Member">
+                                                        <i class="bi bi-arrow-down"></i>
+                                                    </button>
+                                                </form>
+                                                <form method="post" asp-page-handler="RemoveMember" asp-route-id="@Model.Committee.Id" class="d-inline">
+                                                    <input type="hidden" name="membershipId" value="@head.Id" />
+                                                    <button class="btn btn-outline-danger btn-sm" title="Remove">
+                                                        <i class="bi bi-x"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    @if (Model.Members.Any())
+                    {
+                        <h6><i class="bi bi-person"></i> Members</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-3">
+                                <tbody>
+                                    @foreach (var member in Model.Members)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @member.User.Name
+                                                <br /><small class="text-muted">@member.User.Title &mdash; @member.User.Email</small>
+                                            </td>
+                                            <td class="text-end">
+                                                <form method="post" asp-page-handler="ToggleRole" asp-route-id="@Model.Committee.Id" class="d-inline">
+                                                    <input type="hidden" name="membershipId" value="@member.Id" />
+                                                    <input type="hidden" name="newRole" value="@ReportingSystem.Models.CommitteeRole.Head" />
+                                                    <button class="btn btn-outline-success btn-sm" title="Promote to Head">
+                                                        <i class="bi bi-arrow-up"></i>
+                                                    </button>
+                                                </form>
+                                                <form method="post" asp-page-handler="RemoveMember" asp-route-id="@Model.Committee.Id" class="d-inline">
+                                                    <input type="hidden" name="membershipId" value="@member.Id" />
+                                                    <button class="btn btn-outline-danger btn-sm" title="Remove">
+                                                        <i class="bi bi-x"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    @if (!Model.Heads.Any() && !Model.Members.Any())
+                    {
+                        <p class="text-muted mb-2">No members assigned yet.</p>
+                    }
+
+                    <!-- Add Member Form -->
+                    @if (Model.AvailableUsers.Any())
+                    {
+                        <hr />
+                        <h6><i class="bi bi-person-plus"></i> Add Member</h6>
+                        <form method="post" asp-page-handler="AddMember" asp-route-id="@Model.Committee.Id" class="row g-2 align-items-end">
+                            <div class="col-md-6">
+                                <select asp-for="NewMemberUserId" class="form-select form-select-sm"
+                                        asp-items="Model.AvailableUsers">
+                                    <option value="">Select user...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select asp-for="NewMemberRole" class="form-select form-select-sm"
+                                        asp-items="Html.GetEnumSelectList<ReportingSystem.Models.CommitteeRole>()">
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-success btn-sm w-100">
+                                    <i class="bi bi-plus"></i> Add
+                                </button>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <!-- Shadow Assignments -->
+            @if (Model.Shadows.Any())
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-warning text-dark">
+                        <i class="bi bi-person-badge"></i> Shadow/Backup Assignments
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Principal</th>
+                                        <th>Shadow</th>
+                                        <th>Since</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var shadow in Model.Shadows)
+                                    {
+                                        <tr>
+                                            <td>@shadow.PrincipalUser.Name</td>
+                                            <td>@shadow.ShadowUser.Name</td>
+                                            <td><small>@shadow.EffectiveFrom.ToString("yyyy-MM-dd")</small></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sub-Committees -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-secondary text-white">
+                    <i class="bi bi-diagram-2"></i> Sub-Committees (@Model.SubCommittees.Count)
+                </div>
+                <div class="card-body">
+                    @if (Model.SubCommittees.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var sub in Model.SubCommittees)
+                            {
+                                var subHeads = sub.Memberships.Where(m => m.Role == ReportingSystem.Models.CommitteeRole.Head && m.EffectiveTo == null).ToList();
+                                <a asp-page="Details" asp-route-id="@sub.Id" class="list-group-item list-group-item-action">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>@sub.Name</strong>
+                                        <span class="badge bg-secondary">@sub.Memberships.Count(m => m.EffectiveTo == null)</span>
+                                    </div>
+                                    @if (subHeads.Any())
+                                    {
+                                        <small class="text-muted">Head: @string.Join(", ", subHeads.Select(h => h.User.Name))</small>
+                                    }
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">No sub-committees.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-2">
+        <a asp-page="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Committees
+        </a>
+    </div>
+</div>

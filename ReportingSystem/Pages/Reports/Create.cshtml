@@ -1,0 +1,125 @@
+@page
+@model ReportingSystem.Pages.Reports.CreateModel
+@{
+    ViewData["Title"] = "Create Report";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-file-earmark-plus"></i> Create New Report</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Title & Committee -->
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label asp-for="Report.Title" class="form-label fw-semibold">Report Title *</label>
+                                <input asp-for="Report.Title" class="form-control" placeholder="Enter report title" />
+                                <span asp-validation-for="Report.Title" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Report.CommitteeId" class="form-label fw-semibold">Committee *</label>
+                                <select asp-for="Report.CommitteeId" class="form-select" asp-items="Model.CommitteeOptions">
+                                    <option value="">Select committee...</option>
+                                </select>
+                                <span asp-validation-for="Report.CommitteeId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Type & Confidential -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Report.ReportType" class="form-label fw-semibold">Report Type</label>
+                                <select asp-for="Report.ReportType" class="form-select"
+                                        asp-items="Html.GetEnumSelectList<ReportingSystem.Models.ReportType>()">
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check mt-4 pt-2">
+                                    <input asp-for="Report.IsConfidential" class="form-check-input" type="checkbox" />
+                                    <label asp-for="Report.IsConfidential" class="form-check-label">
+                                        <i class="bi bi-lock-fill"></i> Mark as Confidential
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Body Content -->
+                        <div class="mb-3">
+                            <label asp-for="Report.BodyContent" class="form-label fw-semibold">Report Body *</label>
+                            <textarea asp-for="Report.BodyContent" class="form-control" rows="12"
+                                      placeholder="Write your report content here..."></textarea>
+                            <span asp-validation-for="Report.BodyContent" class="text-danger"></span>
+                        </div>
+
+                        <!-- Optional Sections -->
+                        <div class="accordion mb-3" id="optionalSections">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#additionalFields">
+                                        <i class="bi bi-plus-circle me-2"></i> Additional Sections (Optional)
+                                    </button>
+                                </h2>
+                                <div id="additionalFields" class="accordion-collapse collapse">
+                                    <div class="accordion-body">
+                                        <div class="mb-3">
+                                            <label asp-for="Report.SuggestedAction" class="form-label">Suggested Action</label>
+                                            <textarea asp-for="Report.SuggestedAction" class="form-control" rows="3"
+                                                      placeholder="What action do you recommend?"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label asp-for="Report.NeededResources" class="form-label">Needed Resources</label>
+                                            <textarea asp-for="Report.NeededResources" class="form-control" rows="3"
+                                                      placeholder="What resources are needed?"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label asp-for="Report.NeededSupport" class="form-label">Needed Support</label>
+                                            <textarea asp-for="Report.NeededSupport" class="form-control" rows="3"
+                                                      placeholder="What support is needed from other levels?"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label asp-for="Report.SpecialRemarks" class="form-label">Special Remarks</label>
+                                            <textarea asp-for="Report.SpecialRemarks" class="form-control" rows="3"
+                                                      placeholder="Any special notes or remarks"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Attachments -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold"><i class="bi bi-paperclip"></i> Attachments</label>
+                            <input asp-for="Attachments" class="form-control" type="file" multiple />
+                            <div class="form-text">You can select multiple files. Max 10 MB each.</div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            The report will be saved as <strong>Draft</strong>. You can submit it for review from the report details page.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-page="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Reports
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save as Draft
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

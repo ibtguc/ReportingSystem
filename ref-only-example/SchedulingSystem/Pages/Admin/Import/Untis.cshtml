@@ -1,0 +1,1314 @@
+@page
+@model SchedulingSystem.Pages.Admin.Import.UntisModel
+@{
+    ViewData["Title"] = "Data Import";
+}
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-upload"></i> Data Import Hub</h2>
+            <p class="text-muted">Import all your scheduling data from UNTIS exports and CSV files</p>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-page="/Admin/Dashboard">Admin</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Data Import</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.StatusMessage))
+    {
+        <div class="alert @(Model.IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show">
+            <i class="bi @(Model.IsSuccess ? "bi-check-circle" : "bi-exclamation-triangle")"></i>
+            @Model.StatusMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.ImportResults.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Import Results</h5>
+            </div>
+            <div class="card-body">
+                @foreach (var result in Model.ImportResults)
+                {
+                    <div class="mb-3 p-3 border rounded @(result.Value.Success ? "border-success bg-light" : "border-danger bg-light")">
+                        <h6 class="fw-bold">@result.Key</h6>
+                        <p class="mb-1">@result.Value.Message</p>
+                        <small class="text-muted">
+                            Processed: @result.Value.RecordsProcessed |
+                            Imported: @result.Value.RecordsImported |
+                            Updated: @result.Value.RecordsUpdated |
+                            Skipped: @result.Value.RecordsSkipped
+                        </small>
+
+                        @if (result.Value.Errors.Any())
+                        {
+                            <div class="mt-2">
+                                <strong class="text-danger">Errors:</strong>
+                                @{
+                                    // Define field names for different import types
+                                    var departmentsFieldNames = new[] { "Name", "Description" };
+
+                                    var teachersFieldNames = new[] {
+                                        "Name (First Name)", "Full Name (Last Name)", "Statistic 1", "Personnel Number", "Home Room",
+                                        "Field 6", "Field 7", "Min. per./day", "Max. per./day", "Min NTP", "Max NTP",
+                                        "Min Lunchbreak", "Max Lunchbreak", "Max. Consec. pers.", "Weekly quota", "Weekly value",
+                                        "Department 1", "Value resp. factor", "Field 19", "Field 20", "Status", "Yearly quota",
+                                        "Field 23", "Description", "Foreground colour", "Background colour", "Statistic 2",
+                                        "Field 28", "First name (field 29)", "Title", "Gender", "Field 32", "E-mail address",
+                                        "Field 34-38", "Field 35", "Field 36", "Field 37", "Field 38", "Phone", "Mobile",
+                                        "Date of birth (YYYYMMDD)", "Field 42"
+                                    };
+
+                                    var classesFieldNames = new[] {
+                                        "Name", "Long name", "Category", "Class teacher", "Statistic 1", "Statistic 2",
+                                        "Class level", "Department 1", "Department 2", "Department 3", "Room", "Field 12",
+                                        "Field 13", "Max. per./day", "Weekly periods", "Weekly value", "Status", "Description",
+                                        "Foreground colour", "Background colour", "Codes", "Student group", "Min. double pers.",
+                                        "Max. double pers.", "Block size", "Collision check", "Room group", "Building", "Text", "Value"
+                                    };
+
+                                    var studentsFieldNames = new[] {
+                                        "Name", "First name", "Class", "Status", "Student number", "Date of birth (YYYYMMDD)",
+                                        "Gender", "Field 8", "E-mail address", "Mobile number", "Field 11", "Field 12",
+                                        "Statistic 1", "Field 14"
+                                    };
+
+                                    var subjectsFieldNames = new[] {
+                                        "Code", "Name", "Long name", "Category", "Statistical category 1", "Statistical category 2",
+                                        "Lessons per week", "Field 8", "Block", "Room group", "Subject group", "Weekly periods",
+                                        "Weekly value", "Yearly value", "Department 1", "Field 16 (Text)", "Description",
+                                        "Foreground colour", "Background colour", "Value factor", "Codes"
+                                    };
+
+                                    var roomsFieldNames = new[] {
+                                        "Room Number", "Long name", "Capacity", "Department 1", "Field 5", "Field 6",
+                                        "Building", "Weight", "Description", "Foreground colour", "Background colour",
+                                        "Field 12", "Field 13", "Field 14", "Field 15", "Field 16", "Field 17"
+                                    };
+
+                                    var lessonsFieldNames = new[] {
+                                        "L-No.", "Pers./week", "Class per./wk", "Teacher per./wk.", "Class", "Teacher", "Subject",
+                                        "Subject Room", "Less. Statistic 1.", "No. of students", "Week value", "Group",
+                                        "Teacher text", "Line value", "From date", "To date", "Year value", "Text",
+                                        "Partition No.", "Home Room", "Description", "F`ground colour", "B`kground colour",
+                                        "Codes", "Consec. Subj. Class", "Consec. Subj. Teach.", "Class Collision Ref.",
+                                        "Min Double pers.", "Max. Double pers.", "Block size", "Pers. in the room", "Priority",
+                                        "Teacher Statistic 1", "Students male", "Students female", "Value resp. factor",
+                                        "2nd Block", "3rd Block", "Line text 2", "Value", "Value(in 1/100000)",
+                                        "Student group", "Weekly periods in 'Year's planning in terms'"
+                                    };
+
+                                    var qualificationsFieldNames = new[] { "Teacher Code", "Subject Code", "Department", "Field 4" };
+
+                                    var timetableFieldNames = new[] {
+                                        "L-No", "Class", "Teacher", "Subject", "Room", "Day", "Period"
+                                    };
+
+                                    var availabilityFieldNames = new[] {
+                                        "Type", "Element Name", "Day Number", "Period Number", "Weight", "Reason"
+                                    };
+
+                                    var periodsFieldNames = new[] { "PeriodNumber", "Name", "StartTime", "EndTime" };
+
+                                    var breakSupervisionFieldNames = new[] { "Location", "Teacher Name", "Day Number", "Break Slot", "Duration" };
+
+                                    // Parse all errors with CSV data
+                                    var errorsWithData = result.Value.Errors
+                                        .Where(e => e.Contains("|LINE:"))
+                                        .Select(e => {
+                                            var parts = e.Split(new[] { "|LINE:" }, StringSplitOptions.None);
+                                            var message = parts[0];
+                                            var fields = parts[1].Split(';').Select(f => f.Trim('"').Trim()).ToList();
+
+                                            // Extract line number from message (e.g., "Line 13: message" -> lineNum="13", cleanMessage="message")
+                                            string lineNumber = "";
+                                            string cleanMessage = message;
+                                            var lineMatch = System.Text.RegularExpressions.Regex.Match(message, @"^Line\s+(\d+):\s*(.*)$");
+                                            if (lineMatch.Success)
+                                            {
+                                                lineNumber = lineMatch.Groups[1].Value;
+                                                cleanMessage = lineMatch.Groups[2].Value;
+                                            }
+
+                                            return new { LineNumber = lineNumber, Message = cleanMessage, Fields = fields };
+                                        })
+                                        .ToList();
+
+                                    // Use appropriate field names based on import type
+                                    string[] fieldNames = result.Key switch {
+                                        "Departments" => departmentsFieldNames,
+                                        "Teachers" => teachersFieldNames,
+                                        "Classes" => classesFieldNames,
+                                        "Students" => studentsFieldNames,
+                                        "Subjects" => subjectsFieldNames,
+                                        "Rooms" => roomsFieldNames,
+                                        "Lessons" => lessonsFieldNames,
+                                        "Qualifications" => qualificationsFieldNames,
+                                        "Timetable" => timetableFieldNames,
+                                        "Availability" => availabilityFieldNames,
+                                        "Periods" => periodsFieldNames,
+                                        "Break Supervision" => breakSupervisionFieldNames,
+                                        _ => null
+                                    };
+                                }
+
+                                @if (errorsWithData.Any())
+                                {
+                                    var maxFieldCount = errorsWithData.Max(e => e.Fields.Count);
+
+                                    <div class="mb-3 p-2 bg-white border border-danger rounded">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered mb-0" style="font-size: 0.75rem;">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th class="text-center align-middle" style="min-width: 50px;">Line</th>
+                                                        <th class="text-center align-middle" style="min-width: 200px;">Error Message</th>
+                                                        @for (int i = 0; i < maxFieldCount; i++)
+                                                        {
+                                                            var headerName = (fieldNames != null && i < fieldNames.Length)
+                                                                ? fieldNames[i]
+                                                                : $"Field {i + 1}";
+                                                            <th class="text-center align-middle" style="min-width: 80px;">@headerName</th>
+                                                        }
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var error in errorsWithData)
+                                                    {
+                                                        <tr>
+                                                            <td class="text-center align-middle fw-bold">@error.LineNumber</td>
+                                                            <td class="text-danger fw-bold align-middle">@error.Message</td>
+                                                            @for (int i = 0; i < maxFieldCount; i++)
+                                                            {
+                                                                var fieldValue = i < error.Fields.Count ? error.Fields[i] : "";
+                                                                <td class="font-monospace">@(string.IsNullOrEmpty(fieldValue) ? "(empty)" : fieldValue)</td>
+                                                            }
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
+
+                                @* Display errors without CSV data separately *@
+                                @{
+                                    var errorsWithoutData = result.Value.Errors.Where(e => !e.Contains("|LINE:")).ToList();
+                                }
+                                @if (errorsWithoutData.Any())
+                                {
+                                    <div class="mb-0">
+                                        @foreach (var error in errorsWithoutData)
+                                        {
+                                            <div class="mb-2 p-2 bg-white border border-danger rounded">
+                                                <small class="d-block text-danger fw-bold">@error</small>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (result.Value.Warnings.Any())
+                        {
+                            <div class="mt-2">
+                                <strong class="text-warning">Warnings:</strong>
+                                @{
+                                    // Define field names for different import types
+                                    var departmentsFieldNames = new[] { "Name", "Description" };
+
+                                    var teachersFieldNames = new[] {
+                                        "Name (First Name)", "Full Name (Last Name)", "Statistic 1", "Personnel Number", "Home Room",
+                                        "Field 6", "Field 7", "Min. per./day", "Max. per./day", "Min NTP", "Max NTP",
+                                        "Min Lunchbreak", "Max Lunchbreak", "Max. Consec. pers.", "Weekly quota", "Weekly value",
+                                        "Department 1", "Value resp. factor", "Field 19", "Field 20", "Status", "Yearly quota",
+                                        "Field 23", "Description", "Foreground colour", "Background colour", "Statistic 2",
+                                        "Field 28", "First name (field 29)", "Title", "Gender", "Field 32", "E-mail address",
+                                        "Field 34-38", "Field 35", "Field 36", "Field 37", "Field 38", "Phone", "Mobile",
+                                        "Date of birth (YYYYMMDD)", "Field 42"
+                                    };
+
+                                    var classesFieldNames = new[] {
+                                        "Name", "Long name", "Category", "Class teacher", "Statistic 1", "Statistic 2",
+                                        "Class level", "Department 1", "Department 2", "Department 3", "Room", "Field 12",
+                                        "Field 13", "Max. per./day", "Weekly periods", "Weekly value", "Status", "Description",
+                                        "Foreground colour", "Background colour", "Codes", "Student group", "Min. double pers.",
+                                        "Max. double pers.", "Block size", "Collision check", "Room group", "Building", "Text", "Value"
+                                    };
+
+                                    var studentsFieldNames = new[] {
+                                        "Name", "First name", "Class", "Status", "Student number", "Date of birth (YYYYMMDD)",
+                                        "Gender", "Field 8", "E-mail address", "Mobile number", "Field 11", "Field 12",
+                                        "Statistic 1", "Field 14"
+                                    };
+
+                                    var subjectsFieldNames = new[] {
+                                        "Code", "Name", "Long name", "Category", "Statistical category 1", "Statistical category 2",
+                                        "Lessons per week", "Field 8", "Block", "Room group", "Subject group", "Weekly periods",
+                                        "Weekly value", "Yearly value", "Department 1", "Field 16 (Text)", "Description",
+                                        "Foreground colour", "Background colour", "Value factor", "Codes"
+                                    };
+
+                                    var roomsFieldNames = new[] {
+                                        "Room Number", "Long name", "Capacity", "Department 1", "Field 5", "Field 6",
+                                        "Building", "Weight", "Description", "Foreground colour", "Background colour",
+                                        "Field 12", "Field 13", "Field 14", "Field 15", "Field 16", "Field 17"
+                                    };
+
+                                    var lessonsFieldNames = new[] {
+                                        "L-No.", "Pers./week", "Class per./wk", "Teacher per./wk.", "Class", "Teacher", "Subject",
+                                        "Subject Room", "Less. Statistic 1.", "No. of students", "Week value", "Group",
+                                        "Teacher text", "Line value", "From date", "To date", "Year value", "Text",
+                                        "Partition No.", "Home Room", "Description", "F`ground colour", "B`kground colour",
+                                        "Codes", "Consec. Subj. Class", "Consec. Subj. Teach.", "Class Collision Ref.",
+                                        "Min Double pers.", "Max. Double pers.", "Block size", "Pers. in the room", "Priority",
+                                        "Teacher Statistic 1", "Students male", "Students female", "Value resp. factor",
+                                        "2nd Block", "3rd Block", "Line text 2", "Value", "Value(in 1/100000)",
+                                        "Student group", "Weekly periods in 'Year's planning in terms'"
+                                    };
+
+                                    var qualificationsFieldNames = new[] { "Teacher Code", "Subject Code", "Department", "Field 4" };
+
+                                    var timetableFieldNames = new[] {
+                                        "L-No", "Class", "Teacher", "Subject", "Room", "Day", "Period"
+                                    };
+
+                                    var availabilityFieldNames = new[] {
+                                        "Type", "Element Name", "Day Number", "Period Number", "Weight", "Reason"
+                                    };
+
+                                    var periodsFieldNames = new[] { "PeriodNumber", "Name", "StartTime", "EndTime" };
+
+                                    var breakSupervisionFieldNames = new[] { "Location", "Teacher Name", "Day Number", "Break Slot", "Duration" };
+
+                                    // Parse all warnings with CSV data
+                                    var warningsWithData = result.Value.Warnings
+                                        .Where(w => w.Contains("|LINE:"))
+                                        .Select(w => {
+                                            var parts = w.Split(new[] { "|LINE:" }, StringSplitOptions.None);
+                                            var message = parts[0];
+                                            var fields = parts[1].Split(';').Select(f => f.Trim('"').Trim()).ToList();
+
+                                            // Extract line number from message (e.g., "Line 13: message" -> lineNum="13", cleanMessage="message")
+                                            string lineNumber = "";
+                                            string cleanMessage = message;
+                                            var lineMatch = System.Text.RegularExpressions.Regex.Match(message, @"^Line\s+(\d+):\s*(.*)$");
+                                            if (lineMatch.Success)
+                                            {
+                                                lineNumber = lineMatch.Groups[1].Value;
+                                                cleanMessage = lineMatch.Groups[2].Value;
+                                            }
+
+                                            return new { LineNumber = lineNumber, Message = cleanMessage, Fields = fields };
+                                        })
+                                        .ToList();
+
+                                    // Use appropriate field names based on import type
+                                    string[] fieldNames = result.Key switch {
+                                        "Departments" => departmentsFieldNames,
+                                        "Teachers" => teachersFieldNames,
+                                        "Classes" => classesFieldNames,
+                                        "Students" => studentsFieldNames,
+                                        "Subjects" => subjectsFieldNames,
+                                        "Rooms" => roomsFieldNames,
+                                        "Lessons" => lessonsFieldNames,
+                                        "Qualifications" => qualificationsFieldNames,
+                                        "Timetable" => timetableFieldNames,
+                                        "Availability" => availabilityFieldNames,
+                                        "Periods" => periodsFieldNames,
+                                        "Break Supervision" => breakSupervisionFieldNames,
+                                        _ => null
+                                    };
+                                }
+
+                                @if (warningsWithData.Any())
+                                {
+                                    var maxFieldCount = warningsWithData.Max(w => w.Fields.Count);
+
+                                    <div class="mb-3 p-2 bg-white border border-warning rounded">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered mb-0" style="font-size: 0.75rem;">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th class="text-center align-middle" style="min-width: 50px;">Line</th>
+                                                        <th class="text-center align-middle" style="min-width: 200px;">Warning Message</th>
+                                                        @for (int i = 0; i < maxFieldCount; i++)
+                                                        {
+                                                            var headerName = (fieldNames != null && i < fieldNames.Length)
+                                                                ? fieldNames[i]
+                                                                : $"Field {i + 1}";
+                                                            <th class="text-center align-middle" style="min-width: 80px;">@headerName</th>
+                                                        }
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var warning in warningsWithData)
+                                                    {
+                                                        <tr>
+                                                            <td class="text-center align-middle fw-bold">@warning.LineNumber</td>
+                                                            <td class="text-warning fw-bold align-middle">@warning.Message</td>
+                                                            @for (int i = 0; i < maxFieldCount; i++)
+                                                            {
+                                                                var fieldValue = i < warning.Fields.Count ? warning.Fields[i] : "";
+                                                                <td class="font-monospace">@(string.IsNullOrEmpty(fieldValue) ? "(empty)" : fieldValue)</td>
+                                                            }
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
+
+                                @* Display warnings without CSV data separately *@
+                                @{
+                                    var warningsWithoutData = result.Value.Warnings.Where(w => !w.Contains("|LINE:")).ToList();
+                                }
+                                @if (warningsWithoutData.Any())
+                                {
+                                    <div class="mb-0">
+                                        @foreach (var warning in warningsWithoutData)
+                                        {
+                                            @if (warning.TrimStart().StartsWith("<div") || warning.TrimStart().StartsWith("<table"))
+                                            {
+                                                @* Render HTML content directly *@
+                                                @Html.Raw(warning)
+                                            }
+                                            else
+                                            {
+                                                <div class="mb-2 p-2 bg-white border border-warning rounded">
+                                                    <small class="d-block text-warning fw-bold">@warning</small>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Collapsible Help Sections -->
+    <div class="accordion mb-4" id="helpAccordion">
+        <!-- UNTIS Export Instructions -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#untisInstructions">
+                    <i class="bi bi-question-circle me-2"></i> How to Export from UNTIS
+                </button>
+            </h2>
+            <div id="untisInstructions" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                <div class="accordion-body">
+                    <ol>
+                        <li>Open UNTIS and go to <strong>File → Import/Export → Export</strong></li>
+                        <li>Select <strong>Text file (DIF)</strong> format</li>
+                        <li>Export the following files (GPU*.TXT):
+                            <ul>
+                                <li><strong>GPU007.TXT</strong> - Departments (2 fields)</li>
+                                <li><strong>GPU004.TXT</strong> - Teachers (42 fields)</li>
+                                <li><strong>GPU003.TXT</strong> - Classes (30 fields)</li>
+                                <li><strong>GPU010.TXT</strong> - Students (14 fields)</li>
+                                <li><strong>GPU006.TXT</strong> - Subjects (21 fields)</li>
+                                <li><strong>GPU005.TXT</strong> - Rooms (17 fields)</li>
+                                <li><strong>GPU002.TXT</strong> - Lessons (43 fields)</li>
+                                <li><strong>GPU008.TXT</strong> - Teacher Qualifications (4 fields) - Optional</li>
+                                <li><strong>GPU009.TXT</strong> - Break Supervision Duties (5 fields) - Optional</li>
+                                <li><strong>GPU001.TXT</strong> - Timetable Schedule (7 fields) - Optional</li>
+                                <li><strong>GPU016.TXT</strong> - Time Constraints/Availability - Optional</li>
+                            </ul>
+                        </li>
+                        <li>Files are exported in <strong>semicolon-delimited</strong> format with header rows</li>
+                        <li>Upload the files below in the recommended order</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download Templates -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#downloadTemplates">
+                    <i class="bi bi-download me-2"></i> Download Import Templates
+                </button>
+            </h2>
+            <div id="downloadTemplates" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                <div class="accordion-body">
+                    <p>Download CSV templates for each UNTIS file format. These templates include column headers and sample data.</p>
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadTemplate" asp-route-type="departments" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> GPU007 - Departments
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadTemplate" asp-route-type="teachers" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> GPU004 - Teachers
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadTemplate" asp-route-type="classes" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> GPU003 - Classes
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadTemplate" asp-route-type="students" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> GPU010 - Students
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadTemplate" asp-route-type="subjects" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> GPU006 - Subjects
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadTemplate" asp-route-type="rooms" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> GPU005 - Rooms
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadTemplate" asp-route-type="lessons" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> GPU002 - Lessons
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadTemplate" asp-route-type="qualifications" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> GPU008 - Qualifications
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadTemplate" asp-route-type="timetable" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> GPU001 - Timetable
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadTemplate" asp-route-type="availability" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> GPU016 - Availability
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a asp-page-handler="DownloadPeriodsTemplate" class="btn btn-outline-success btn-sm w-100">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> Periods Template
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GPU File Structure Reference -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#gpuStructure">
+                    <i class="bi bi-table me-2"></i> GPU File Structure Reference
+                </button>
+            </h2>
+            <div id="gpuStructure" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                <div class="accordion-body">
+                    <div class="accordion" id="gpuStructureAccordion">
+                        <!-- GPU007 - Departments -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#gpu007">
+                                    GPU007.TXT - Departments (2 fields)
+                                </button>
+                            </h2>
+                            <div id="gpu007" class="accordion-collapse collapse" data-bs-parent="#gpuStructureAccordion">
+                                <div class="accordion-body">
+                                    <table class="table table-sm table-bordered">
+                                        <thead><tr><th>Field #</th><th>Field Name</th><th>Imported As</th></tr></thead>
+                                        <tbody>
+                                            <tr><td>1</td><td>Name (Abbreviated short name)</td><td><code>Department.Name</code></td></tr>
+                                            <tr><td>2</td><td>Full Name</td><td><code>Department.FullName</code></td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GPU004 - Teachers -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#gpu004">
+                                    GPU004.TXT - Teachers (42 fields)
+                                </button>
+                            </h2>
+                            <div id="gpu004" class="accordion-collapse collapse" data-bs-parent="#gpuStructureAccordion">
+                                <div class="accordion-body">
+                                    <p class="small"><strong>Key fields imported:</strong> First Name, Last Name, Personnel Number, Department, Min/Max Periods, Quotas, Contact Info</p>
+                                    <p class="small text-muted">See full documentation for all 42 fields imported.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add other GPU file structures as needed -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Entity Matching & Import Logic -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#entityMatching">
+                    <i class="bi bi-link-45deg me-2"></i> Entity Matching & Import Logic
+                </button>
+            </h2>
+            <div id="entityMatching" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                <div class="accordion-body">
+                    <h6>How the Import Service Matches Related Entities:</h6>
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Entity Type</th>
+                                <th>Matching Key</th>
+                                <th>Referenced Entities</th>
+                                <th>Import Behavior</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Departments</strong></td>
+                                <td><code>Department.Name</code> (unique)</td>
+                                <td>None</td>
+                                <td>Create new or update existing by name</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Teachers</strong></td>
+                                <td><code>Teacher.Name</code> (unique short code)</td>
+                                <td>Department (matched by name)</td>
+                                <td>Create new or update existing by name</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Classes</strong></td>
+                                <td><code>Class.Name</code> (unique)</td>
+                                <td>Department, ClassTeacher</td>
+                                <td>Create new or update existing by name</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Students</strong></td>
+                                <td><code>Student.StudentNumber</code> (unique)</td>
+                                <td>Class (matched by class name)</td>
+                                <td>Create new or update existing by student number</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Subjects</strong></td>
+                                <td><code>Subject.Code</code> (unique)</td>
+                                <td>PreferredRoom, Department</td>
+                                <td>Create new or update existing by code</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Rooms</strong></td>
+                                <td><code>Room.RoomNumber</code> (unique)</td>
+                                <td>AlternativeRoom, Department</td>
+                                <td>Create new or update existing by room number</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Lessons</strong></td>
+                                <td><code>LessonNumber + ClassId + TeacherId + SubjectId</code></td>
+                                <td>Class, Teacher, Subject</td>
+                                <td>All references must exist or record is skipped</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Important Notes -->
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#importantNotes">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Important Notes
+                </button>
+            </h2>
+            <div id="importantNotes" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                <div class="accordion-body">
+                    <ul class="mb-0">
+                        <li><strong>File Format:</strong> UNTIS exports use semicolon (;) as separator with quoted values</li>
+                        <li><strong>Import Order:</strong> Follow the sequence: Departments → Teachers → Classes → Students → Subjects → Rooms → Lessons → Availability</li>
+                        <li><strong>Updates:</strong> Re-importing the same file will update existing records</li>
+                        <li><strong>Header Row:</strong> Make sure your files have the header row (as exported from UNTIS)</li>
+                        <li><strong>Backup:</strong> Always backup your database before importing data</li>
+                        <li><strong>Case-Sensitive Matching:</strong> All entity matching is case-sensitive for names and codes</li>
+                        <li><strong>Missing References:</strong> If a referenced entity is not found, the record is skipped with a warning</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Cleanup -->
+        <div class="accordion-item border-danger">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed bg-danger text-white" type="button" data-bs-toggle="collapse" data-bs-target="#databaseCleanup">
+                    <i class="bi bi-trash me-2"></i> Database Cleanup (Danger Zone)
+                </button>
+            </h2>
+            <div id="databaseCleanup" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                <div class="accordion-body bg-danger bg-opacity-10">
+                    <div class="alert alert-danger mb-3">
+                        <strong><i class="bi bi-exclamation-triangle-fill"></i> Warning:</strong> This operation cannot be undone!
+                    </div>
+                    <p>Use this before doing a full fresh import from UNTIS. This will delete all UNTIS-importable data, absences, and substitutions.</p>
+                    <p class="mb-3"><strong>Make sure you have a database backup before proceeding!</strong></p>
+                    <form method="post" asp-page-handler="CleanupDatabase" onsubmit="return confirm('Are you sure you want to delete all UNTIS data and absences/substitutions? This cannot be undone!');">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Cleanup Database
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Import - FIRST -->
+    <form method="post" enctype="multipart/form-data">
+        <div class="card mb-4 border-success">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-lightning"></i> Quick Import All (Batch)</h4>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Upload all GPU*.TXT files at once and import them automatically in the correct order.</p>
+                <div class="alert alert-info small mb-3">
+                    <strong>Files Supported:</strong>
+                    <ul class="mb-0">
+                        <li>GPU007.TXT - Departments</li>
+                        <li>GPU004.TXT - Teachers</li>
+                        <li>GPU003.TXT - Classes</li>
+                        <li>GPU010.TXT - Students</li>
+                        <li>GPU006.TXT - Subjects</li>
+                        <li>GPU005.TXT - Rooms</li>
+                        <li>GPU016.TXT - Time Constraints (Optional)</li>
+                    </ul>
+                    <small class="text-muted">GPU001.TXT (Timetable), GPU002.TXT (Lessons), GPU008.TXT (Teacher Qualifications), and Periods must be imported separately.</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Upload All UNTIS Files</label>
+                    <input asp-for="AllFiles" class="form-control" type="file" multiple accept=".txt,.csv">
+                    <small class="form-text text-muted">
+                        Select multiple GPU*.TXT files. They will be imported in the correct order automatically.
+                    </small>
+                </div>
+                <button type="submit" asp-page-handler="ImportAll" class="btn btn-success">
+                    <i class="bi bi-upload"></i> Import All Files
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <hr class="my-4">
+
+    <!-- Individual Imports - Ordered by Foreign Key Sequence -->
+    <h3 class="mb-3"><i class="bi bi-list-ol"></i> Individual Imports</h3>
+    <p class="text-muted mb-4">Import files individually in the recommended sequence to maintain referential integrity</p>
+
+    <form method="post" enctype="multipart/form-data">
+        <!-- 1. Departments -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-1-circle"></i> Departments (GPU007.TXT)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Import department data first - no dependencies</p>
+                <div class="mb-3">
+                    <label asp-for="DepartmentsFile" class="form-label">Upload File</label>
+                    <input asp-for="DepartmentsFile" class="form-control" type="file" accept=".txt,.csv">
+                </div>
+                <button type="submit" asp-page-handler="ImportDepartments" class="btn btn-primary btn-sm">
+                    <i class="bi bi-upload"></i> Import Departments
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. Teachers -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-2-circle"></i> Teachers (GPU004.TXT)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Requires: Departments</p>
+                <div class="mb-3">
+                    <label asp-for="TeachersFile" class="form-label">Upload File</label>
+                    <input asp-for="TeachersFile" class="form-control" type="file" accept=".txt,.csv">
+                </div>
+                <button type="submit" asp-page-handler="ImportTeachers" class="btn btn-primary btn-sm">
+                    <i class="bi bi-upload"></i> Import Teachers
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Classes -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-3-circle"></i> Classes (GPU003.TXT)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Requires: Departments, Teachers (for class teacher)</p>
+                <div class="mb-3">
+                    <label asp-for="ClassesFile" class="form-label">Upload File</label>
+                    <input asp-for="ClassesFile" class="form-control" type="file" accept=".txt,.csv">
+                </div>
+                <button type="submit" asp-page-handler="ImportClasses" class="btn btn-primary btn-sm">
+                    <i class="bi bi-upload"></i> Import Classes
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. Students -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-4-circle"></i> Students (GPU010.TXT)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Requires: Classes</p>
+                <div class="mb-3">
+                    <label asp-for="StudentsFile" class="form-label">Upload File</label>
+                    <input asp-for="StudentsFile" class="form-control" type="file" accept=".txt,.csv">
+                </div>
+                <button type="submit" asp-page-handler="ImportStudents" class="btn btn-primary btn-sm">
+                    <i class="bi bi-upload"></i> Import Students
+                </button>
+            </div>
+        </div>
+
+        <!-- 5. Subjects -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-5-circle"></i> Subjects (GPU006.TXT)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Requires: Departments, Rooms (optional for preferred room)</p>
+                <div class="mb-3">
+                    <label asp-for="SubjectsFile" class="form-label">Upload File</label>
+                    <input asp-for="SubjectsFile" class="form-control" type="file" accept=".txt,.csv">
+                </div>
+                <button type="submit" asp-page-handler="ImportSubjects" class="btn btn-primary btn-sm">
+                    <i class="bi bi-upload"></i> Import Subjects
+                </button>
+            </div>
+        </div>
+
+        <!-- 6. Rooms -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-6-circle"></i> Rooms (GPU005.TXT)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Requires: Departments</p>
+                <div class="mb-3">
+                    <label asp-for="RoomsFile" class="form-label">Upload File</label>
+                    <input asp-for="RoomsFile" class="form-control" type="file" accept=".txt,.csv">
+                </div>
+                <button type="submit" asp-page-handler="ImportRooms" class="btn btn-primary btn-sm">
+                    <i class="bi bi-upload"></i> Import Rooms
+                </button>
+            </div>
+        </div>
+
+        <!-- 7. Lessons -->
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-7-circle"></i> Lessons (GPU002.TXT)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Requires: Classes, Teachers, Subjects</p>
+                <div class="alert alert-warning mb-3">
+                    <strong><i class="bi bi-exclamation-triangle"></i> Warning:</strong>
+                    Importing lessons will <strong>delete all existing lessons</strong> and their associated data (lesson-teacher assignments, lesson-class assignments, lesson-subject assignments, and scheduled lessons).
+                </div>
+                <div class="mb-3">
+                    <label asp-for="LessonsFile" class="form-label">Upload File</label>
+                    <input asp-for="LessonsFile" class="form-control" type="file" accept=".txt,.csv">
+                </div>
+                <button type="submit" asp-page-handler="ImportLessons" class="btn btn-warning btn-sm"
+                        onclick="return confirm('This will delete all existing lessons and their associated data. Are you sure you want to continue?');">
+                    <i class="bi bi-upload"></i> Import Lessons
+                </button>
+            </div>
+        </div>
+
+        <!-- 8. Availability -->
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-8-circle"></i> Time Constraints / Availability (GPU016.TXT) - Optional</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Import scheduling constraints and preferences</p>
+                <div class="alert alert-light small mb-3">
+                    <strong>Constraint Scale:</strong>
+                    <p class="mb-2"><strong>Negative = AVOID scheduling, Positive = TRY TO schedule</strong></p>
+                    <ul class="mb-0 small">
+                        <li><strong>-3:</strong> Avoid scheduling (strongest)</li>
+                        <li><strong>-2:</strong> Avoid scheduling (medium)</li>
+                        <li><strong>-1:</strong> Avoid scheduling (weakest)</li>
+                        <li><strong>0:</strong> Neutral</li>
+                        <li><strong>+1 to +3:</strong> Try to schedule (increasing preference)</li>
+                    </ul>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="AvailabilityFile" class="form-label">Upload File</label>
+                    <input asp-for="AvailabilityFile" class="form-control" type="file" accept=".txt,.csv">
+                </div>
+                <button type="submit" asp-page-handler="ImportAvailability" class="btn btn-info btn-sm">
+                    <i class="bi bi-upload"></i> Import Availability
+                </button>
+            </div>
+        </div>
+
+        <!-- 9. Teacher Qualifications - Optional -->
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-9-circle"></i> Teacher Qualifications (GPU008.TXT) - Optional</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Import teacher-subject qualifications. Use the dedicated page for this import.</p>
+                <a asp-page="TeacherQualifications" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-upload"></i> Go to Qualifications Import
+                </a>
+            </div>
+        </div>
+
+        <!-- 10. Break Supervision - GPU009.TXT -->
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-cup-hot"></i> Break Supervision Duties (GPU009.TXT) - Optional</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Requires: Rooms (for supervision locations), Teachers, Timetable</p>
+                <div class="alert alert-info small mb-3">
+                    <strong>GPU009.TXT Format:</strong>
+                    <code>Corridor;TeacherName;DayNumber;PeriodNumber;Points</code>
+                    <ul class="mb-0 mt-2">
+                        <li><strong>Corridor</strong> - Supervision location (must exist in Rooms table, e.g., "Hof1", "oben")</li>
+                        <li><strong>TeacherName</strong> - Teacher short name (can be empty for unassigned slots)</li>
+                        <li><strong>DayNumber</strong> - 1=Monday to 5=Friday</li>
+                        <li><strong>PeriodNumber</strong> - Period number for the supervision duty</li>
+                        <li><strong>Points</strong> - Points value (typically 30)</li>
+                    </ul>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="BreakSupervisionTimetableId" class="form-label">Target Timetable <span class="text-danger">*</span></label>
+                        <select asp-for="BreakSupervisionTimetableId" asp-items="Model.TimetableList" class="form-select">
+                            <option value="">-- Select Timetable --</option>
+                        </select>
+                        <small class="text-muted">Break supervision duties will be imported into this timetable</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="BreakSupervisionFile" class="form-label">Upload File</label>
+                        <input asp-for="BreakSupervisionFile" class="form-control" type="file" accept=".txt,.csv">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" asp-page-handler="ImportBreakSupervision" class="btn btn-warning btn-sm">
+                        <i class="bi bi-upload"></i> Import Break Supervision
+                    </button>
+                    <button type="submit" asp-page-handler="ClearBreakSupervision" class="btn btn-outline-danger btn-sm"
+                            onclick="return confirm('Are you sure you want to clear all break supervision data for the selected timetable?');">
+                        <i class="bi bi-trash"></i> Clear Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 11. Periods - Additional Data -->
+        <div class="card mb-3 border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-clock"></i> Periods - Additional Data (Not in UNTIS)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Import period definitions with times. Required for scheduling. Not included in UNTIS export.</p>
+                <div class="alert alert-info small mb-3">
+                    <strong>CSV Format Required:</strong>
+                    <ul class="mb-0">
+                        <li><code>PeriodNumber</code> (unique, numeric)</li>
+                        <li><code>Name</code></li>
+                        <li><code>StartTime</code> (HH:mm format)</li>
+                        <li><code>EndTime</code> (HH:mm format)</li>
+                    </ul>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="PeriodsFile" class="form-label">Upload CSV File</label>
+                    <input asp-for="PeriodsFile" class="form-control" type="file" accept=".csv">
+                </div>
+                <button type="submit" asp-page-handler="ImportPeriods" class="btn btn-success btn-sm">
+                    <i class="bi bi-upload"></i> Import Periods
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <hr class="my-4">
+
+    <!-- Timetable Section - LAST -->
+    <h3 class="mb-3"><i class="bi bi-calendar3"></i> Timetable Import</h3>
+    <p class="text-muted mb-4">Create a timetable record and import scheduled lessons (GPU001.TXT)</p>
+
+    <div class="row">
+        <!-- Create Timetable Section -->
+        <div class="col-md-6 mb-3">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Create Timetable Record</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Create an empty timetable record before importing GPU001.TXT</p>
+                    <form method="post" asp-page-handler="CreateTimetable">
+                        <div class="mb-3">
+                            <label for="newTimetableName" class="form-label">Timetable Name</label>
+                            <input type="text" class="form-control" id="newTimetableName" name="newTimetableName"
+                                   placeholder="e.g., Fall 2024-2025" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newTimetableSchoolYearId" class="form-label">School Year</label>
+                            <select class="form-select" id="newTimetableSchoolYearId" name="newTimetableSchoolYearId" required>
+                                <option value="">-- Select School Year --</option>
+                                @if (Model.SchoolYearList != null)
+                                {
+                                    @foreach (var sy in Model.SchoolYearList)
+                                    {
+                                        <option value="@sy.Value">@sy.Text</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newTimetableNotes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="newTimetableNotes" name="newTimetableNotes"
+                                      rows="2" placeholder="Additional information..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create Timetable
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Timetable Section -->
+        <div class="col-md-6 mb-3">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar3"></i> Import Schedule (GPU001.TXT)</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Import the scheduled lessons into an existing timetable record</p>
+                    <form method="post" enctype="multipart/form-data" asp-page-handler="ImportTimetable">
+                        <div class="mb-3">
+                            <label asp-for="TimetableFile" class="form-label">Upload File</label>
+                            <input asp-for="TimetableFile" class="form-control" type="file" accept=".txt,.csv">
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="TimetableId" class="form-label">Select Timetable</label>
+                            <select asp-for="TimetableId" class="form-select" asp-items="Model.TimetableList">
+                                <option value="">-- Select Timetable --</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                Create a timetable record first (see left panel)
+                            </small>
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-upload"></i> Import Timetable Schedule
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* COMMENTED OUT - Import Schedule with Co-Teaching Detection
+    <!-- NEW: Import Schedule with Co-Teaching Detection -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card border-primary shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people-fill"></i>
+                        Import Schedule with Co-Teaching Detection (GPU002.TXT + GPU001.TXT)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> What's This?</h6>
+                        <p class="mb-2">
+                            This is the <strong>recommended way</strong> to import schedules with automatic co-teaching detection.
+                            It analyzes both lesson definitions and schedule entries together to detect:
+                        </p>
+                        <ul class="mb-0">
+                            <li><strong>Co-teaching:</strong> Multiple teachers teaching the same class at the same time</li>
+                            <li><strong>Multi-subject lessons:</strong> Integrated or cross-disciplinary lessons</li>
+                            <li><strong>Multi-room scenarios:</strong> Split classes in different rooms</li>
+                        </ul>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data" asp-page-handler="ImportScheduleWithCoTeaching">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LessonsFile" class="form-label fw-bold">
+                                    1. Upload GPU002.TXT (Lesson Definitions)
+                                </label>
+                                <input asp-for="LessonsFile" class="form-control" type="file" accept=".txt,.csv" required>
+                                <small class="form-text text-muted">
+                                    Contains teacher, subject, and class assignments
+                                </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TimetableFile" class="form-label fw-bold">
+                                    2. Upload GPU001.TXT (Schedule)
+                                </label>
+                                <input asp-for="TimetableFile" class="form-control" type="file" accept=".txt,.csv" required>
+                                <small class="form-text text-muted">
+                                    Contains day/period scheduling information
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CombinedImportTimetableId" class="form-label fw-bold">
+                                3. Select Target Timetable
+                            </label>
+                            <select asp-for="CombinedImportTimetableId" class="form-select" asp-items="Model.TimetableList" required>
+                                <option value="">-- Select Timetable --</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-exclamation-circle text-warning"></i>
+                                Existing scheduled lessons in this timetable will be cleared
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input type="hidden" name="enableCoTeachingDetection" value="false">
+                                <input class="form-check-input" type="checkbox" id="enableCoTeachingDetection" name="enableCoTeachingDetection" value="true" checked>
+                                <label class="form-check-label fw-bold" for="enableCoTeachingDetection">
+                                    <i class="bi bi-people-fill text-primary"></i> Enable Co-Teaching Detection
+                                </label>
+                                <div class="form-text">
+                                    When enabled, lessons scheduled for the same class at the same time will be merged into a single co-teaching lesson with multiple teachers.
+                                    When disabled, each lesson will be imported separately (may create scheduling conflicts).
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-danger">
+                            <strong><i class="bi bi-exclamation-triangle-fill"></i> Important Warning:</strong>
+                            This will <strong>delete all existing lessons</strong> and their associated data (lesson-teacher assignments, lesson-class assignments, lesson-subject assignments, and all scheduled lessons in all timetables).
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <strong><i class="bi bi-exclamation-triangle"></i> Prerequisites:</strong>
+                            Before importing, make sure you've already imported:
+                            <span class="badge bg-secondary">Periods</span>
+                            <span class="badge bg-secondary">Departments</span>
+                            <span class="badge bg-secondary">Teachers</span>
+                            <span class="badge bg-secondary">Classes</span>
+                            <span class="badge bg-secondary">Subjects</span>
+                            <span class="badge bg-secondary">Rooms</span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg"
+                                onclick="return confirm('This will delete all existing lessons and their associated data. Are you sure you want to continue?');">
+                            <i class="bi bi-magic"></i> Import Schedule
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    *@
+
+    <!-- NEW: Combined Import with Co-Teaching Detection -->
+    @* COMMENTED OUT - Will be rebuilt step by step
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-primary shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people-fill"></i>
+                        NEW: Import Schedule with Co-Teaching Detection (GPU002.TXT + GPU001.TXT)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> What's This?</h6>
+                        <p class="mb-2">
+                            This is the <strong>new recommended way</strong> to import schedules with automatic co-teaching detection.
+                            It analyzes both lesson definitions and schedule entries together to detect:
+                        </p>
+                        <ul class="mb-0">
+                            <li><strong>Co-teaching:</strong> Multiple teachers teaching the same class at the same time</li>
+                            <li><strong>Multi-subject lessons:</strong> Integrated or cross-disciplinary lessons</li>
+                            <li><strong>Multi-room scenarios:</strong> Split classes in different rooms</li>
+                        </ul>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data" asp-page-handler="ImportScheduleWithCoTeaching">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LessonsFile" class="form-label fw-bold">
+                                    1. Upload GPU002.TXT (Lesson Definitions)
+                                </label>
+                                <input asp-for="LessonsFile" class="form-control" type="file" accept=".txt,.csv" required>
+                                <small class="form-text text-muted">
+                                    Contains teacher, subject, and class assignments
+                                </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TimetableFile" class="form-label fw-bold">
+                                    2. Upload GPU001.TXT (Schedule)
+                                </label>
+                                <input asp-for="TimetableFile" class="form-control" type="file" accept=".txt,.csv" required>
+                                <small class="form-text text-muted">
+                                    Contains day/period scheduling information
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CombinedImportTimetableId" class="form-label fw-bold">
+                                3. Select Target Timetable
+                            </label>
+                            <select asp-for="CombinedImportTimetableId" class="form-select" asp-items="Model.TimetableList" required>
+                                <option value="">-- Select Timetable --</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-exclamation-circle text-warning"></i>
+                                Existing scheduled lessons in this timetable will be cleared
+                            </small>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <strong><i class="bi bi-exclamation-triangle"></i> Prerequisites:</strong>
+                            Before importing, make sure you've already imported:
+                            <span class="badge bg-secondary">Periods</span>
+                            <span class="badge bg-secondary">Departments</span>
+                            <span class="badge bg-secondary">Teachers</span>
+                            <span class="badge bg-secondary">Classes</span>
+                            <span class="badge bg-secondary">Subjects</span>
+                            <span class="badge bg-secondary">Rooms</span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-magic"></i> Import with Co-Teaching Detection
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    *@
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // Co-Teaching Merges Table - Sorting and Filtering
+        document.addEventListener('DOMContentLoaded', function() {
+            const table = document.getElementById('coTeachingMergesTable');
+            const filterInput = document.getElementById('coTeachingFilter');
+
+            if (!table) return; // Exit if table doesn't exist
+
+            let sortDirection = {};
+
+            // Sorting functionality
+            const headers = table.querySelectorAll('th[data-column]');
+            headers.forEach(header => {
+                header.addEventListener('click', function() {
+                    const column = this.getAttribute('data-column');
+                    const tbody = table.querySelector('tbody');
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                    // Toggle sort direction
+                    sortDirection[column] = sortDirection[column] === 'asc' ? 'desc' : 'asc';
+
+                    // Get column index
+                    const columnIndex = Array.from(this.parentElement.children).indexOf(this);
+
+                    // Sort rows
+                    rows.sort((a, b) => {
+                        const aValue = a.children[columnIndex].getAttribute('data-value') || a.children[columnIndex].textContent.trim();
+                        const bValue = b.children[columnIndex].getAttribute('data-value') || b.children[columnIndex].textContent.trim();
+
+                        // Try to parse as numbers for numeric sorting
+                        const aNum = parseFloat(aValue);
+                        const bNum = parseFloat(bValue);
+
+                        let comparison = 0;
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                            comparison = aNum - bNum;
+                        } else {
+                            comparison = aValue.localeCompare(bValue);
+                        }
+
+                        return sortDirection[column] === 'asc' ? comparison : -comparison;
+                    });
+
+                    // Clear tbody and append sorted rows
+                    tbody.innerHTML = '';
+                    rows.forEach(row => tbody.appendChild(row));
+
+                    // Update sort icons
+                    headers.forEach(h => {
+                        const icon = h.querySelector('i');
+                        if (h === this) {
+                            icon.className = sortDirection[column] === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down';
+                        } else {
+                            icon.className = 'bi bi-arrow-down-up';
+                        }
+                    });
+                });
+            });
+
+            // Filtering functionality
+            if (filterInput) {
+                filterInput.addEventListener('keyup', function() {
+                    const filterValue = this.value.toLowerCase();
+                    const tbody = table.querySelector('tbody');
+                    const rows = tbody.querySelectorAll('tr');
+
+                    rows.forEach(row => {
+                        const cells = row.querySelectorAll('td[data-value]');
+                        let found = false;
+
+                        cells.forEach(cell => {
+                            const cellValue = cell.getAttribute('data-value').toLowerCase();
+                            if (cellValue.includes(filterValue)) {
+                                found = true;
+                            }
+                        });
+
+                        row.style.display = found ? '' : 'none';
+                    });
+
+                    // Update visible count
+                    const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none').length;
+                    const totalRows = rows.length;
+
+                    // Find or create count display
+                    let countDisplay = document.querySelector('.co-teaching-filter-count');
+                    if (!countDisplay) {
+                        countDisplay = document.createElement('small');
+                        countDisplay.className = 'co-teaching-filter-count text-muted ms-2';
+                        filterInput.parentElement.appendChild(countDisplay);
+                    }
+
+                    if (filterValue) {
+                        countDisplay.textContent = `Showing ${visibleRows} of ${totalRows} merges`;
+                    } else {
+                        countDisplay.textContent = '';
+                    }
+                });
+            }
+        });
+    </script>
+}

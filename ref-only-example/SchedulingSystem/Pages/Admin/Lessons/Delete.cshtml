@@ -1,0 +1,95 @@
+@*
+DISABLED: Lessons are managed through data import
+This page is commented out to prevent manual data entry that could conflict with imported data.
+Use /Admin/Import/Untis to import Lesson data from UNTIS export files.
+*@
+
+@*
+@page
+@model SchedulingSystem.Pages.Admin.Lessons.DeleteModel
+@{
+    ViewData["Title"] = "Delete Lesson";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4><i class="bi bi-exclamation-triangle"></i> Delete Lesson</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Are you sure you want to delete this lesson? This will also remove any scheduled instances of this lesson.
+                    </div>
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Subject</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge" style="background-color: @Model.Lesson.Subject.Color">
+                                @Model.Lesson.Subject.Code
+                            </span>
+                            @Model.Lesson.Subject.Name
+                        </dd>
+
+                        <dt class="col-sm-4">Class</dt>
+                        <dd class="col-sm-8">@Model.Lesson.Class.Name</dd>
+
+                        <dt class="col-sm-4">Teacher</dt>
+                        <dd class="col-sm-8">@Model.Lesson.Teacher.FullName</dd>
+
+                        <dt class="col-sm-4">Frequency Per Week</dt>
+                        <dd class="col-sm-8">@Model.Lesson.FrequencyPerWeek times</dd>
+
+                        <dt class="col-sm-4">Duration</dt>
+                        <dd class="col-sm-8">@Model.Lesson.Duration minutes</dd>
+
+                        <dt class="col-sm-4">Required Room Type</dt>
+                        <dd class="col-sm-8">
+                            @if (!string.IsNullOrEmpty(Model.Lesson.RequiredRoomType))
+                            {
+                                <span class="badge bg-secondary">@Model.Lesson.RequiredRoomType</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Any</span>
+                            }
+                        </dd>
+
+                        @if (!string.IsNullOrEmpty(Model.Lesson.SpecialRequirements))
+                        {
+                            <dt class="col-sm-4">Special Requirements</dt>
+                            <dd class="col-sm-8">@Model.Lesson.SpecialRequirements</dd>
+                        }
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Lesson.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </dd>
+                    </dl>
+
+                    <form method="post">
+                        <input type="hidden" asp-for="Lesson.Id" />
+                        <div class="d-flex justify-content-between">
+                            <a asp-page="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete Lesson
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+*@

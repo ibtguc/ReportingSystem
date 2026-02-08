@@ -1,0 +1,181 @@
+@page "{id:int}"
+@model SchedulingSystem.Pages.Admin.Timetables.ValidateModel
+@{
+    ViewData["Title"] = "Validate Timetable";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2><i class="bi bi-shield-check"></i> Validate Timetable</h2>
+            <p class="text-muted">Check for conflicts and constraint violations</p>
+            <hr />
+        </div>
+    </div>
+
+    @if (Model.ValidationResult != null)
+    {
+        @if (Model.ValidationResult.IsValid)
+        {
+            <div class="alert alert-success" role="alert">
+                <h4 class="alert-heading"><i class="bi bi-check-circle-fill"></i> Validation Passed!</h4>
+                <p>No conflicts found. The timetable is valid and ready to be published.</p>
+                <hr>
+                <div class="mt-3">
+                    <a href="/Admin/Timetables/Edit/@Model.TimetableId" class="btn btn-primary">
+                        <i class="bi bi-eye"></i> View Timetable
+                    </a>
+                    @if (Model.Timetable?.Status == SchedulingSystem.Models.TimetableStatus.Draft)
+                    {
+                        <button type="button" class="btn btn-success" onclick="alert('Publish feature coming soon!')">
+                            <i class="bi bi-cloud-upload"></i> Publish Timetable
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> Validation Failed</h4>
+                <p>Found <strong>@Model.ValidationResult.Conflicts.Count</strong> conflict(s) that need to be resolved.</p>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="bi bi-x-circle"></i> Conflicts Found</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var conflictGroup in Model.ValidationResult.Conflicts.GroupBy(c => c.Type))
+                    {
+                        <div class="mb-4">
+                            <h5>
+                                @if (conflictGroup.Key == SchedulingSystem.Services.ConflictType.TeacherDoubleBooking)
+                                {
+                                    <i class="bi bi-person-x"></i> @:Teacher Double-Booking
+                                }
+                                else if (conflictGroup.Key == SchedulingSystem.Services.ConflictType.ClassDoubleBooking)
+                                {
+                                    <i class="bi bi-people-fill"></i> @:Class Double-Booking
+                                }
+                                else if (conflictGroup.Key == SchedulingSystem.Services.ConflictType.RoomDoubleBooking)
+                                {
+                                    <i class="bi bi-door-closed"></i> @:Room Double-Booking
+                                }
+                                else
+                                {
+                                    @conflictGroup.Key.ToString()
+                                }
+                                <span class="badge bg-danger">@conflictGroup.Count()</span>
+                            </h5>
+
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Affected Lessons</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var conflict in conflictGroup)
+                                    {
+                                        <tr>
+                                            <td>@conflict.Description</td>
+                                            <td>
+                                                <span class="badge bg-secondary">@conflict.AffectedLessons.Count lessons</span>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#conflict-@conflict.GetHashCode()">
+                                                    <i class="bi bi-info-circle"></i> Details
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr class="collapse" id="conflict-@conflict.GetHashCode()">
+                                            <td colspan="3">
+                                                <div class="p-3 bg-light">
+                                                    <strong>Conflicting Lessons:</strong>
+                                                    <ul class="mt-2">
+                                                        @foreach (var lesson in conflict.AffectedLessons)
+                                                        {
+                                                            <li>
+                                                                <strong>@lesson.Lesson?.LessonSubjects.FirstOrDefault()?.Subject?.Name</strong>
+                                                                for <strong>@lesson.Lesson?.LessonClasses.FirstOrDefault()?.Class?.Name</strong>
+                                                                with <strong>@lesson.Lesson?.LessonTeachers.FirstOrDefault()?.Teacher?.FullName</strong>
+                                                                @if (lesson.Room != null)
+                                                                {
+                                                                    @:in <strong>@lesson.Room.Name</strong>
+                                                                }
+                                                                <br />
+                                                                <small class="text-muted">
+                                                                    Time: @lesson.DayOfWeek, Period @lesson.Period?.PeriodNumber
+                                                                    (@lesson.Period?.StartTime.ToString(@"hh\:mm") - @lesson.Period?.EndTime.ToString(@"hh\:mm"))
+                                                                </small>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="bi bi-bar-chart"></i> Timetable Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-primary">@Model.Statistics.TotalLessons</h3>
+                            <p class="text-muted">Total Lessons</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-info">@Model.Statistics.UniqueTeachers</h3>
+                            <p class="text-muted">Teachers</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-success">@Model.Statistics.UniqueClasses</h3>
+                            <p class="text-muted">Classes</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-warning">@Model.Statistics.UniqueRooms</h3>
+                            <p class="text-muted">Rooms Used</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Running validation...</p>
+        </div>
+    }
+
+    <div class="mt-4">
+        <a href="/Admin/Timetables/Edit/@Model.TimetableId" class="btn btn-primary">
+            <i class="bi bi-eye"></i> View Timetable
+        </a>
+        <a href="/Admin/Timetables/Generate" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Generation
+        </a>
+    </div>
+</div>

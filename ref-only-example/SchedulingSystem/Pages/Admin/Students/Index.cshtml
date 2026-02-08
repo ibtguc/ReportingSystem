@@ -1,0 +1,109 @@
+@page
+@model SchedulingSystem.Pages.Admin.Students.IndexModel
+@{
+    ViewData["Title"] = "Students";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-person"></i> Students</h2>
+            <p class="text-muted">Student data (imported)</p>
+        </div>
+        @* Removed Create button - Students are managed through data import *@
+    </div>
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i>
+        <strong>Note:</strong> Students are managed through data import.
+        To add or update students, use <a asp-page="/Admin/Import/Untis" class="alert-link">Import Data</a>.
+    </div>
+
+    @if (Model.Students.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No students found. Import student data using the Import Data page.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Student Number</th>
+                                <th>Short Name</th>
+                                <th>Display Name</th>
+                                <th>Class</th>
+                                <th>Gender</th>
+                                <th>Statistics</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var student in Model.Students)
+                            {
+                                <tr>
+                                    <td><strong>@student.StudentNumber</strong></td>
+                                    <td>@student.Name</td>
+                                    <td>@student.DisplayName</td>
+                                    <td>
+                                        @if (student.Class != null)
+                                        {
+                                            <span class="badge bg-primary">@student.Class.Name</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (student.Gender.HasValue)
+                                        {
+                                            <small>@student.GenderDisplay</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>
+                                            @if (!string.IsNullOrEmpty(student.Statistic1) || !string.IsNullOrEmpty(student.Statistic2))
+                                            {
+                                                if (!string.IsNullOrEmpty(student.Statistic1))
+                                                {
+                                                    <text>@student.Statistic1</text>
+                                                }
+                                                if (!string.IsNullOrEmpty(student.Statistic1) && !string.IsNullOrEmpty(student.Statistic2))
+                                                {
+                                                    <text> / </text>
+                                                }
+                                                if (!string.IsNullOrEmpty(student.Statistic2))
+                                                {
+                                                    <text>@student.Statistic2</text>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <a asp-page="Details" asp-route-id="@student.Id" class="btn btn-outline-info btn-sm" title="Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @* Removed Edit and Delete buttons - Students are managed through data import *@
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

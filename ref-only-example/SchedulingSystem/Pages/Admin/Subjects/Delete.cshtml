@@ -1,0 +1,115 @@
+@page
+@model SchedulingSystem.Pages.Admin.Subjects.DeleteModel
+@functions {
+    /// <summary>
+    /// Converts a decimal COLORREF value to hex RGB color code.
+    /// Colors stored as Windows COLORREF in BGR format: 0x00BBGGRR
+    /// </summary>
+    public static string ConvertDecimalColorToHex(string? decimalColor, string defaultColor = "#6c757d")
+    {
+        if (string.IsNullOrWhiteSpace(decimalColor))
+            return defaultColor;
+
+        // If already a hex color, return as-is
+        if (decimalColor.StartsWith("#"))
+            return decimalColor;
+
+        if (!long.TryParse(decimalColor, out long colorValue))
+            return defaultColor;
+
+        // Extract RGB from COLORREF (BGR format: 0x00BBGGRR)
+        int r = (int)(colorValue & 0xFF);
+        int g = (int)((colorValue >> 8) & 0xFF);
+        int b = (int)((colorValue >> 16) & 0xFF);
+
+        return $"#{r:X2}{g:X2}{b:X2}";
+    }
+
+    /// <summary>
+    /// Determines appropriate foreground color (black or white) based on background luminance.
+    /// </summary>
+    public static string GetContrastingTextColor(string hexBgColor)
+    {
+        if (string.IsNullOrWhiteSpace(hexBgColor) || !hexBgColor.StartsWith("#") || hexBgColor.Length < 7)
+            return "#FFFFFF";
+
+        try
+        {
+            int r = Convert.ToInt32(hexBgColor.Substring(1, 2), 16);
+            int g = Convert.ToInt32(hexBgColor.Substring(3, 2), 16);
+            int b = Convert.ToInt32(hexBgColor.Substring(5, 2), 16);
+
+            // Calculate relative luminance using sRGB formula
+            double luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+            return luminance > 0.5 ? "#000000" : "#FFFFFF";
+        }
+        catch
+        {
+            return "#FFFFFF";
+        }
+    }
+}
+@{
+    ViewData["Title"] = "Delete Subject";
+    var bgColor = ConvertDecimalColorToHex(Model.Subject.BackgroundColor);
+    var fgColor = GetContrastingTextColor(bgColor);
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Delete Subject</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>Warning!</strong> Are you sure you want to delete this subject?
+                        @if (Model.LessonCount > 0)
+                        {
+                            <br /><strong class="text-danger">This subject has @Model.LessonCount lesson(s) assigned! Deleting will remove it from all lessons.</strong>
+                        }
+                    </div>
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Code</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge" style="background-color: @bgColor; color: @fgColor;">@Model.Subject.Code</span>
+                        </dd>
+
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8">@Model.Subject.Name</dd>
+
+                        <dt class="col-sm-4">Category</dt>
+                        <dd class="col-sm-8">@(Model.Subject.Category ?? "-")</dd>
+
+                        <dt class="col-sm-4">Department</dt>
+                        <dd class="col-sm-8">@(Model.Subject.Department?.Name ?? "-")</dd>
+
+                        <dt class="col-sm-4">Duration</dt>
+                        <dd class="col-sm-8">@Model.Subject.DefaultDuration period(s)</dd>
+
+                        <dt class="col-sm-4">Room Type</dt>
+                        <dd class="col-sm-8">@(Model.Subject.RequiredRoomType ?? "Any")</dd>
+
+                        <dt class="col-sm-4">Assigned Lessons</dt>
+                        <dd class="col-sm-8">@Model.LessonCount</dd>
+                    </dl>
+
+                    <form method="post">
+                        <input type="hidden" asp-for="Subject.Id" />
+                        <div class="d-flex justify-content-between">
+                            <a asp-page="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete Subject
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

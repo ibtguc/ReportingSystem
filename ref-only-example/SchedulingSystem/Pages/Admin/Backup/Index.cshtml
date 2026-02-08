@@ -1,0 +1,504 @@
+@page
+@model SchedulingSystem.Pages.Admin.Backup.IndexModel
+@{
+    ViewData["Title"] = "Database Backups";
+}
+
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-database-fill-gear"></i> Database Backups</h2>
+            <p class="text-muted">Manage database backups - create, download, and restore</p>
+        </div>
+        <div class="col text-end">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createBackupModal">
+                <i class="bi bi-plus-circle"></i> Create New Backup
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1 opacity-75">Total Backups</h6>
+                            <h3 class="card-title mb-0">@Model.Statistics.TotalBackups</h3>
+                        </div>
+                        <i class="bi bi-database fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1 opacity-75">Total Size</h6>
+                            <h3 class="card-title mb-0">@Model.Statistics.TotalSizeFormatted</h3>
+                        </div>
+                        <i class="bi bi-hdd fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1 opacity-75">Auto Backups</h6>
+                            <h3 class="card-title mb-0">@Model.Statistics.AutomaticBackups</h3>
+                        </div>
+                        <i class="bi bi-clock-history fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-secondary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1 opacity-75">Last Backup</h6>
+                            <h5 class="card-title mb-0">
+                                @if (Model.Statistics.LastBackupDate.HasValue)
+                                {
+                                    @Model.Statistics.LastBackupDate.Value.ToLocalTime().ToString("MMM dd, HH:mm")
+                                }
+                                else
+                                {
+                                    <span>Never</span>
+                                }
+                            </h5>
+                        </div>
+                        <i class="bi bi-calendar-check fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Card -->
+    <div class="card border-info mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-info-circle text-info"></i> Automatic Backups</h5>
+            <p class="card-text mb-0">
+                The system automatically creates a backup twice per day (every 12 hours) before any data modification.
+                This ensures you always have recent backups during active usage.
+                @if (Model.Statistics.LastAutomaticBackupDate.HasValue)
+                {
+                    <strong>Last automatic backup: @Model.Statistics.LastAutomaticBackupDate.Value.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</strong>
+                }
+            </p>
+        </div>
+    </div>
+
+    <!-- Database Maintenance Card -->
+    <div class="card border-warning mb-4">
+        <div class="card-header bg-warning bg-opacity-25">
+            <h5 class="mb-0"><i class="bi bi-wrench"></i> Database Maintenance</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Current Database Files</h6>
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td><i class="bi bi-database"></i> Main Database</td>
+                                <td class="text-end">
+                                    @if (Model.DatabaseInfo.DatabaseExists)
+                                    {
+                                        <span class="badge bg-success">@Model.DatabaseInfo.DatabaseSizeFormatted</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Not Found</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="bi bi-file-earmark-text"></i> WAL File
+                                    <small class="text-muted d-block">Write-Ahead Log (pending changes)</small>
+                                </td>
+                                <td class="text-end">
+                                    @if (Model.DatabaseInfo.WalExists)
+                                    {
+                                        <span class="badge bg-warning text-dark">@Model.DatabaseInfo.WalSizeFormatted</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">None</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="bi bi-file-earmark-binary"></i> SHM File
+                                    <small class="text-muted d-block">Shared Memory (index)</small>
+                                </td>
+                                <td class="text-end">
+                                    @if (Model.DatabaseInfo.ShmExists)
+                                    {
+                                        <span class="badge bg-warning text-dark">@Model.DatabaseInfo.ShmSizeFormatted</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">None</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr class="table-light">
+                                <td><strong>Total Size</strong></td>
+                                <td class="text-end"><strong>@Model.DatabaseInfo.TotalSizeFormatted</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>About WAL Mode</h6>
+                    <p class="small text-muted mb-2">
+                        SQLite uses <strong>Write-Ahead Logging (WAL)</strong> for better performance and concurrency.
+                        Changes are first written to the WAL file, then periodically merged into the main database.
+                    </p>
+                    <ul class="small text-muted mb-3">
+                        <li><strong>-wal</strong>: Contains uncommitted changes waiting to be written</li>
+                        <li><strong>-shm</strong>: Shared memory file for coordinating access</li>
+                    </ul>
+
+                    @if (Model.DatabaseInfo.WalExists || Model.DatabaseInfo.ShmExists)
+                    {
+                        <form method="post" asp-page-handler="WalCheckpoint" class="d-inline">
+                            <button type="submit" class="btn btn-warning"
+                                    onclick="return confirm('This will write all pending changes to the main database and remove WAL/SHM files. The database will switch to DELETE journal mode until app restart. Continue?');">
+                                <i class="bi bi-arrow-down-circle"></i> Force Write & Clean Up
+                            </button>
+                        </form>
+                        <p class="small text-muted mt-2 mb-0">
+                            <i class="bi bi-info-circle"></i> Writes all pending changes to the main database file and removes WAL/SHM files.
+                            Database will switch to DELETE journal mode (slightly slower for concurrent writes, but works fine).
+                            WAL mode will be restored automatically on app restart.
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="alert alert-success py-2 mb-0">
+                            <i class="bi bi-check-circle"></i> Database is clean - no pending WAL/SHM files.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Backups.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No backups found. Click "Create New Backup" to create your first backup.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Created</th>
+                                <th>Created By</th>
+                                <th>Size</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var backup in Model.Backups)
+                            {
+                                var fileExists = Model.BackupFileExists(backup);
+                                <tr class="@(fileExists ? "" : "table-warning")">
+                                    <td>
+                                        <strong>@backup.Name</strong>
+                                        @if (!string.IsNullOrEmpty(backup.Description))
+                                        {
+                                            <br />
+                                            <small class="text-muted">@backup.Description</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @Model.GetBackupTypeBadgeClass(backup.Type)">
+                                            @backup.Type.ToString()
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @backup.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
+                                    </td>
+                                    <td>@(backup.CreatedBy ?? "-")</td>
+                                    <td>@Model.FormatFileSize(backup.FileSizeBytes)</td>
+                                    <td>
+                                        @if (fileExists)
+                                        {
+                                            <span class="badge bg-success">Available</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">File Missing</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            @if (fileExists)
+                                            {
+                                                <a asp-page-handler="Download" asp-route-id="@backup.Id"
+                                                   class="btn btn-outline-primary" title="Download">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-warning" title="Restore"
+                                                        data-bs-toggle="modal" data-bs-target="#restoreModal"
+                                                        data-backup-id="@backup.Id" data-backup-name="@backup.Name">
+                                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                                </button>
+                                            }
+                                            <button type="button" class="btn btn-outline-danger" title="Delete"
+                                                    data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                                    data-backup-id="@backup.Id" data-backup-name="@backup.Name">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Create Backup Modal -->
+<div class="modal fade" id="createBackupModal" tabindex="-1" aria-labelledby="createBackupModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createBackupForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createBackupModalLabel">
+                        <i class="bi bi-database-fill-add"></i> Create New Backup
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label asp-for="CreateInput.Name" class="form-label"></label>
+                        <input asp-for="CreateInput.Name" class="form-control" placeholder="e.g., Before major update" required id="backupName" />
+                        <span asp-validation-for="CreateInput.Name" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="CreateInput.Description" class="form-label"></label>
+                        <textarea asp-for="CreateInput.Description" class="form-control" rows="3"
+                                  placeholder="Optional description of this backup" id="backupDescription"></textarea>
+                        <span asp-validation-for="CreateInput.Description" class="text-danger"></span>
+                    </div>
+                    <div class="form-check">
+                        <input asp-for="CreateInput.DownloadAfterCreate" class="form-check-input" id="downloadAfterCreate" />
+                        <label asp-for="CreateInput.DownloadAfterCreate" class="form-check-label">
+                            Download backup file after creating
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="createBackupBtn">
+                        <i class="bi bi-plus-circle"></i> Create Backup
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Restore Backup Modal -->
+<div class="modal fade" id="restoreModal" tabindex="-1" aria-labelledby="restoreModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Restore">
+                <input type="hidden" name="id" id="restoreBackupId" />
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="restoreModalLabel">
+                        <i class="bi bi-exclamation-triangle"></i> Restore Backup
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <strong>Warning!</strong> This action will:
+                        <ul class="mb-0">
+                            <li>Create a new backup of the current database (pre-restore backup)</li>
+                            <li>Replace the current database with the selected backup</li>
+                            <li>Require an application restart for changes to take full effect</li>
+                        </ul>
+                    </div>
+                    <p>Are you sure you want to restore the backup "<strong id="restoreBackupName"></strong>"?</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="restoreConfirm" required>
+                        <label class="form-check-label" for="restoreConfirm">
+                            I understand this will replace the current database
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-arrow-counterclockwise"></i> Restore Backup
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Backup Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Delete">
+                <input type="hidden" name="id" id="deleteBackupId" />
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">
+                        <i class="bi bi-trash"></i> Delete Backup
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the backup "<strong id="deleteBackupName"></strong>"?</p>
+                    <p class="text-danger mb-0">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Handle restore modal data
+        var restoreModal = document.getElementById('restoreModal');
+        restoreModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var backupId = button.getAttribute('data-backup-id');
+            var backupName = button.getAttribute('data-backup-name');
+
+            document.getElementById('restoreBackupId').value = backupId;
+            document.getElementById('restoreBackupName').textContent = backupName;
+            document.getElementById('restoreConfirm').checked = false;
+        });
+
+        // Handle delete modal data
+        var deleteModal = document.getElementById('deleteModal');
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var backupId = button.getAttribute('data-backup-id');
+            var backupName = button.getAttribute('data-backup-name');
+
+            document.getElementById('deleteBackupId').value = backupId;
+            document.getElementById('deleteBackupName').textContent = backupName;
+        });
+
+        // Handle create backup form submission via AJAX
+        document.getElementById('createBackupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('backupName').value.trim();
+            const description = document.getElementById('backupDescription').value.trim();
+            const downloadAfterCreate = document.getElementById('downloadAfterCreate').checked;
+            const createBtn = document.getElementById('createBackupBtn');
+
+            if (!name) {
+                alert('Backup name is required.');
+                return;
+            }
+
+            // Disable button and show loading
+            createBtn.disabled = true;
+            createBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Creating...';
+
+            try {
+                const response = await fetch('/Admin/Backup?handler=CreateAjax', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        description: description || null
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Close the modal
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('createBackupModal'));
+                    modal.hide();
+
+                    // If download is requested, trigger the download
+                    if (downloadAfterCreate && result.backupId) {
+                        // Create a temporary link to trigger download
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = `/Admin/Backup?handler=Download&id=${result.backupId}`;
+                        downloadLink.style.display = 'none';
+                        document.body.appendChild(downloadLink);
+                        downloadLink.click();
+                        document.body.removeChild(downloadLink);
+                    }
+
+                    // Refresh the page after a short delay to show the new backup
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                } else {
+                    alert('Failed to create backup: ' + (result.error || 'Unknown error'));
+                    // Reset button
+                    createBtn.disabled = false;
+                    createBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Create Backup';
+                }
+            } catch (error) {
+                console.error('Error creating backup:', error);
+                alert('Failed to create backup. See console for details.');
+                // Reset button
+                createBtn.disabled = false;
+                createBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Create Backup';
+            }
+        });
+    </script>
+}

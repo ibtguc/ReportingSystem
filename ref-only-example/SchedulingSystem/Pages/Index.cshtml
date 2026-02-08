@@ -1,0 +1,53 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="text-center mt-5">
+    <h1 class="display-3 fw-bold text-primary">Scheduling System</h1>
+    <p class="lead text-muted">Comprehensive Educational Timetabling Solution</p>
+    <hr class="my-4">
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-gear-fill text-primary" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Administration</h5>
+                <p class="card-text">Manage teachers, classes, rooms, subjects, and students with ease.</p>
+                <a href="#" class="btn btn-outline-primary">Manage Data</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-check-fill text-success" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Timetable Generation</h5>
+                <p class="card-text">Automatically generate optimized timetables with constraint checking.</p>
+                <a href="#" class="btn btn-outline-success">Generate Schedule</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-file-earmark-bar-graph-fill text-info" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Reports & Analytics</h5>
+                <p class="card-text">View comprehensive reports and analyze resource utilization.</p>
+                <a href="#" class="btn btn-outline-info">View Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="alert alert-info">
+            <h5 class="alert-heading">Getting Started</h5>
+            <p class="mb-0">Welcome to the Scheduling System. Start by setting up your master data (School Year, Teachers, Subjects, Classes, Rooms) and then create your timetable.</p>
+        </div>
+    </div>
+</div>

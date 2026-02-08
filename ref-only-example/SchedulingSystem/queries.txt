@@ -1,0 +1,36 @@
+﻿schedule comapre:
+
+select
+	*
+from
+	(select * from ScheduledLessons where timetableid = 1) as tt full outer join
+	(select * from ScheduledLessons where timetableid = 62) as tt4
+on
+	tt.lessonid = tt4.lessonid AND
+	tt.periodid = tt4.periodid AND
+	tt.DayOfWeek = tt4.DayOfWeek
+where tt.lessonid is null or tt4.lessonid is null
+
+select
+	ttA.*, 'A' as source
+from
+	(select * from ScheduledLessons where timetableid = 1) as ttA full outer join
+	(select * from ScheduledLessons where timetableid = 62) as ttB
+on
+	ttA.lessonid = ttB.lessonid AND
+	ttA.periodid = ttB.periodid AND
+	ttA.DayOfWeek = ttB.DayOfWeek
+where ttB.lessonid is null
+
+union 
+
+select
+	ttB.*, 'B' as source
+from
+	(select * from ScheduledLessons where timetableid = 1) as ttA full outer join
+	(select * from ScheduledLessons where timetableid = 62) as ttB
+on
+	ttA.lessonid = ttB.lessonid AND
+	ttA.periodid = ttB.periodid AND
+	ttA.DayOfWeek = ttB.DayOfWeek
+where ttA.lessonid is null

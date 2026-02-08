@@ -1,0 +1,99 @@
+@using ReportingSystem.Models
+@using ReportingSystem.Services
+@model DrillDownNode
+
+@{
+    var report = Model.Report;
+    var hasChildren = Model.Children.Any();
+    var depthBadge = Model.Depth switch
+    {
+        0 => ("bg-dark", "Root"),
+        1 => ("bg-warning text-dark", "L1"),
+        2 => ("bg-info", "L2"),
+        3 => ("bg-success", "L3"),
+        _ => ("bg-secondary", $"L{Model.Depth}")
+    };
+    var typeBadge = report.ReportType switch
+    {
+        ReportType.ExecutiveSummary => "bg-dark",
+        ReportType.Summary => "bg-warning text-dark",
+        _ => "bg-info"
+    };
+}
+
+@if (Model.Depth > 0)
+{
+    <div class="drill-down-node border-start border-2 ps-3 mb-2" style="margin-left: @(Model.Depth * 16)px;">
+        <div class="d-flex align-items-center py-1">
+            @if (hasChildren)
+            {
+                <a href="javascript:void(0)" onclick="toggleDrillDown(@report.Id)" class="text-decoration-none me-1">
+                    <i id="dd-icon-@report.Id" class="bi bi-chevron-right"></i>
+                </a>
+            }
+            else
+            {
+                <span class="me-1" style="width:16px;display:inline-block;"></span>
+            }
+
+            <span class="badge @depthBadge.Item1 me-2">@depthBadge.Item2</span>
+            <span class="badge @typeBadge me-2">@report.ReportType</span>
+
+            <a asp-page="Details" asp-route-id="@report.Id" class="text-decoration-none fw-semibold me-2">
+                @report.Title
+            </a>
+
+            <small class="text-muted me-2">@report.Committee.Name</small>
+            <small class="text-muted me-2">by @report.Author.Name</small>
+            <small class="text-muted">@report.CreatedAt.ToString("yyyy-MM-dd")</small>
+
+            <a asp-page="DrillDown" asp-route-id="@report.Id" class="btn btn-sm btn-outline-secondary ms-auto" title="Drill into this report">
+                <i class="bi bi-diagram-2"></i>
+            </a>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Annotation))
+        {
+            <div class="ms-4 mb-1">
+                <small class="fst-italic text-muted">
+                    <i class="bi bi-chat-left-quote"></i> @Model.Annotation
+                </small>
+            </div>
+        }
+
+        @if (hasChildren)
+        {
+            <div id="dd-children-@report.Id" class="d-none">
+                @foreach (var child in Model.Children)
+                {
+                    @await Html.PartialAsync("_DrillDownNode", child)
+                }
+            </div>
+        }
+    </div>
+}
+else
+{
+    @* Root node — just render children *@
+    @foreach (var child in Model.Children)
+    {
+        @await Html.PartialAsync("_DrillDownNode", child)
+    }
+}
+
+@if (Model.Depth == 0)
+{
+    <script>
+        function toggleDrillDown(id) {
+            var el = document.getElementById('dd-children-' + id);
+            var icon = document.getElementById('dd-icon-' + id);
+            if (el) {
+                el.classList.toggle('d-none');
+                if (icon) {
+                    icon.classList.toggle('bi-chevron-right');
+                    icon.classList.toggle('bi-chevron-down');
+                }
+            }
+        }
+    </script>
+}

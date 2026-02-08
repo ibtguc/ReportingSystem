@@ -1,0 +1,268 @@
+@page
+@model SchedulingSystem.Pages.Admin.Timetables.DebugLessonMoveLiveModel
+@{
+    ViewData["Title"] = "Debug Lesson Move (Live)";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+}
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="bi bi-broadcast text-info"></i> Debug Lesson Move (Live)
+                </h2>
+                <a href="/Admin/Timetables/MoveLessons?id=@Model.TimetableId" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Move Lessons
+                </a>
+            </div>
+
+            <!-- Input Parameters Display -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-input-cursor-text"></i> Input Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong>Timetable ID:</strong>
+                                <span>@Model.TimetableId</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Selected Lesson IDs:</strong>
+                                <div>@string.Join(", ", Model.SelectedLessonIdsList)</div>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Algorithm:</strong>
+                                <span>@Model.Algorithm</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong>Max Depth (Un-fixed Lessons):</strong>
+                                <span>@Model.MaxDepth</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Max Time (Minutes):</strong>
+                                <span>@Model.MaxTimeMinutes</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Destination Slot:</strong>
+                                <span>
+                                    @if (!string.IsNullOrEmpty(Model.DestinationDay) && Model.DestinationPeriodId.HasValue && Model.DestinationPeriodId > 0)
+                                    {
+                                        @($"{Model.DestinationDay} - Period {Model.DestinationPeriodId}")
+                                    }
+                                    else
+                                    {
+                                        <text>Not specified (will try all slots)</text>
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Results Area -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <span class="spinner-border spinner-border-sm me-2" id="loadingSpinner"></span>
+                        <i class="bi bi-broadcast"></i> Live Results
+                        <small class="ms-2" id="statusText">Connecting...</small>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Status Messages -->
+                    <div id="statusMessages" class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Initializing connection...
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="row mb-4" id="statisticsArea" style="display: none;">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Solutions Found</h6>
+                                    <h3 class="mb-0" id="solutionCount">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Elapsed Time</h6>
+                                    <h3 class="mb-0"><span id="elapsedTime">0</span>ms</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Status</h6>
+                                    <h3 class="mb-0" id="algorithmStatus">Running...</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Solutions Container -->
+                    <div id="solutionsContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden session ID -->
+<input type="hidden" id="sessionId" value="@Model.SessionId" />
+
+<script>
+    const sessionId = document.getElementById('sessionId').value;
+    let solutionCount = 0;
+
+    // Initialize SignalR connection
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/debugRecursive")
+        .withAutomaticReconnect()
+        .build();
+
+    // Handle connection events
+    connection.on("Joined", (sid) => {
+        console.log("Joined session:", sid);
+        updateStatus("Connected", "success");
+
+        // Start the algorithm
+        startAlgorithm();
+    });
+
+    connection.on("AlgorithmStarted", (data) => {
+        console.log("Algorithm started:", data);
+        updateStatus("Algorithm running...", "info");
+        document.getElementById('statisticsArea').style.display = 'block';
+    });
+
+    connection.on("SolutionFound", (data) => {
+        console.log("Solution found:", data);
+        solutionCount++;
+
+        // Update statistics
+        document.getElementById('solutionCount').textContent = solutionCount;
+        document.getElementById('elapsedTime').textContent = data.foundAtMs;
+
+        // Add solution card
+        addSolutionCard(data);
+    });
+
+    connection.on("AlgorithmCompleted", (data) => {
+        console.log("Algorithm completed:", data);
+        document.getElementById('loadingSpinner').style.display = 'none';
+
+        if (data.success) {
+            updateStatus(`Completed! Found ${data.solutionCount} solution(s) in ${data.elapsedMs}ms`, "success");
+            document.getElementById('algorithmStatus').textContent = `Completed (${data.elapsedMs}ms)`;
+        } else {
+            updateStatus(`Completed: ${data.message}`, "warning");
+            document.getElementById('algorithmStatus').textContent = "Completed - No solutions";
+        }
+    });
+
+    connection.on("AlgorithmError", (data) => {
+        console.error("Algorithm error:", data);
+        document.getElementById('loadingSpinner').style.display = 'none';
+        updateStatus(`Error: ${data.error}`, "danger");
+        document.getElementById('algorithmStatus').textContent = "Error";
+    });
+
+    // Start connection
+    connection.start()
+        .then(() => {
+            console.log("SignalR connected");
+            return connection.invoke("JoinSession", sessionId);
+        })
+        .catch(err => {
+            console.error("SignalR connection error:", err);
+            updateStatus("Connection failed: " + err.toString(), "danger");
+        });
+
+    function updateStatus(message, alertClass) {
+        const statusDiv = document.getElementById('statusMessages');
+        statusDiv.className = `alert alert-${alertClass}`;
+        statusDiv.innerHTML = `<i class="bi bi-info-circle"></i> ${message}`;
+        document.getElementById('statusText').textContent = message;
+    }
+
+    async function startAlgorithm() {
+        try {
+            const response = await fetch('?handler=Start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify(sessionId)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to start algorithm');
+            }
+
+            const result = await response.json();
+            console.log("Algorithm start result:", result);
+        } catch (error) {
+            console.error("Error starting algorithm:", error);
+            updateStatus("Failed to start algorithm: " + error.message, "danger");
+        }
+    }
+
+    function addSolutionCard(data) {
+        const container = document.getElementById('solutionsContainer');
+
+        const card = document.createElement('div');
+        card.className = 'card mb-3 border-success';
+        card.innerHTML = `
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-check-circle-fill"></i> Solution #${data.solutionNumber}
+                    <small class="float-end">Found at ${data.foundAtMs}ms</small>
+                </h6>
+            </div>
+            <div class="card-body">
+                <h6>Movements Required:</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Lesson ID</th>
+                                <th>Description</th>
+                                <th>From Slot</th>
+                                <th>To Slot</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.movements.map(m => `
+                                <tr>
+                                    <td>${m.lessonId}</td>
+                                    <td>${m.lessonDescription}</td>
+                                    <td><span class="badge bg-danger">${m.fromSlot}</span></td>
+                                    <td><span class="badge bg-success">${m.toSlot}</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(card);
+
+        // Scroll to the new solution
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+</script>
