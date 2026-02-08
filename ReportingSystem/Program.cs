@@ -29,6 +29,8 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<MagicLinkService>();
 builder.Services.AddScoped<DatabaseBackupService>();
+builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<ExportService>();
 
 // Register background service for daily automatic backups
 builder.Services.AddHostedService<DailyBackupHostedService>();
@@ -103,7 +105,6 @@ using (var scope = app.Services.CreateScope())
         // Seed the database with initial data
         logger.LogInformation("Seeding database with initial data...");
         await SeedData.InitializeAsync(context);
-        await UserSeeder.SeedAdminUsersAsync(context);
         logger.LogInformation("Database seeding completed.");
     }
     catch (Exception ex)

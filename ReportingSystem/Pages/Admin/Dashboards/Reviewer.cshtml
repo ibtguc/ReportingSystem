@@ -1,0 +1,491 @@
+@page
+@model ReportingSystem.Pages.Admin.Dashboards.ReviewerModel
+@using ReportingSystem.Models
+@{
+    ViewData["Title"] = "Reviewer Dashboard";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-clipboard-check"></i> Reviewer Dashboard</h2>
+            <p class="text-muted">
+                Review workload and completion statistics
+                @if (Model.CurrentUser != null)
+                {
+                    <span class="badge bg-secondary ms-2">@Model.CurrentUser.Name</span>
+                }
+            </p>
+        </div>
+        <div class="col-auto">
+            <a asp-page="/Admin/Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Main Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-warning">
+                <div class="card-body text-center">
+                    <div class="display-4 text-warning">@Model.Data.PendingReviewCount</div>
+                    <div class="text-muted">Pending Reviews</div>
+                    <small class="text-secondary">Awaiting action</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-body text-center">
+                    <div class="display-4 text-success">@Model.Data.TotalReviewsCompleted</div>
+                    <div class="text-muted">Reviews Completed</div>
+                    <small class="text-secondary">All time</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-info">
+                <div class="card-body text-center">
+                    <div class="display-4 text-info">@Model.Data.ReviewsLast30Days</div>
+                    <div class="text-muted">Last 30 Days</div>
+                    <small class="text-secondary">Recent reviews</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-primary">
+                <div class="card-body text-center">
+                    <div class="display-4 text-primary">@Model.Data.MyApprovalRate%</div>
+                    <div class="text-muted">Approval Rate</div>
+                    <small class="text-secondary">Your average</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Reviews Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> Reports Pending Review</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.PendingReviews.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Report</th>
+                                        <th>Period</th>
+                                        <th>Submitted By</th>
+                                        <th>Org Unit</th>
+                                        <th>Submitted At</th>
+                                        <th>Days Pending</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var report in Model.Data.PendingReviews)
+                                    {
+                                        <tr class="@(report.DaysPending > 5 ? "table-danger" : report.DaysPending > 2 ? "table-warning" : "")">
+                                            <td>@report.TemplateName</td>
+                                            <td>@report.PeriodName</td>
+                                            <td>@report.SubmittedBy</td>
+                                            <td>@report.OrgUnitName</td>
+                                            <td>@(report.SubmittedAt?.ToString("MMM dd, yyyy") ?? "N/A")</td>
+                                            <td>
+                                                @if (report.DaysPending > 5)
+                                                {
+                                                    <span class="badge bg-danger">@report.DaysPending days</span>
+                                                }
+                                                else if (report.DaysPending > 2)
+                                                {
+                                                    <span class="badge bg-warning text-dark">@report.DaysPending days</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-info">@report.DaysPending day(s)</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge @ReportStatus.BadgeClass(report.Status)">
+                                                    @ReportStatus.DisplayName(report.Status)
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a asp-page="/Admin/Reports/View" asp-route-id="@report.ReportId"
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-eye"></i> Review
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-check-circle display-3 text-success"></i>
+                            <h4 class="mt-3 text-muted">All Caught Up!</h4>
+                            <p class="text-muted">No reports pending your review.</p>
+                        </div>
+                    }
+                </div>
+                @if (Model.Data.AssignedReports > Model.Data.PendingReviewCount)
+                {
+                    <div class="card-footer">
+                        <span class="text-muted">
+                            <i class="bi bi-info-circle"></i> You have @Model.Data.AssignedReports total assigned reports.
+                        </span>
+                        <a asp-page="/Admin/Reports/Index" class="btn btn-sm btn-outline-warning float-end">
+                            View All Assigned
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-8 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Weekly Review Performance</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="weeklyPerformanceChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Review Outcomes</h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    @if (Model.Data.ReviewsByOutcome.Any())
+                    {
+                        <canvas id="reviewOutcomesChart" height="200"></canvas>
+                    }
+                    else
+                    {
+                        <div class="text-center py-3">
+                            <i class="bi bi-inbox display-4 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">No completed reviews yet</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workload Distribution -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Workload by Org Unit</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Data.WorkloadByOrgUnit.Any())
+                    {
+                        <canvas id="workloadChart" height="200"></canvas>
+                    }
+                    else
+                    {
+                        <div class="text-center py-3">
+                            <i class="bi bi-inbox display-6 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">No pending reviews</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-award"></i> Review Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 text-center mb-3">
+                            <div class="border rounded p-3">
+                                <div class="h2 mb-0 text-success">@Model.Data.TotalReviewsCompleted</div>
+                                <small class="text-muted">Total Completed</small>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center mb-3">
+                            <div class="border rounded p-3">
+                                <div class="h2 mb-0 text-primary">@Model.Data.MyApprovalRate%</div>
+                                <small class="text-muted">Approval Rate</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <div class="border rounded p-3">
+                                <div class="h2 mb-0 text-info">@Model.Data.ReviewsLast30Days</div>
+                                <small class="text-muted">Last 30 Days</small>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="border rounded p-3">
+                                <div class="h2 mb-0 text-warning">@Model.Data.PendingReviewCount</div>
+                                <small class="text-muted">Pending</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow & Activity -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> My Workflow Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4 text-center">
+                            <div class="h3 mb-0 text-info">@Model.Data.MyCommentsCount</div>
+                            <small class="text-muted">Comments</small>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="h3 mb-0 text-success">@Model.Data.MyFeedbackCount</div>
+                            <small class="text-muted">Feedback Given</small>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="h3 mb-0 text-warning">@Model.Data.PendingConfirmationTags</div>
+                            <small class="text-muted">Confirmations</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a asp-page="/Admin/Workflow/Comments/Index" class="btn btn-sm btn-outline-secondary me-1">
+                        Comments
+                    </a>
+                    <a asp-page="/Admin/Downward/Feedback/Index" class="btn btn-sm btn-outline-secondary me-1">
+                        Feedback
+                    </a>
+                    <a asp-page="/Admin/Workflow/Confirmations/Index" class="btn btn-sm btn-outline-secondary">
+                        Confirmations
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Performance Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <div class="h3 mb-0 text-primary">@Model.Data.MyApprovalRate%</div>
+                                <small class="text-muted">Approval Rate</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <div class="h3 mb-0 text-info">@Model.Data.ReviewsLast30Days</div>
+                                <small class="text-muted">Reviews (30 days)</small>
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="d-flex justify-content-between text-muted small">
+                        <span>Total Assigned:</span>
+                        <strong>@Model.Data.AssignedReports</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small">
+                        <span>Completed:</span>
+                        <strong>@Model.Data.TotalReviewsCompleted</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small">
+                        <span>Pending:</span>
+                        <strong class="text-warning">@Model.Data.PendingReviewCount</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Reports/Index" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-file-earmark-text"></i> View All Reports
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Downward/Feedback/Index" class="btn btn-outline-info w-100">
+                                <i class="bi bi-chat-dots"></i> Give Feedback
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Workflow/Comments/Index" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-chat-left-text"></i> View Comments
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-page="/Admin/Aggregation/Summary/Index" class="btn btn-outline-success w-100">
+                                <i class="bi bi-bar-chart-line"></i> View Aggregation
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Weekly Performance Chart (Line)
+            const weeklyCtx = document.getElementById('weeklyPerformanceChart').getContext('2d');
+            new Chart(weeklyCtx, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PerformanceData.WeekLabels)),
+                    datasets: [
+                        {
+                            label: 'Total Reviews',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PerformanceData.ReviewsPerWeek)),
+                            backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                            borderColor: 'rgb(13, 110, 253)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Approved',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PerformanceData.ApprovalsPerWeek)),
+                            backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                            borderColor: 'rgb(25, 135, 84)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Rejected',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PerformanceData.RejectionsPerWeek)),
+                            backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                            borderColor: 'rgb(220, 53, 69)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Review Outcomes Chart (Doughnut)
+            const outcomesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Data.ReviewsByOutcome));
+            if (outcomesData && outcomesData.length > 0) {
+                const outcomesCtx = document.getElementById('reviewOutcomesChart').getContext('2d');
+                const statusColors = {
+                    'draft': '#6c757d',
+                    'submitted': '#0d6efd',
+                    'under_review': '#0dcaf0',
+                    'approved': '#198754',
+                    'rejected': '#dc3545',
+                    'revision_requested': '#fd7e14'
+                };
+                new Chart(outcomesCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: outcomesData.map(s => s.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())),
+                        datasets: [{
+                            data: outcomesData.map(s => s.count),
+                            backgroundColor: outcomesData.map(s => statusColors[s.status] || '#6c757d'),
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 8
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Workload by Org Unit Chart (Horizontal Bar)
+            const workloadData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Data.WorkloadByOrgUnit));
+            if (workloadData && workloadData.length > 0) {
+                const workloadCtx = document.getElementById('workloadChart').getContext('2d');
+                new Chart(workloadCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: workloadData.map(w => w.status),
+                        datasets: [{
+                            label: 'Pending Reviews',
+                            data: workloadData.map(w => w.count),
+                            backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                            borderColor: 'rgb(255, 193, 7)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

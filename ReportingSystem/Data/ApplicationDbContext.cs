@@ -56,6 +56,9 @@ public class ApplicationDbContext : DbContext
     // Backup DbSets
     public DbSet<DatabaseBackup> DatabaseBackups { get; set; }
 
+    // Report Builder DbSets (Phase 8)
+    public DbSet<SavedReport> SavedReports { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -606,6 +609,22 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => e.Type);
             entity.HasIndex(e => e.IsAutomaticDailyBackup);
+        });
+
+        // Configure SavedReport (Phase 8)
+        modelBuilder.Entity<SavedReport>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.CreatedById);
+            entity.HasIndex(e => e.ReportType);
+            entity.HasIndex(e => e.IsPublic);
+            entity.HasIndex(e => e.IsPinnedToDashboard);
+            entity.HasIndex(e => new { e.CreatedById, e.Name }).IsUnique();
+
+            entity.HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedById)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

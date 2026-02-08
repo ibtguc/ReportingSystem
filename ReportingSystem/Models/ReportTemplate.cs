@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ReportingSystem.Models;
 
@@ -77,6 +78,7 @@ public class ReportTemplate
     /// <summary>
     /// Get ordered fields for display.
     /// </summary>
+    [NotMapped]
     public IEnumerable<ReportField> OrderedFields =>
         Fields.OrderBy(f => f.SectionOrder).ThenBy(f => f.FieldOrder);
 }
