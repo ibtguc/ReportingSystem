@@ -1,11 +1,21 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using ReportingSystem.Services;
 
 namespace ReportingSystem.Pages.Admin;
 
 public class DashboardModel : PageModel
 {
-    public void OnGet()
+    private readonly OrganizationService _orgService;
+
+    public DashboardModel(OrganizationService orgService)
     {
-        // Dashboard is a navigation hub - no data loading required for Phase 1
+        _orgService = orgService;
+    }
+
+    public (int committees, int users, int memberships, int shadows) Stats { get; set; }
+
+    public async Task OnGetAsync()
+    {
+        Stats = await _orgService.GetOrganizationStatsAsync();
     }
 }

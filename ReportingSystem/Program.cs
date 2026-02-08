@@ -29,6 +29,7 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<MagicLinkService>();
 builder.Services.AddScoped<DatabaseBackupService>();
+builder.Services.AddScoped<OrganizationService>();
 
 // Register background service for daily automatic backups
 builder.Services.AddHostedService<DailyBackupHostedService>();
@@ -80,8 +81,8 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdministratorOnly", policy =>
-        policy.RequireRole("Administrator"));
+    options.AddPolicy("SystemAdminOnly", policy =>
+        policy.RequireRole("SystemAdmin"));
 });
 
 var app = builder.Build();
@@ -103,6 +104,7 @@ using (var scope = app.Services.CreateScope())
         // Seed the database with initial data
         logger.LogInformation("Seeding database with initial data...");
         await SeedData.InitializeAsync(context);
+        await OrganizationSeeder.SeedAsync(context);
         await UserSeeder.SeedAdminUsersAsync(context);
         logger.LogInformation("Database seeding completed.");
     }

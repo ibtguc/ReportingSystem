@@ -26,14 +26,22 @@
                             <a class="nav-link" asp-area="" asp-page="/Admin/Dashboard">Home</a>
                         </li>
                         <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="orgDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                Organization
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="orgDropdown">
+                                <li><a class="dropdown-item" asp-page="/Admin/Organization/Index"><i class="bi bi-diagram-3-fill"></i> Org Tree</a></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/Organization/Committees/Index"><i class="bi bi-people-fill"></i> Committees</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 Administration
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                                <li><h6 class="dropdown-header">System</h6></li>
                                 <li><a class="dropdown-item" asp-page="/Admin/Users/Index"><i class="bi bi-people-fill"></i> Users</a></li>
-                                <li><a class="dropdown-item" asp-page="/Admin/Dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
                                 <li><a class="dropdown-item" asp-page="/Admin/Backup/Index"><i class="bi bi-database-fill-gear"></i> Database Backups</a></li>
                             </ul>
                         </li>
@@ -64,7 +72,7 @@
             </div>
         </nav>
     </header>
-    <div class="container">
+    <div class="container-fluid px-4">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>

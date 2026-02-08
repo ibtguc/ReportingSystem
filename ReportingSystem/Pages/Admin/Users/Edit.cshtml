@@ -33,15 +33,20 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="User.Role" class="form-label"></label>
-                                <select asp-for="User.Role" class="form-select">
-                                    <option value="Administrator">Administrator</option>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="User.SystemRole" class="form-label">System Role</label>
+                                <select asp-for="User.SystemRole" class="form-select"
+                                        asp-items="Html.GetEnumSelectList<ReportingSystem.Models.SystemRole>()">
                                 </select>
-                                <span asp-validation-for="User.Role" class="text-danger"></span>
+                                <span asp-validation-for="User.SystemRole" class="text-danger"></span>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="User.Title" class="form-label">Job Title</label>
+                                <input asp-for="User.Title" class="form-control" placeholder="e.g. Director, Engineer" />
+                            </div>
+
+                            <div class="col-md-4 mb-3">
                                 <div class="form-check mt-4 pt-2">
                                     <input asp-for="User.IsActive" class="form-check-input" type="checkbox" />
                                     <label asp-for="User.IsActive" class="form-check-label"></label>

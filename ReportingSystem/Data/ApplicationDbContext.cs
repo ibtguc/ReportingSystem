@@ -3,9 +3,6 @@ using ReportingSystem.Models;
 
 namespace ReportingSystem.Data;
 
-/// <summary>
-/// Main database context for the reporting system
-/// </summary>
 public class ApplicationDbContext : DbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
@@ -13,14 +10,19 @@ public class ApplicationDbContext : DbContext
     {
     }
 
-    // Authentication DbSets
+    // Authentication
     public DbSet<User> Users { get; set; }
     public DbSet<MagicLink> MagicLinks { get; set; }
 
-    // Notification DbSets
+    // Organization
+    public DbSet<Committee> Committees { get; set; }
+    public DbSet<CommitteeMembership> CommitteeMemberships { get; set; }
+    public DbSet<ShadowAssignment> ShadowAssignments { get; set; }
+
+    // Notifications
     public DbSet<Notification> Notifications { get; set; }
 
-    // Backup DbSets
+    // Backup
     public DbSet<DatabaseBackup> DatabaseBackups { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -32,7 +34,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Email).IsUnique();
-            entity.HasIndex(e => e.Role);
+            entity.HasIndex(e => e.SystemRole);
             entity.HasIndex(e => e.IsActive);
         });
 
@@ -47,6 +49,55 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.User)
                 .WithMany(u => u.MagicLinks)
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Committee
+        modelBuilder.Entity<Committee>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.HierarchyLevel);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.Sector);
+            entity.HasOne(e => e.ParentCommittee)
+                .WithMany(e => e.SubCommittees)
+                .HasForeignKey(e => e.ParentCommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure CommitteeMembership
+        modelBuilder.Entity<CommitteeMembership>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.CommitteeId });
+            entity.HasIndex(e => e.CommitteeId);
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.CommitteeMemberships)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Committee)
+                .WithMany(c => c.Memberships)
+                .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ShadowAssignment
+        modelBuilder.Entity<ShadowAssignment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.PrincipalUserId, e.CommitteeId });
+            entity.HasIndex(e => e.ShadowUserId);
+            entity.HasOne(e => e.PrincipalUser)
+                .WithMany()
+                .HasForeignKey(e => e.PrincipalUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.ShadowUser)
+                .WithMany()
+                .HasForeignKey(e => e.ShadowUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Committee)
+                .WithMany(c => c.ShadowAssignments)
+                .HasForeignKey(e => e.CommitteeId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

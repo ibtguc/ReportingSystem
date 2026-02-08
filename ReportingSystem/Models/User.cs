@@ -2,9 +2,16 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ReportingSystem.Models;
 
+public enum SystemRole
+{
+    SystemAdmin,
+    Chairman,
+    ChairmanOffice,
+    CommitteeUser
+}
+
 /// <summary>
 /// User account for system access
-/// Currently supports administrators only
 /// </summary>
 public class User
 {
@@ -19,9 +26,18 @@ public class User
     [StringLength(100)]
     public string Name { get; set; } = string.Empty;
 
-    [Required]
-    [StringLength(50)]
-    public string Role { get; set; } = "Administrator"; // Administrator, Manager, Employee (future)
+    public SystemRole SystemRole { get; set; } = SystemRole.CommitteeUser;
+
+    [StringLength(100)]
+    public string? Title { get; set; }
+
+    [StringLength(20)]
+    public string? Phone { get; set; }
+
+    /// <summary>
+    /// Rank within Chairman's Office (1=senior/Chief of Staff, 4=junior). Null if not in Chairman's Office.
+    /// </summary>
+    public int? ChairmanOfficeRank { get; set; }
 
     public bool IsActive { get; set; } = true;
 
@@ -31,6 +47,7 @@ public class User
 
     // Navigation properties
     public ICollection<MagicLink> MagicLinks { get; set; } = new List<MagicLink>();
+    public ICollection<CommitteeMembership> CommitteeMemberships { get; set; } = new List<CommitteeMembership>();
 }
 
 /// <summary>

@@ -21,7 +21,6 @@ public class CreateModel : PageModel
     public IActionResult OnGet()
     {
         User.IsActive = true;
-        User.Role = "Administrator";
 
         return Page();
     }

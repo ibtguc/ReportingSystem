@@ -12,9 +12,8 @@ public static class SeedData
             return; // Database has been seeded
         }
 
-        // No domain-specific seed data for Phase 1
-        // Domain entities (ReportTemplates, OrganizationalUnits, etc.) will be
-        // seeded in later phases when those models are implemented.
+        // Domain-specific seeding is handled by OrganizationSeeder.SeedAsync()
+        // which creates the full organizational hierarchy from test data.
 
         await context.SaveChangesAsync();
     }

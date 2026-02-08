@@ -1,0 +1,135 @@
+@page
+@model ReportingSystem.Pages.Admin.Organization.Committees.IndexModel
+@{
+    ViewData["Title"] = "Committees";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-people-fill"></i> Committees</h2>
+            <p class="text-muted">Manage organizational committees across all hierarchy levels</p>
+        </div>
+        <div class="col-auto">
+            <a asp-page="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Committee
+            </a>
+            <a asp-page="../Index" class="btn btn-outline-secondary ms-1">
+                <i class="bi bi-diagram-3"></i> Org Tree
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Hierarchy Level</label>
+                    <select name="LevelFilter" class="form-select">
+                        <option value="">All Levels</option>
+                        <option value="TopLevel" selected="@(Model.LevelFilter == "TopLevel")">L0 - Top Level</option>
+                        <option value="Directors" selected="@(Model.LevelFilter == "Directors")">L1 - Directors</option>
+                        <option value="Functions" selected="@(Model.LevelFilter == "Functions")">L2 - Functions</option>
+                        <option value="Processes" selected="@(Model.LevelFilter == "Processes")">L3 - Processes</option>
+                        <option value="Tasks" selected="@(Model.LevelFilter == "Tasks")">L4 - Tasks</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sector</label>
+                    <select name="SectorFilter" class="form-select">
+                        <option value="">All Sectors</option>
+                        @foreach (var sector in Model.Committees.Where(c => c.Sector != null).Select(c => c.Sector).Distinct().OrderBy(s => s))
+                        {
+                            <option value="@sector" selected="@(Model.SectorFilter == sector)">@sector</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-outline-primary"><i class="bi bi-funnel"></i> Filter</button>
+                    <a asp-page="Index" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Committee Table -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            @if (!Model.Committees.Any())
+            {
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle"></i> No committees found matching the selected filters.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Level</th>
+                                <th>Sector</th>
+                                <th>Parent</th>
+                                <th>Members</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model.Committees)
+                            {
+                                var heads = c.Memberships.Where(m => m.Role == ReportingSystem.Models.CommitteeRole.Head && m.EffectiveTo == null).ToList();
+                                <tr>
+                                    <td>
+                                        <strong>@c.Name</strong>
+                                        @if (heads.Any())
+                                        {
+                                            <br /><small class="text-muted">Head(s): @string.Join(", ", heads.Select(h => h.User.Name))</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @{
+                                            var badge = c.HierarchyLevel switch {
+                                                ReportingSystem.Models.HierarchyLevel.TopLevel => "bg-danger",
+                                                ReportingSystem.Models.HierarchyLevel.Directors => "bg-warning text-dark",
+                                                ReportingSystem.Models.HierarchyLevel.Functions => "bg-info",
+                                                ReportingSystem.Models.HierarchyLevel.Processes => "bg-success",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @badge">@c.HierarchyLevel</span>
+                                    </td>
+                                    <td><small>@(c.Sector ?? "-")</small></td>
+                                    <td><small>@(c.ParentCommittee?.Name ?? "-")</small></td>
+                                    <td>@c.Memberships.Count(m => m.EffectiveTo == null)</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-page="Details" asp-route-id="@c.Id" class="btn btn-outline-info" title="Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-page="Edit" asp-route-id="@c.Id" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-page="Delete" asp-route-id="@c.Id" class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
