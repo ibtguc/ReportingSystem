@@ -94,7 +94,7 @@ public class IndexModel : PageModel
                 Title = r.Title,
                 Author = r.Author?.Name ?? "Unknown",
                 Committee = r.Committee?.Name ?? "Unknown",
-                ArchivedDate = r.UpdatedAt,
+                ArchivedDate = r.UpdatedAt ?? r.CreatedAt,
                 CreatedDate = r.CreatedAt,
                 Url = $"/Reports/Details/{r.Id}",
                 SubType = r.ReportType.ToString()
@@ -128,7 +128,7 @@ public class IndexModel : PageModel
                 Title = d.Title,
                 Author = d.Issuer?.Name ?? "Unknown",
                 Committee = d.TargetCommittee?.Name ?? "Unknown",
-                ArchivedDate = d.UpdatedAt,
+                ArchivedDate = d.UpdatedAt ?? d.CreatedAt,
                 CreatedDate = d.CreatedAt,
                 Url = $"/Directives/Details/{d.Id}",
                 SubType = d.DirectiveType.ToString()

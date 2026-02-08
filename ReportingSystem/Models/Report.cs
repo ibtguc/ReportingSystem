@@ -54,6 +54,11 @@ public class Report
     [StringLength(1000)]
     public string? SpecialRemarks { get; set; }
 
+    /// <summary>
+    /// Optional template used to create this report.
+    /// </summary>
+    public int? TemplateId { get; set; }
+
     public bool IsConfidential { get; set; } = false;
 
     public DateTime? SubmittedAt { get; set; }
@@ -75,6 +80,7 @@ public class Report
     // Navigation properties
     public User Author { get; set; } = null!;
     public Committee Committee { get; set; } = null!;
+    public ReportTemplate? Template { get; set; }
     public Report? OriginalReport { get; set; }
     public ICollection<Report> Revisions { get; set; } = new List<Report>();
     public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();

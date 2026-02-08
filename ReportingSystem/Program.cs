@@ -45,6 +45,7 @@ builder.Services.AddScoped<ConfidentialityService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<ReportTemplateService>();
 
 // Register background service for daily automatic backups
 builder.Services.AddHostedService<DailyBackupHostedService>();
@@ -121,6 +122,11 @@ using (var scope = app.Services.CreateScope())
         await SeedData.InitializeAsync(context);
         await OrganizationSeeder.SeedAsync(context);
         await UserSeeder.SeedAdminUsersAsync(context);
+
+        // Seed default report templates
+        var templateService = services.GetRequiredService<ReportTemplateService>();
+        await templateService.SeedDefaultTemplatesAsync();
+
         logger.LogInformation("Database seeding completed.");
     }
     catch (Exception ex)

@@ -176,7 +176,7 @@ public class ConfidentialityService
         // FR-4.5.1.4: Higher hierarchy levels (lower numeric value) can access
         // The item was marked at MarkerCommitteeLevel; users at strictly higher levels can access
         var userCommitteeLevels = user.CommitteeMemberships
-            .Where(cm => cm.IsActive)
+            .Where(cm => cm.EffectiveTo == null)
             .Select(cm => cm.Committee.HierarchyLevel)
             .ToList();
 
@@ -187,7 +187,7 @@ public class ConfidentialityService
         // FR-4.5.3: Cross-committee access via membership — if user is a member
         // of the same committee where the item was marked, they have access
         var isMarkerCommitteeMember = user.CommitteeMemberships
-            .Any(cm => cm.CommitteeId == marking.MarkerCommitteeId && cm.IsActive);
+            .Any(cm => cm.CommitteeId == marking.MarkerCommitteeId && cm.EffectiveTo == null);
         if (isMarkerCommitteeMember) return true;
 
         return false;
@@ -247,12 +247,12 @@ public class ConfidentialityService
 
             // Hierarchy check
             var userLevels = user.CommitteeMemberships
-                .Where(cm => cm.IsActive)
+                .Where(cm => cm.EffectiveTo == null)
                 .Select(cm => cm.Committee.HierarchyLevel)
                 .ToList();
 
             var isSameCommitteeMember = user.CommitteeMemberships
-                .Any(cm => cm.CommitteeId == committeeId && cm.IsActive);
+                .Any(cm => cm.CommitteeId == committeeId && cm.EffectiveTo == null);
 
             if (isSameCommitteeMember || userLevels.Any(l => l < committee.HierarchyLevel))
                 retainAccess.Add(user);

@@ -66,10 +66,38 @@
                             </div>
                         </div>
 
-                        <!-- Body Content -->
+                        <!-- Body Content with Rich Text Editor -->
                         <div class="mb-3">
                             <label asp-for="Report.BodyContent" class="form-label fw-semibold">Report Body *</label>
-                            <textarea asp-for="Report.BodyContent" class="form-control" rows="12"></textarea>
+                            <div id="editor-toolbar">
+                                <span class="ql-formats">
+                                    <select class="ql-header">
+                                        <option value="1"></option>
+                                        <option value="2"></option>
+                                        <option value="3"></option>
+                                        <option selected></option>
+                                    </select>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-bold"></button>
+                                    <button class="ql-italic"></button>
+                                    <button class="ql-underline"></button>
+                                    <button class="ql-strike"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-list" value="ordered"></button>
+                                    <button class="ql-list" value="bullet"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-blockquote"></button>
+                                    <button class="ql-link"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-clean"></button>
+                                </span>
+                            </div>
+                            <div id="editor-container" style="min-height: 250px;"></div>
+                            <textarea asp-for="Report.BodyContent" id="bodyContentField" class="d-none"></textarea>
                             <span asp-validation-for="Report.BodyContent" class="text-danger"></span>
                         </div>
 
@@ -134,8 +162,42 @@
     </div>
 </div>
 
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+    <style>
+        .ql-editor { min-height: 200px; font-size: 1rem; }
+        .ql-toolbar.ql-snow { border-radius: 0.375rem 0.375rem 0 0; }
+        .ql-container.ql-snow { border-radius: 0 0 0.375rem 0.375rem; }
+    </style>
+}
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var quill = new Quill('#editor-container', {
+                theme: 'snow',
+                modules: {
+                    toolbar: '#editor-toolbar'
+                }
+            });
+
+            // Load existing content
+            var existingContent = document.getElementById('bodyContentField').value;
+            if (existingContent) {
+                quill.root.innerHTML = existingContent;
+            }
+
+            // Sync editor content to hidden textarea before form submit
+            var form = document.querySelector('form');
+            form.addEventListener('submit', function () {
+                var html = quill.root.innerHTML;
+                if (html === '<p><br></p>') html = '';
+                document.getElementById('bodyContentField').value = html;
+            });
+        });
+    </script>
 }
 
 @functions {

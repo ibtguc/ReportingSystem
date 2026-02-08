@@ -21,6 +21,7 @@ public class ApplicationDbContext : DbContext
 
     // Reporting
     public DbSet<Report> Reports { get; set; }
+    public DbSet<ReportTemplate> ReportTemplates { get; set; }
     public DbSet<Attachment> Attachments { get; set; }
     public DbSet<ReportStatusHistory> ReportStatusHistories { get; set; }
     public DbSet<ReportSourceLink> ReportSourceLinks { get; set; }
@@ -125,6 +126,24 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // Configure ReportTemplate
+        modelBuilder.Entity<ReportTemplate>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.CommitteeId);
+            entity.HasIndex(e => e.HierarchyLevel);
+            entity.HasIndex(e => e.ReportType);
+            entity.HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Committee)
+                .WithMany()
+                .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         // Configure Report
         modelBuilder.Entity<Report>(entity =>
         {
@@ -141,6 +160,10 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Committee)
                 .WithMany()
                 .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Template)
+                .WithMany()
+                .HasForeignKey(e => e.TemplateId)
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.OriginalReport)
                 .WithMany(r => r.Revisions)
