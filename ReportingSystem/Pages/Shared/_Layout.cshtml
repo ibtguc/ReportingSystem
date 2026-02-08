@@ -60,6 +60,18 @@
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="meetingsDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                Meetings
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="meetingsDropdown">
+                                <li><a class="dropdown-item" asp-page="/Meetings/Index"><i class="bi bi-calendar-event"></i> All Meetings</a></li>
+                                <li><a class="dropdown-item" asp-page="/Meetings/Create"><i class="bi bi-calendar-plus"></i> Schedule Meeting</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-page="/Meetings/ActionItems"><i class="bi bi-list-task"></i> Action Items</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 Administration

@@ -29,6 +29,13 @@ public class ApplicationDbContext : DbContext
     public DbSet<Directive> Directives { get; set; }
     public DbSet<DirectiveStatusHistory> DirectiveStatusHistories { get; set; }
 
+    // Meetings
+    public DbSet<Meeting> Meetings { get; set; }
+    public DbSet<MeetingAgendaItem> MeetingAgendaItems { get; set; }
+    public DbSet<MeetingAttendee> MeetingAttendees { get; set; }
+    public DbSet<MeetingDecision> MeetingDecisions { get; set; }
+    public DbSet<ActionItem> ActionItems { get; set; }
+
     // Notifications
     public DbSet<Notification> Notifications { get; set; }
 
@@ -226,6 +233,100 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.ChangedBy)
                 .WithMany()
                 .HasForeignKey(e => e.ChangedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Meeting
+        modelBuilder.Entity<Meeting>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.CommitteeId, e.Status });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.ScheduledAt);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasOne(e => e.Committee)
+                .WithMany()
+                .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Moderator)
+                .WithMany()
+                .HasForeignKey(e => e.ModeratorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure MeetingAgendaItem
+        modelBuilder.Entity<MeetingAgendaItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.MeetingId);
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.AgendaItems)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Presenter)
+                .WithMany()
+                .HasForeignKey(e => e.PresenterId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LinkedReport)
+                .WithMany()
+                .HasForeignKey(e => e.LinkedReportId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure MeetingAttendee
+        modelBuilder.Entity<MeetingAttendee>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.MeetingId, e.UserId }).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.Attendees)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure MeetingDecision
+        modelBuilder.Entity<MeetingDecision>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.MeetingId);
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.Decisions)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.AgendaItem)
+                .WithMany()
+                .HasForeignKey(e => e.AgendaItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ActionItem
+        modelBuilder.Entity<ActionItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.AssignedToId, e.Status });
+            entity.HasIndex(e => e.MeetingId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Deadline);
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.ActionItems)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.MeetingDecision)
+                .WithMany(d => d.ActionItems)
+                .HasForeignKey(e => e.MeetingDecisionId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.AssignedTo)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedToId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.AssignedBy)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedById)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

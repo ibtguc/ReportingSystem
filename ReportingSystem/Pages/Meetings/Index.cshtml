@@ -1,0 +1,188 @@
+@page
+@model ReportingSystem.Pages.Meetings.IndexModel
+@{
+    ViewData["Title"] = "Meetings";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-calendar-event"></i> Meetings</h2>
+            <p class="text-muted mb-0">Scheduled meetings and minutes management</p>
+        </div>
+        @if (Model.CanSchedule)
+        {
+            <a asp-page="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Schedule Meeting
+            </a>
+        }
+    </div>
+
+    <!-- Status Pipeline -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-primary shadow-sm">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">@Model.ScheduledCount</h4>
+                    <small class="text-muted">Scheduled</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-warning shadow-sm">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">@Model.InProgressCount</h4>
+                    <small class="text-muted">In Progress / Minutes Entry</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-info shadow-sm">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">@Model.MinutesReviewCount</h4>
+                    <small class="text-muted">Awaiting Confirmation</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-success shadow-sm">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">@Model.FinalizedCount</h4>
+                    <small class="text-muted">Finalized</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select asp-for="Status" class="form-select">
+                        <option value="">All Statuses</option>
+                        @foreach (var s in Enum.GetValues<ReportingSystem.Models.MeetingStatus>())
+                        {
+                            <option value="@s">@s</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-4">
+                        <input asp-for="ShowMine" class="form-check-input" />
+                        <label asp-for="ShowMine" class="form-check-label">My Meetings</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-4">
+                        <input asp-for="IncludePast" class="form-check-input" />
+                        <label asp-for="IncludePast" class="form-check-label">Include Past</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a asp-page="Index" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Meetings Table -->
+    @if (Model.Meetings.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Title</th>
+                            <th>Committee</th>
+                            <th>Moderator</th>
+                            <th>Scheduled</th>
+                            <th>Duration</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Attendees</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var meeting in Model.Meetings)
+                        {
+                            var isPast = meeting.ScheduledAt < DateTime.UtcNow && meeting.Status == ReportingSystem.Models.MeetingStatus.Scheduled;
+                            <tr class="@(isPast ? "table-secondary" : "")">
+                                <td>
+                                    <a asp-page="Details" asp-route-id="@meeting.Id" class="text-decoration-none fw-bold">
+                                        @meeting.Title
+                                    </a>
+                                    @if (meeting.RecurrencePattern != ReportingSystem.Models.RecurrencePattern.None)
+                                    {
+                                        <span class="badge bg-secondary ms-1"><i class="bi bi-arrow-repeat"></i> @meeting.RecurrencePattern</span>
+                                    }
+                                </td>
+                                <td>@meeting.Committee.Name</td>
+                                <td>@meeting.Moderator.Name</td>
+                                <td>@meeting.ScheduledAt.ToString("MMM dd, yyyy HH:mm")</td>
+                                <td>@meeting.DurationMinutes min</td>
+                                <td><span class="badge bg-secondary">@meeting.MeetingType</span></td>
+                                <td>
+                                    @{
+                                        var statusClass = meeting.Status switch
+                                        {
+                                            ReportingSystem.Models.MeetingStatus.Scheduled => "bg-primary",
+                                            ReportingSystem.Models.MeetingStatus.InProgress => "bg-warning text-dark",
+                                            ReportingSystem.Models.MeetingStatus.MinutesEntry => "bg-warning text-dark",
+                                            ReportingSystem.Models.MeetingStatus.MinutesReview => "bg-info",
+                                            ReportingSystem.Models.MeetingStatus.Finalized => "bg-success",
+                                            ReportingSystem.Models.MeetingStatus.Cancelled => "bg-danger",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @statusClass">@meeting.Status</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-people"></i> @meeting.Attendees.Count
+                                    </span>
+                                </td>
+                                <td>
+                                    <a asp-page="Details" asp-route-id="@meeting.Id" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No meetings found matching your criteria.
+        </div>
+    }
+</div>

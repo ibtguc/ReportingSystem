@@ -1,0 +1,190 @@
+@page
+@model ReportingSystem.Pages.Meetings.ActionItemsModel
+@{
+    ViewData["Title"] = "Action Items";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-list-task"></i> Action Items</h2>
+            <p class="text-muted mb-0">Track action items across all meetings</p>
+        </div>
+        <a asp-page="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Meetings
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select asp-for="Status" class="form-select">
+                        <option value="">All Statuses</option>
+                        @foreach (var s in Enum.GetValues<ReportingSystem.Models.ActionItemStatus>())
+                        {
+                            <option value="@s">@s</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-4">
+                        <input asp-for="ShowMine" class="form-check-input" />
+                        <label asp-for="ShowMine" class="form-check-label">My Items</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-funnel"></i> Filter</button>
+                </div>
+                <div class="col-md-2">
+                    <a asp-page="ActionItems" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i> Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Overdue Alert -->
+    @if (Model.OverdueItems.Any())
+    {
+        <div class="alert alert-danger">
+            <h5><i class="bi bi-exclamation-triangle-fill"></i> @Model.OverdueItems.Count Overdue Action Item(s)</h5>
+            <ul class="mb-0">
+                @foreach (var item in Model.OverdueItems.Take(5))
+                {
+                    var daysOverdue = (DateTime.UtcNow - item.Deadline!.Value).Days;
+                    <li>
+                        <strong>@item.Title</strong> — @item.AssignedTo.Name
+                        <span class="badge bg-danger">@daysOverdue day(s) overdue</span>
+                        (Meeting: @item.Meeting.Title)
+                    </li>
+                }
+                @if (Model.OverdueItems.Count > 5)
+                {
+                    <li class="text-muted">... and @(Model.OverdueItems.Count - 5) more</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <!-- Action Items Table -->
+    @if (Model.ActionItems.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Task</th>
+                            <th>Meeting</th>
+                            <th>Committee</th>
+                            <th>Assigned To</th>
+                            <th>Deadline</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.ActionItems)
+                        {
+                            var isOverdue = item.Deadline.HasValue && item.Deadline.Value < DateTime.UtcNow
+                                && item.Status != ReportingSystem.Models.ActionItemStatus.Completed
+                                && item.Status != ReportingSystem.Models.ActionItemStatus.Verified;
+                            <tr class="@(isOverdue ? "table-danger" : "")">
+                                <td>
+                                    <strong>@item.Title</strong>
+                                    @if (!string.IsNullOrEmpty(item.Description))
+                                    {
+                                        <br /><small class="text-muted">@item.Description</small>
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-page="Details" asp-route-id="@item.MeetingId" class="text-decoration-none">
+                                        @item.Meeting.Title
+                                    </a>
+                                </td>
+                                <td>@item.Meeting.Committee.Name</td>
+                                <td>@item.AssignedTo.Name</td>
+                                <td>
+                                    @if (item.Deadline.HasValue)
+                                    {
+                                        @item.Deadline.Value.ToString("MMM dd, yyyy")
+                                        @if (isOverdue)
+                                        {
+                                            var daysOver = (DateTime.UtcNow - item.Deadline.Value).Days;
+                                            <span class="badge bg-danger">@daysOver d overdue</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @{
+                                        var statusClass = item.Status switch
+                                        {
+                                            ReportingSystem.Models.ActionItemStatus.Assigned => "bg-primary",
+                                            ReportingSystem.Models.ActionItemStatus.InProgress => "bg-warning text-dark",
+                                            ReportingSystem.Models.ActionItemStatus.Completed => "bg-info",
+                                            ReportingSystem.Models.ActionItemStatus.Verified => "bg-success",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @statusClass">@item.Status</span>
+                                </td>
+                                <td>
+                                    @if (item.Status == ReportingSystem.Models.ActionItemStatus.Assigned)
+                                    {
+                                        <form method="post" asp-page-handler="Start" class="d-inline">
+                                            <input type="hidden" name="actionItemId" value="@item.Id" />
+                                            <input type="hidden" name="meetingId" value="@item.MeetingId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Start">
+                                                <i class="bi bi-play"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    @if (item.Status == ReportingSystem.Models.ActionItemStatus.Assigned || item.Status == ReportingSystem.Models.ActionItemStatus.InProgress)
+                                    {
+                                        <form method="post" asp-page-handler="Complete" class="d-inline">
+                                            <input type="hidden" name="actionItemId" value="@item.Id" />
+                                            <input type="hidden" name="meetingId" value="@item.MeetingId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-info" title="Complete">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    @if (item.Status == ReportingSystem.Models.ActionItemStatus.Completed)
+                                    {
+                                        <form method="post" asp-page-handler="Verify" class="d-inline">
+                                            <input type="hidden" name="actionItemId" value="@item.Id" />
+                                            <input type="hidden" name="meetingId" value="@item.MeetingId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Verify">
+                                                <i class="bi bi-check-all"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No action items found.
+        </div>
+    }
+</div>

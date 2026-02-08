@@ -1,0 +1,570 @@
+@page "{id:int}"
+@model ReportingSystem.Pages.Meetings.DetailsModel
+@{
+    ViewData["Title"] = Model.Meeting.Title;
+    var meeting = Model.Meeting;
+    var isFinalized = meeting.Status == ReportingSystem.Models.MeetingStatus.Finalized;
+    var isCancelled = meeting.Status == ReportingSystem.Models.MeetingStatus.Cancelled;
+    var isScheduled = meeting.Status == ReportingSystem.Models.MeetingStatus.Scheduled;
+    var isInProgress = meeting.Status == ReportingSystem.Models.MeetingStatus.InProgress;
+    var isMinutesEntry = meeting.Status == ReportingSystem.Models.MeetingStatus.MinutesEntry;
+    var isMinutesReview = meeting.Status == ReportingSystem.Models.MeetingStatus.MinutesReview;
+}
+
+<div class="container-fluid mt-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Meeting Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2>
+                <i class="bi bi-calendar-event"></i> @meeting.Title
+                @{
+                    var statusBadge = meeting.Status switch
+                    {
+                        ReportingSystem.Models.MeetingStatus.Scheduled => "bg-primary",
+                        ReportingSystem.Models.MeetingStatus.InProgress => "bg-warning text-dark",
+                        ReportingSystem.Models.MeetingStatus.MinutesEntry => "bg-warning text-dark",
+                        ReportingSystem.Models.MeetingStatus.MinutesReview => "bg-info",
+                        ReportingSystem.Models.MeetingStatus.Finalized => "bg-success",
+                        ReportingSystem.Models.MeetingStatus.Cancelled => "bg-danger",
+                        _ => "bg-secondary"
+                    };
+                }
+                <span class="badge @statusBadge fs-6">@meeting.Status</span>
+                <span class="badge bg-secondary fs-6">@meeting.MeetingType</span>
+            </h2>
+            <p class="text-muted mb-0">
+                <i class="bi bi-people"></i> @meeting.Committee.Name |
+                <i class="bi bi-person"></i> Moderator: @meeting.Moderator.Name |
+                <i class="bi bi-clock"></i> @meeting.ScheduledAt.ToString("MMM dd, yyyy HH:mm") (@(meeting.DurationMinutes) min)
+                @if (!string.IsNullOrEmpty(meeting.Location))
+                {
+                    <text> | <i class="bi bi-geo-alt"></i> @meeting.Location</text>
+                }
+            </p>
+        </div>
+        <a asp-page="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(meeting.Description))
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <p class="mb-0">@meeting.Description</p>
+            </div>
+        </div>
+    }
+
+    <!-- Moderator Actions -->
+    @if (Model.IsModerator && !isFinalized && !isCancelled)
+    {
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2 flex-wrap">
+                    @if (isScheduled)
+                    {
+                        <form method="post" asp-page-handler="StartMeeting" asp-route-id="@meeting.Id" class="d-inline">
+                            <button type="submit" class="btn btn-success"><i class="bi bi-play-circle"></i> Start Meeting</button>
+                        </form>
+                        <form method="post" asp-page-handler="BeginMinutes" asp-route-id="@meeting.Id" class="d-inline">
+                            <button type="submit" class="btn btn-warning"><i class="bi bi-pencil-square"></i> Enter Minutes</button>
+                        </form>
+                    }
+                    @if (isInProgress)
+                    {
+                        <form method="post" asp-page-handler="BeginMinutes" asp-route-id="@meeting.Id" class="d-inline">
+                            <button type="submit" class="btn btn-warning"><i class="bi bi-pencil-square"></i> Enter Minutes</button>
+                        </form>
+                    }
+                    @if (isMinutesReview)
+                    {
+                        <a asp-page="Minutes" asp-route-id="@meeting.Id" class="btn btn-info">
+                            <i class="bi bi-pencil-square"></i> Edit & Resubmit Minutes
+                        </a>
+                    }
+                    @if (!isFinalized)
+                    {
+                        <form method="post" asp-page-handler="CancelMeeting" asp-route-id="@meeting.Id" class="d-inline"
+                              onsubmit="return confirm('Cancel this meeting?');">
+                            <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle"></i> Cancel Meeting</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- RSVP Section (for attendees, before meeting starts) -->
+    @if (Model.IsAttendee && Model.CurrentAttendee != null && isScheduled)
+    {
+        <div class="card mb-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-envelope-check"></i> RSVP</h5>
+            </div>
+            <div class="card-body">
+                <p>Current RSVP: <span class="badge bg-secondary">@Model.CurrentAttendee.RsvpStatus</span></p>
+                <div class="mb-3">
+                    <input asp-for="RsvpComment" class="form-control" placeholder="Optional comment..." />
+                </div>
+                <div class="d-flex gap-2">
+                    <form method="post" asp-page-handler="RsvpAccept" asp-route-id="@meeting.Id" class="d-inline">
+                        <input type="hidden" name="RsvpComment" value="" />
+                        <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Accept</button>
+                    </form>
+                    <form method="post" asp-page-handler="RsvpTentative" asp-route-id="@meeting.Id" class="d-inline">
+                        <input type="hidden" name="RsvpComment" value="" />
+                        <button type="submit" class="btn btn-warning"><i class="bi bi-question-lg"></i> Tentative</button>
+                    </form>
+                    <form method="post" asp-page-handler="RsvpDecline" asp-route-id="@meeting.Id" class="d-inline">
+                        <input type="hidden" name="RsvpComment" value="" />
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-x-lg"></i> Decline</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Left Column: Agenda & Minutes -->
+        <div class="col-lg-8">
+            <!-- Agenda Items -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list-ol"></i> Agenda (@meeting.AgendaItems.Count items)</h5>
+                </div>
+                <div class="card-body">
+                    @if (meeting.AgendaItems.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var item in meeting.AgendaItems)
+                            {
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">@(item.OrderIndex + 1). @item.TopicTitle</h6>
+                                            @if (!string.IsNullOrEmpty(item.Description))
+                                            {
+                                                <p class="mb-1 text-muted small">@item.Description</p>
+                                            }
+                                            <small class="text-muted">
+                                                <i class="bi bi-clock"></i> @item.AllocatedMinutes min
+                                                @if (item.Presenter != null)
+                                                {
+                                                    <text> | <i class="bi bi-person"></i> @item.Presenter.Name</text>
+                                                }
+                                                @if (item.LinkedReport != null)
+                                                {
+                                                    <text> | <i class="bi bi-file-earmark-text"></i> <a asp-page="/Reports/Details" asp-route-id="@item.LinkedReport.Id">@item.LinkedReport.Title</a></text>
+                                                }
+                                            </small>
+                                            @if (!string.IsNullOrEmpty(item.DiscussionNotes))
+                                            {
+                                                <div class="mt-2 p-2 bg-light rounded">
+                                                    <small class="text-muted d-block mb-1"><strong>Discussion Notes:</strong></small>
+                                                    <p class="mb-0 small">@item.DiscussionNotes</p>
+                                                </div>
+                                            }
+                                        </div>
+                                        @if (Model.IsModerator && !isFinalized && !isCancelled)
+                                        {
+                                            <form method="post" asp-page-handler="RemoveAgendaItem" asp-route-id="@meeting.Id" asp-route-agendaItemId="@item.Id">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">No agenda items yet.</p>
+                    }
+
+                    @if (Model.IsModerator && !isFinalized && !isCancelled)
+                    {
+                        <hr />
+                        <form method="post" asp-page-handler="AddAgendaItem" asp-route-id="@meeting.Id">
+                            <h6>Add Agenda Item</h6>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <input asp-for="NewAgendaItem.TopicTitle" class="form-control form-control-sm" placeholder="Topic title *" />
+                                </div>
+                                <div class="col-md-2">
+                                    <input asp-for="NewAgendaItem.AllocatedMinutes" type="number" class="form-control form-control-sm" min="5" step="5" placeholder="Min" />
+                                </div>
+                                <div class="col-md-4">
+                                    <input asp-for="NewAgendaItem.Description" class="form-control form-control-sm" placeholder="Description (optional)" />
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="bi bi-plus"></i> Add Item
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <!-- Minutes Content (if submitted) -->
+            @if (!string.IsNullOrEmpty(meeting.MinutesContent))
+            {
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-journal-text"></i> Meeting Minutes
+                            @if (meeting.MinutesFinalizedAt.HasValue)
+                            {
+                                <span class="badge bg-success ms-2">Finalized @meeting.MinutesFinalizedAt.Value.ToString("MMM dd, yyyy")</span>
+                            }
+                            else if (meeting.MinutesSubmittedAt.HasValue)
+                            {
+                                <span class="badge bg-info ms-2">Submitted @meeting.MinutesSubmittedAt.Value.ToString("MMM dd, yyyy HH:mm")</span>
+                            }
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="border rounded p-3 bg-light">
+                            @Html.Raw(meeting.MinutesContent.Replace("\n", "<br/>"))
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Minutes Confirmation (for attendees during MinutesReview) -->
+            @if (isMinutesReview && Model.IsAttendee && Model.CurrentAttendee != null
+                && Model.CurrentAttendee.ConfirmationStatus == ReportingSystem.Models.ConfirmationStatus.Pending)
+            {
+                <div class="card mb-4 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Confirm Minutes</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Please review the minutes above and confirm, request revision, or abstain.</p>
+                        <div class="mb-3">
+                            <textarea asp-for="ConfirmationComment" class="form-control" rows="2" placeholder="Optional comment or reason..."></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <form method="post" asp-page-handler="ConfirmMinutes" asp-route-id="@meeting.Id" class="d-inline">
+                                <input type="hidden" name="ConfirmationComment" value="" />
+                                <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> Confirm</button>
+                            </form>
+                            <form method="post" asp-page-handler="RequestRevision" asp-route-id="@meeting.Id" class="d-inline">
+                                <input type="hidden" name="ConfirmationComment" value="" />
+                                <button type="submit" class="btn btn-warning"><i class="bi bi-pencil"></i> Request Revision</button>
+                            </form>
+                            <form method="post" asp-page-handler="Abstain" asp-route-id="@meeting.Id" class="d-inline">
+                                <input type="hidden" name="ConfirmationComment" value="" />
+                                <button type="submit" class="btn btn-secondary"><i class="bi bi-dash-circle"></i> Abstain</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Decisions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-check2-square"></i> Decisions (@meeting.Decisions.Count)</h5>
+                </div>
+                <div class="card-body">
+                    @if (meeting.Decisions.Any())
+                    {
+                        @foreach (var decision in meeting.Decisions)
+                        {
+                            <div class="border rounded p-3 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <span class="badge bg-secondary me-2">@decision.DecisionType</span>
+                                        @decision.DecisionText
+                                        @if (decision.Deadline.HasValue)
+                                        {
+                                            <br /><small class="text-muted"><i class="bi bi-calendar"></i> Deadline: @decision.Deadline.Value.ToString("MMM dd, yyyy")</small>
+                                        }
+                                        @if (decision.AgendaItem != null)
+                                        {
+                                            <br /><small class="text-muted"><i class="bi bi-list-ol"></i> Re: @decision.AgendaItem.TopicTitle</small>
+                                        }
+                                    </div>
+                                    @if (Model.IsModerator && !isFinalized)
+                                    {
+                                        <form method="post" asp-page-handler="RemoveDecision" asp-route-id="@meeting.Id" asp-route-decisionId="@decision.Id">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    }
+                                </div>
+                                @if (decision.ActionItems.Any())
+                                {
+                                    <div class="mt-2">
+                                        <small class="text-muted">Action Items:</small>
+                                        <ul class="mb-0 small">
+                                            @foreach (var ai in decision.ActionItems)
+                                            {
+                                                <li>@ai.Title — <span class="badge bg-secondary">@ai.Status</span></li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">No decisions recorded.</p>
+                    }
+
+                    @if (Model.IsModerator && !isFinalized && !isCancelled && (isMinutesEntry || isInProgress || isMinutesReview))
+                    {
+                        <hr />
+                        <form method="post" asp-page-handler="AddDecision" asp-route-id="@meeting.Id">
+                            <h6>Record Decision</h6>
+                            <div class="row g-2">
+                                <div class="col-md-7">
+                                    <textarea asp-for="NewDecision.DecisionText" class="form-control form-control-sm" rows="2" placeholder="Decision text *"></textarea>
+                                </div>
+                                <div class="col-md-3">
+                                    <select asp-for="NewDecision.DecisionType" asp-items="Html.GetEnumSelectList<ReportingSystem.Models.DecisionType>()" class="form-select form-select-sm"></select>
+                                </div>
+                                <div class="col-md-2">
+                                    <input asp-for="NewDecision.Deadline" type="date" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="bi bi-plus"></i> Add Decision
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <!-- Action Items -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list-task"></i> Action Items (@meeting.ActionItems.Count)</h5>
+                </div>
+                <div class="card-body">
+                    @if (meeting.ActionItems.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Task</th>
+                                        <th>Assigned To</th>
+                                        <th>Deadline</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ai in meeting.ActionItems.OrderBy(a => a.Deadline ?? DateTime.MaxValue))
+                                    {
+                                        var isOverdue = ai.Deadline.HasValue && ai.Deadline.Value < DateTime.UtcNow
+                                            && ai.Status != ReportingSystem.Models.ActionItemStatus.Completed
+                                            && ai.Status != ReportingSystem.Models.ActionItemStatus.Verified;
+                                        <tr class="@(isOverdue ? "table-danger" : "")">
+                                            <td>
+                                                @ai.Title
+                                                @if (!string.IsNullOrEmpty(ai.Description))
+                                                {
+                                                    <br /><small class="text-muted">@ai.Description</small>
+                                                }
+                                            </td>
+                                            <td>@ai.AssignedTo.Name</td>
+                                            <td>
+                                                @if (ai.Deadline.HasValue)
+                                                {
+                                                    @ai.Deadline.Value.ToString("MMM dd, yyyy")
+                                                    @if (isOverdue)
+                                                    {
+                                                        <span class="badge bg-danger ms-1">Overdue</span>
+                                                    }
+                                                }
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var aiStatusClass = ai.Status switch
+                                                    {
+                                                        ReportingSystem.Models.ActionItemStatus.Assigned => "bg-primary",
+                                                        ReportingSystem.Models.ActionItemStatus.InProgress => "bg-warning text-dark",
+                                                        ReportingSystem.Models.ActionItemStatus.Completed => "bg-info",
+                                                        ReportingSystem.Models.ActionItemStatus.Verified => "bg-success",
+                                                        _ => "bg-secondary"
+                                                    };
+                                                }
+                                                <span class="badge @aiStatusClass">@ai.Status</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">No action items yet.</p>
+                    }
+
+                    @if (Model.IsModerator && !isCancelled && !isFinalized)
+                    {
+                        <hr />
+                        <form method="post" asp-page-handler="AddActionItem" asp-route-id="@meeting.Id">
+                            <h6>Create Action Item</h6>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <input asp-for="NewActionItem.Title" class="form-control form-control-sm" placeholder="Task title *" />
+                                </div>
+                                <div class="col-md-3">
+                                    <select asp-for="NewActionItem.AssignedToId" class="form-select form-select-sm">
+                                        <option value="">-- Assign to --</option>
+                                        @foreach (var attendee in meeting.Attendees)
+                                        {
+                                            <option value="@attendee.UserId">@attendee.User.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <input asp-for="NewActionItem.Deadline" type="date" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-3">
+                                    <input asp-for="NewActionItem.Description" class="form-control form-control-sm" placeholder="Description" />
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="bi bi-plus"></i> Add Action Item
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Attendees -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> Attendees (@meeting.Attendees.Count)</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        @foreach (var attendee in meeting.Attendees.OrderBy(a => a.User.Name))
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@attendee.User.Name</strong>
+                                    @if (attendee.UserId == meeting.ModeratorId)
+                                    {
+                                        <span class="badge bg-primary ms-1">Moderator</span>
+                                    }
+                                    <br />
+                                    <small>
+                                        RSVP:
+                                        @{
+                                            var rsvpClass = attendee.RsvpStatus switch
+                                            {
+                                                ReportingSystem.Models.RsvpStatus.Accepted => "text-success",
+                                                ReportingSystem.Models.RsvpStatus.Declined => "text-danger",
+                                                ReportingSystem.Models.RsvpStatus.Tentative => "text-warning",
+                                                _ => "text-muted"
+                                            };
+                                        }
+                                        <span class="@rsvpClass">@attendee.RsvpStatus</span>
+                                        @if (isMinutesReview || isFinalized)
+                                        {
+                                            <text> | Minutes: </text>
+                                            var confClass = attendee.ConfirmationStatus switch
+                                            {
+                                                ReportingSystem.Models.ConfirmationStatus.Confirmed => "text-success",
+                                                ReportingSystem.Models.ConfirmationStatus.RevisionRequested => "text-danger",
+                                                ReportingSystem.Models.ConfirmationStatus.Abstained => "text-muted",
+                                                _ => "text-warning"
+                                            };
+                                            <span class="@confClass">@attendee.ConfirmationStatus</span>
+                                        }
+                                    </small>
+                                    @if (!string.IsNullOrEmpty(attendee.ConfirmationComment))
+                                    {
+                                        <br /><small class="text-muted fst-italic">"@attendee.ConfirmationComment"</small>
+                                    }
+                                </div>
+                                @if (Model.IsModerator && !isFinalized && !isCancelled && attendee.UserId != meeting.ModeratorId)
+                                {
+                                    <form method="post" asp-page-handler="RemoveAttendee" asp-route-id="@meeting.Id" asp-route-userId="@attendee.UserId">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove"><i class="bi bi-x"></i></button>
+                                    </form>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+                @if (Model.IsModerator && !isFinalized && !isCancelled)
+                {
+                    <div class="card-footer">
+                        <form method="post" asp-page-handler="AddAttendee" asp-route-id="@meeting.Id" class="d-flex gap-2">
+                            <select asp-for="AddAttendeeUserId" asp-items="Model.AvailableUsers" class="form-select form-select-sm">
+                                <option value="">-- Add attendee --</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i></button>
+                        </form>
+                        <form method="post" asp-page-handler="AddCommitteeMembers" asp-route-id="@meeting.Id" class="mt-2">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
+                                <i class="bi bi-people-fill"></i> Add All Committee Members
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+
+            <!-- Confirmation Progress (MinutesReview) -->
+            @if (isMinutesReview)
+            {
+                var confirmed = meeting.Attendees.Count(a => a.ConfirmationStatus == ReportingSystem.Models.ConfirmationStatus.Confirmed);
+                var abstained = meeting.Attendees.Count(a => a.ConfirmationStatus == ReportingSystem.Models.ConfirmationStatus.Abstained);
+                var pending = meeting.Attendees.Count(a => a.ConfirmationStatus == ReportingSystem.Models.ConfirmationStatus.Pending);
+                var revisionReq = meeting.Attendees.Count(a => a.ConfirmationStatus == ReportingSystem.Models.ConfirmationStatus.RevisionRequested);
+                var total = meeting.Attendees.Count;
+                var progress = total > 0 ? (int)((confirmed + abstained) * 100.0 / total) : 0;
+
+                <div class="card mb-4 border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Confirmation Progress</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress mb-3" style="height: 25px;">
+                            <div class="progress-bar bg-success" style="width: @(total > 0 ? confirmed * 100 / total : 0)%">@confirmed</div>
+                            <div class="progress-bar bg-secondary" style="width: @(total > 0 ? abstained * 100 / total : 0)%">@abstained</div>
+                        </div>
+                        <div class="small">
+                            <span class="text-success"><i class="bi bi-check-circle-fill"></i> Confirmed: @confirmed</span> |
+                            <span class="text-muted"><i class="bi bi-dash-circle-fill"></i> Abstained: @abstained</span> |
+                            <span class="text-warning"><i class="bi bi-hourglass-split"></i> Pending: @pending</span>
+                            @if (revisionReq > 0)
+                            {
+                                <text> | <span class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> Revision Requested: @revisionReq</span></text>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

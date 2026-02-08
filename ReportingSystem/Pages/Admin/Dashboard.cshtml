@@ -237,6 +237,85 @@
         </div>
     </div>
 
+    <!-- Meeting Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-primary shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar-event fs-3 text-primary"></i>
+                    <h3 class="mb-0">@Model.MeetingStats.total</h3>
+                    <small class="text-muted">Total Meetings</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-info shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar-check fs-3 text-info"></i>
+                    <h3 class="mb-0">@Model.MeetingStats.scheduled</h3>
+                    <small class="text-muted">Scheduled</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-4 border-warning shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-clipboard-check fs-3 text-warning"></i>
+                    <h3 class="mb-0">@Model.MeetingStats.minutesReview</h3>
+                    <small class="text-muted">Awaiting Confirmation</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-4 @(Model.MeetingStats.overdueActions > 0 ? "border-danger" : "border-success") shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-list-task fs-3 @(Model.MeetingStats.overdueActions > 0 ? "text-danger" : "text-success")"></i>
+                    <h3 class="mb-0">@Model.MeetingStats.overdueActions</h3>
+                    <small class="text-muted">Overdue Actions</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meetings Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Meetings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a asp-page="/Meetings/Create" class="btn btn-outline-primary btn-lg w-100 py-3">
+                                <i class="bi bi-calendar-plus d-block mb-2" style="font-size: 2rem;"></i>
+                                Schedule Meeting
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a asp-page="/Meetings/Index" class="btn btn-outline-secondary btn-lg w-100 py-3">
+                                <i class="bi bi-calendar-event d-block mb-2" style="font-size: 2rem;"></i>
+                                All Meetings
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a asp-page="/Meetings/ActionItems" class="btn btn-outline-warning btn-lg w-100 py-3">
+                                <i class="bi bi-list-task d-block mb-2" style="font-size: 2rem;"></i>
+                                Action Items
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a asp-page="/Meetings/Index" asp-route-Status="Finalized" asp-route-IncludePast="true" class="btn btn-outline-success btn-lg w-100 py-3">
+                                <i class="bi bi-journal-check d-block mb-2" style="font-size: 2rem;"></i>
+                                Finalized Minutes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- System Section -->
     <div class="row mb-4">
         <div class="col-12">

@@ -13,6 +13,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Admin");
     options.Conventions.AuthorizeFolder("/Reports");
     options.Conventions.AuthorizeFolder("/Directives");
+    options.Conventions.AuthorizeFolder("/Meetings");
 
     // Allow anonymous access to Auth pages (login, verify, logout)
     options.Conventions.AllowAnonymousToFolder("/Auth");
@@ -34,6 +35,7 @@ builder.Services.AddScoped<DatabaseBackupService>();
 builder.Services.AddScoped<OrganizationService>();
 builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<DirectiveService>();
+builder.Services.AddScoped<MeetingService>();
 
 // Register background service for daily automatic backups
 builder.Services.AddHostedService<DailyBackupHostedService>();

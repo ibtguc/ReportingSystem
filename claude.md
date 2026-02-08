@@ -4,7 +4,7 @@
 
 ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows, structured meeting management, confidentiality controls, and full audit trail.
 
-**Current Status**: Phases 1-5 Complete — Phase 6 (Meeting Management) is NEXT
+**Current Status**: Phases 1-6 Complete — Phase 7 (Confidentiality & Access Control) is NEXT
 
 ## Tech Stack
 
@@ -57,11 +57,12 @@ dotnet build ReportingSystem/ReportingSystem.csproj
 ```
 ReportingSystem/
 ├── Data/
-│   ├── ApplicationDbContext.cs      # EF Core DbContext (~240 lines)
+│   ├── ApplicationDbContext.cs      # EF Core DbContext (~330 lines)
 │   │                                 # DbSets: Users, MagicLinks, Committees, CommitteeMemberships,
 │   │                                 # ShadowAssignments, Reports, Attachments, ReportStatusHistories,
 │   │                                 # ReportSourceLinks, Directives, DirectiveStatusHistories,
-│   │                                 # Notifications, DatabaseBackups
+│   │                                 # Meetings, MeetingAgendaItems, MeetingAttendees,
+│   │                                 # MeetingDecisions, ActionItems, Notifications, DatabaseBackups
 │   ├── SeedData.cs                  # Placeholder for domain seeding
 │   ├── UserSeeder.cs                # Seeds 3 admin users
 │   └── OrganizationSeeder.cs        # Seeds ~155 users, ~185 committees, memberships (853 lines)
@@ -78,11 +79,16 @@ ReportingSystem/
 │   ├── ReportSourceLink.cs          # Summary→Source report links (Phase 4)
 │   ├── Directive.cs                 # Directive + DirectiveType/Priority/Status enums (Phase 5)
 │   ├── DirectiveStatusHistory.cs    # Audit trail for directive status transitions (Phase 5)
+│   ├── Meeting.cs                   # Meeting + MeetingType/MeetingStatus/RecurrencePattern enums (Phase 6)
+│   ├── MeetingAgendaItem.cs         # Structured agenda items with presenter + linked reports (Phase 6)
+│   ├── MeetingAttendee.cs           # Attendees with RSVP + minutes confirmation (Phase 6)
+│   ├── MeetingDecision.cs           # Formal decisions + DecisionType enum (Phase 6)
+│   ├── ActionItem.cs                # Trackable action items + ActionItemStatus enum (Phase 6)
 │   ├── Notification.cs              # In-app notifications
 │   └── DatabaseBackup.cs            # Backup records
 ├── Pages/
 │   ├── Admin/
-│   │   ├── Dashboard.cshtml(.cs)    # Stats: org + report + directive counts
+│   │   ├── Dashboard.cshtml(.cs)    # Stats: org + report + directive + meeting counts
 │   │   ├── Backup/Index             # Backup management (SystemAdmin only)
 │   │   ├── Users/                   # CRUD: Index, Create, Edit, Details, Delete
 │   │   └── Organization/
@@ -106,7 +112,13 @@ ReportingSystem/
 │   │   ├── Create                   # Issue directive (optionally linked to report)
 │   │   ├── Details                  # Full view + actions + propagation tree + forwarding
 │   │   └── Track                    # Overdue directives dashboard
-│   ├── Shared/_Layout.cshtml        # Nav: Home, Organization, Reports, Directives, Administration, User
+│   ├── Meetings/
+│   │   ├── Index                    # Filterable meeting list with status pipeline
+│   │   ├── Create                   # Schedule meeting with committee + auto-invite
+│   │   ├── Details                  # Full view + agenda + attendees + RSVP + decisions + action items
+│   │   ├── Minutes                  # Minutes entry (per-agenda-item notes + overall summary)
+│   │   └── ActionItems              # Consolidated action items dashboard with status transitions
+│   ├── Shared/_Layout.cshtml        # Nav: Home, Organization, Reports, Directives, Meetings, Administration, User
 │   ├── Index.cshtml                 # Landing → redirects to Dashboard or Login
 │   └── Error.cshtml
 ├── Services/
@@ -117,7 +129,8 @@ ReportingSystem/
 │   ├── DailyBackupHostedService.cs  # Background 12h backup scheduler (96 lines)
 │   ├── OrganizationService.cs       # Committee/membership/shadow CRUD (235 lines)
 │   ├── ReportService.cs             # Reports, status workflow, summarization, drill-down (547 lines)
-│   └── DirectiveService.cs         # Directives, status transitions, propagation, overdue (~340 lines)
+│   ├── DirectiveService.cs          # Directives, status transitions, propagation, overdue (~340 lines)
+│   └── MeetingService.cs            # Meetings, agenda, attendees, RSVP, minutes, decisions, action items (~420 lines)
 ├── wwwroot/                         # Static files (Bootstrap, jQuery, uploads/)
 ├── Program.cs                       # App configuration & DI (~140 lines)
 ├── appsettings.json                 # Production config
@@ -197,14 +210,21 @@ Chairman/CEO
 - [x] Dashboard updated with directive statistics (active, issued, in progress, overdue)
 - [x] Layout nav: Directives dropdown (All Directives, Issue Directive, Track Overdue)
 
-### Phase 6: Meeting Management [NEXT]
-**Goal**: Full meeting lifecycle with structured minutes and confirmation (SRS 4.4)
+### Phase 6: Meeting Management [COMPLETE]
+- [x] Models: Meeting (6 statuses, 4 types, 3 recurrence patterns), MeetingAgendaItem, MeetingAttendee (RSVP + Confirmation), MeetingDecision (4 types), ActionItem (4 statuses)
+- [x] MeetingService: full lifecycle — schedule, start, minutes entry/submit, attendee confirmation, finalization
+- [x] Meeting scheduling: committee-scoped, auto-invite committee members, moderator role
+- [x] Structured agenda: ordered items with allocated time, presenter, linked reports, discussion notes
+- [x] RSVP workflow: Accept/Decline/Tentative with comments
+- [x] Minutes: per-agenda-item discussion notes + overall summary, save draft + submit for confirmation
+- [x] Confirmation workflow: each attendee Confirms/Requests Revision/Abstains — finalized only when all responded
+- [x] Decisions: captured per meeting with DecisionType (Approval/Direction/Resolution/Deferral) and deadlines
+- [x] Action items: Assigned→InProgress→Completed→Verified lifecycle, overdue tracking, consolidated dashboard
+- [x] Pages: Index (status pipeline + filters), Create (with auto-invite), Details (full meeting view with all sub-entities), Minutes (structured entry), ActionItems (consolidated dashboard with status actions)
+- [x] Dashboard updated with meeting statistics (total, scheduled, awaiting confirmation, overdue actions)
+- [x] Layout nav: Meetings dropdown (All Meetings, Schedule Meeting, Action Items)
 
-**Models**: Meeting, MeetingAgendaItem, MeetingAttendee (RSVP + Confirmation), MeetingDecision, ActionItem
-
-**Pages**: Schedule, Index, Details, Minutes, Confirm, ActionItems dashboard
-
-### Phase 7: Confidentiality & Access Control
+### Phase 7: Confidentiality & Access Control [NEXT]
 **Goal**: Hierarchy-based access control and confidentiality marking (SRS 4.5)
 
 **Model**: ConfidentialityMarking — per-item marking with rank-based Chairman's Office access, shadow exclusion, reversible
@@ -240,6 +260,11 @@ Chairman/CEO
 | `ReportSourceLink` | 4 | SummaryReportId, SourceReportId, Annotation | → SummaryReport, SourceReport |
 | `Directive` | 5 | Title, DirectiveType, Priority, Status, IssuerId, TargetCommitteeId, TargetUserId, RelatedReportId, ParentDirectiveId, BodyContent, ForwardingAnnotation, Deadline | → Issuer, TargetCommittee, TargetUser, RelatedReport, ParentDirective, ChildDirectives, StatusHistory |
 | `DirectiveStatusHistory` | 5 | DirectiveId, OldStatus, NewStatus, ChangedById, Comments | → Directive, ChangedBy |
+| `Meeting` | 6 | Title, MeetingType, Status, CommitteeId, ModeratorId, Description, Location, ScheduledAt, DurationMinutes, RecurrencePattern, MinutesContent, MinutesSubmittedAt, MinutesFinalizedAt | → Committee, Moderator, AgendaItems, Attendees, Decisions, ActionItems |
+| `MeetingAgendaItem` | 6 | MeetingId, OrderIndex, TopicTitle, Description, AllocatedMinutes, PresenterId, LinkedReportId, DiscussionNotes | → Meeting, Presenter, LinkedReport |
+| `MeetingAttendee` | 6 | MeetingId, UserId, RsvpStatus, RsvpComment, RsvpAt, ConfirmationStatus, ConfirmationComment, ConfirmedAt | → Meeting, User |
+| `MeetingDecision` | 6 | MeetingId, AgendaItemId, DecisionText, DecisionType, Deadline | → Meeting, AgendaItem, ActionItems |
+| `ActionItem` | 6 | MeetingId, MeetingDecisionId, Title, Description, AssignedToId, AssignedById, Status, Deadline, CompletedAt, VerifiedAt | → Meeting, MeetingDecision, AssignedTo, AssignedBy |
 | `Notification` | 1 | UserId, Type, Title, Message, IsRead, Priority | — |
 | `DatabaseBackup` | 1 | Name, FileName, FilePath, Type, CreatedBy | — |
 
@@ -252,6 +277,13 @@ Chairman/CEO
 - `DirectiveType`: Instruction, Approval, CorrectiveAction, Feedback, InformationNotice
 - `DirectivePriority`: Normal, High, Urgent
 - `DirectiveStatus`: Issued, Delivered, Acknowledged, InProgress, Implemented, Verified, Closed
+- `MeetingType`: Regular, Emergency, Annual, SpecialSession
+- `MeetingStatus`: Scheduled, InProgress, MinutesEntry, MinutesReview, Finalized, Cancelled
+- `RecurrencePattern`: None, Weekly, Biweekly, Monthly
+- `RsvpStatus`: Pending, Accepted, Declined, Tentative
+- `ConfirmationStatus`: Pending, Confirmed, RevisionRequested, Abstained
+- `DecisionType`: Approval, Direction, Resolution, Deferral
+- `ActionItemStatus`: Assigned, InProgress, Completed, Verified
 
 ## Services (with key methods)
 
@@ -265,6 +297,7 @@ Chairman/CEO
 | `OrganizationService` | GetAllCommitteesAsync, GetHierarchyTreeAsync, CreateCommitteeAsync, AddMembershipAsync, AddShadowAssignmentAsync, GetOrganizationStatsAsync |
 | `ReportService` | GetReportsAsync, CreateReportAsync, UpdateReportAsync, SubmitReportAsync, StartReviewAsync, RequestFeedbackAsync, ReviseReportAsync, ApproveReportAsync, ArchiveReportAsync, AddAttachmentAsync, CreateSummaryAsync, GetDrillDownTreeAsync, GetSummarizableReportsAsync, GetSummarizationDepthAsync, CanUserReviewReportAsync, GetReportStatsAsync |
 | `DirectiveService` | GetDirectivesAsync, GetDirectiveByIdAsync, GetDirectivesForUserAsync, CreateDirectiveAsync, ForwardDirectiveAsync, MarkDeliveredAsync, AcknowledgeAsync, StartProgressAsync, MarkImplementedAsync, VerifyAsync, CloseAsync, GetPropagationTreeAsync, GetOverdueDirectivesAsync, GetApproachingDeadlineDirectivesAsync, CanUserIssueDirectivesAsync, IsUserTargetOfDirectiveAsync, GetTargetableCommitteesAsync, GetForwardableCommitteesAsync, GetDirectiveStatsAsync |
+| `MeetingService` | GetMeetingsAsync, GetMeetingByIdAsync, GetMeetingsForUserAsync, CreateMeetingAsync, UpdateMeetingAsync, CancelMeetingAsync, StartMeetingAsync, BeginMinutesEntryAsync, SubmitMinutesAsync, TryFinalizeMinutesAsync, AddAttendeeAsync, AddAttendeesFromCommitteeAsync, RemoveAttendeeAsync, UpdateRsvpAsync, UpdateConfirmationAsync, AddAgendaItemAsync, UpdateAgendaItemAsync, RemoveAgendaItemAsync, UpdateAgendaDiscussionNotesAsync, AddDecisionAsync, RemoveDecisionAsync, CreateActionItemAsync, StartActionItemAsync, CompleteActionItemAsync, VerifyActionItemAsync, GetActionItemsForUserAsync, GetAllActionItemsAsync, GetOverdueActionItemsAsync, CanUserScheduleMeetingAsync, IsUserModeratorAsync, IsUserAttendeeAsync, GetSchedulableCommitteesAsync, GetMeetingStatsAsync, GetUpcomingMeetingsAsync |
 
 ## Pages (Route Map)
 
@@ -297,15 +330,24 @@ Chairman/CEO
 | Directive Create | `/Directives/Create?ReportId=` | GET, POST |
 | Directive Details | `/Directives/Details/{id}` | GET, POST:Acknowledge/StartProgress/Implement/Verify/Close/Forward |
 | Directive Track | `/Directives/Track` | GET (overdue + approaching deadline) |
+| Meetings Index | `/Meetings` | GET (CommitteeId, Status, ShowMine, IncludePast) |
+| Meeting Create | `/Meetings/Create` | GET, POST (with auto-invite committee members) |
+| Meeting Details | `/Meetings/Details/{id}` | GET, POST:StartMeeting/BeginMinutes/CancelMeeting/AddAttendee/RemoveAttendee/AddCommitteeMembers/RsvpAccept/RsvpDecline/RsvpTentative/AddAgendaItem/RemoveAgendaItem/AddDecision/RemoveDecision/AddActionItem/ConfirmMinutes/RequestRevision/Abstain |
+| Meeting Minutes | `/Meetings/Minutes/{id}` | GET, POST:Save/Submit (per-agenda-item notes + overall minutes) |
+| Action Items | `/Meetings/ActionItems` | GET (Status, ShowMine), POST:Start/Complete/Verify |
 
 ## Authorization
 
-- `/Admin/*`, `/Reports/*`, and `/Directives/*` → `[Authorize]` (any authenticated user)
+- `/Admin/*`, `/Reports/*`, `/Directives/*`, and `/Meetings/*` → `[Authorize]` (any authenticated user)
 - `/Admin/Backup/*` → `SystemAdminOnly` policy
 - `/Auth/*` and `/` → `[AllowAnonymous]`
 - Report actions: committee membership checks (submit), head-of-committee/parent checks (review)
 - Directive issuing: Chairman/ChairmanOffice/SystemAdmin or committee heads
 - Directive actions: target committee members can acknowledge/implement; issuer can verify/close
+- Meeting scheduling: Chairman/ChairmanOffice/SystemAdmin or committee heads
+- Meeting minutes: only moderator can enter/edit/submit minutes
+- Minutes confirmation: only attendees can confirm/request revision/abstain
+- Action item transitions: assignee can start/complete; moderator/head can verify
 
 ## Configuration
 
@@ -340,6 +382,7 @@ OrganizationSeeder seeds the full ORS_Test_Data.md dataset:
 - **Self-referential FKs**: Committee.ParentCommitteeId, Report.OriginalReportId, Directive.ParentDirectiveId
 - **DrillDownNode DTO**: Defined after ReportService class in same file, used for recursive tree rendering
 - **DirectivePropagationNode DTO**: Defined after DirectiveService class in same file, used for propagation tree
+- **AgendaItemNotes DTO**: Defined after MinutesModel page model class in same file, used for per-item discussion notes
 
 ## Git
 
@@ -378,17 +421,17 @@ COMPLETED PHASES:
 - Phase 3 (Report Lifecycle): Report CRUD, 8-status workflow (Draft→Submitted→UnderReview→Approved→Archived), attachments, versioning, status history
 - Phase 4 (Summarization): ReportSourceLink model, summary creation linking to sources, recursive drill-down tree visualization, bidirectional chain navigation
 - Phase 5 (Directives): Directive model (7 statuses, 5 types, 3 priorities), propagation chain via ParentDirectiveId, forwarding with annotations, overdue tracking, status pipeline view
+- Phase 6 (Meetings): Meeting scheduling, structured agenda, RSVP, minutes entry with per-agenda-item notes, attendee confirmation workflow (all must Confirm/Abstain to finalize), decisions with DecisionType, action items (Assigned→InProgress→Completed→Verified), overdue action item tracking
 
 CURRENT STATE:
-- 13 model classes, 8 services, 23 page models, 29+ Razor views
+- 18 model classes, 9 services, 28 page models, 34+ Razor views
+- MeetingService.cs (~420 lines) handles: meeting lifecycle, agenda, RSVP, minutes, confirmation, decisions, action items, overdue tracking
 - DirectiveService.cs (~340 lines) handles: directive CRUD, 7-status workflow, propagation tree, forwarding, overdue tracking, access control
 - ReportService.cs (547 lines) handles: report CRUD, status transitions, file attachments, summary creation, recursive drill-down tree building, access control checks
-- ApplicationDbContext.cs (~240 lines) with 13 DbSets and full relationship configuration
+- ApplicationDbContext.cs (~330 lines) with 18 DbSets and full relationship configuration
 - OrganizationSeeder.cs (853 lines) seeds entire test dataset
 
-NEXT: Phase 6 — Meeting Management (full lifecycle with structured minutes and confirmation)
-- Models: Meeting, MeetingAgendaItem, MeetingAttendee, MeetingDecision, ActionItem
-- Pages: Schedule, Index, Details, Minutes, Confirm, ActionItems dashboard
+NEXT: Phase 7 — Confidentiality & Access Control (hierarchy-based access, confidentiality marking, SRS 4.5)
 
 Read claude.md for full roadmap, model definitions, service methods, and page routes.
 ```
