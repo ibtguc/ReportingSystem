@@ -36,9 +36,6 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public bool ShowMine { get; set; }
 
-    [BindProperty(SupportsGet = true)]
-    public bool IncludeArchived { get; set; }
-
     public async Task OnGetAsync()
     {
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
@@ -52,8 +49,7 @@ public class IndexModel : PageModel
             committeeId: CommitteeId,
             authorId: authorFilter,
             status: Status,
-            reportType: ReportType,
-            includeArchived: IncludeArchived);
+            reportType: ReportType);
 
         // Filter out confidential items the user cannot access
         Reports = await _confidentialityService.FilterAccessibleReportsAsync(Reports, userId);

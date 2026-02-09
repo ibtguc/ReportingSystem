@@ -21,17 +21,13 @@ public class ReportService
         int? committeeId = null,
         int? authorId = null,
         ReportStatus? status = null,
-        ReportType? reportType = null,
-        bool includeArchived = false)
+        ReportType? reportType = null)
     {
         var query = _context.Reports
             .Include(r => r.Author)
             .Include(r => r.Committee)
             .Include(r => r.Attachments)
             .AsQueryable();
-
-        if (!includeArchived)
-            query = query.Where(r => r.Status != ReportStatus.Archived);
 
         if (committeeId.HasValue)
             query = query.Where(r => r.CommitteeId == committeeId.Value);
@@ -59,19 +55,19 @@ public class ReportService
             .Include(r => r.StatusHistory).ThenInclude(h => h.ChangedBy)
             .Include(r => r.OriginalReport)
             .Include(r => r.Revisions)
+            .Include(r => r.Approvals).ThenInclude(a => a.User)
             .FirstOrDefaultAsync(r => r.Id == id);
     }
 
     public async Task<List<Report>> GetReportsForCommitteeTreeAsync(int committeeId)
     {
-        // Get this committee and all descendant committee IDs
         var committeeIds = await GetDescendantCommitteeIdsAsync(committeeId);
         committeeIds.Add(committeeId);
 
         return await _context.Reports
             .Include(r => r.Author)
             .Include(r => r.Committee)
-            .Where(r => committeeIds.Contains(r.CommitteeId) && r.Status != ReportStatus.Archived)
+            .Where(r => committeeIds.Contains(r.CommitteeId))
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
     }
@@ -108,45 +104,57 @@ public class ReportService
 
     // ── Status Transitions ──
 
+    /// <summary>
+    /// Submit a report for collective approval. Valid from Draft or FeedbackRequested.
+    /// When resubmitting after feedback, all prior approvals are reset.
+    /// </summary>
     public async Task<bool> SubmitReportAsync(int reportId, int userId)
     {
         var report = await _context.Reports.FindAsync(reportId);
         if (report == null) return false;
-        if (report.Status != ReportStatus.Draft && report.Status != ReportStatus.Revised)
+        if (report.Status != ReportStatus.Draft && report.Status != ReportStatus.FeedbackRequested)
             return false;
 
         var oldStatus = report.Status;
+
+        // Reset approvals when resubmitting after feedback
+        if (oldStatus == ReportStatus.FeedbackRequested)
+        {
+            var existingApprovals = await _context.ReportApprovals
+                .Where(a => a.ReportId == reportId)
+                .ToListAsync();
+            _context.ReportApprovals.RemoveRange(existingApprovals);
+        }
+
         report.Status = ReportStatus.Submitted;
         report.SubmittedAt = DateTime.UtcNow;
         report.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        await AddStatusHistoryAsync(reportId, oldStatus, ReportStatus.Submitted, userId, "Report submitted for review");
+        var comment = oldStatus == ReportStatus.FeedbackRequested
+            ? "Report resubmitted after revision (approvals reset)"
+            : "Report submitted for collective approval";
+        await AddStatusHistoryAsync(reportId, oldStatus, ReportStatus.Submitted, userId, comment);
 
         _logger.LogInformation("Report {Id} submitted by user {UserId}", reportId, userId);
         return true;
     }
 
-    public async Task<bool> StartReviewAsync(int reportId, int userId)
+    /// <summary>
+    /// Request feedback on a submitted report. Any committee member (except author) can request.
+    /// Resets all existing approvals.
+    /// </summary>
+    public async Task<bool> RequestFeedbackAsync(int reportId, int userId, string comments)
     {
         var report = await _context.Reports.FindAsync(reportId);
         if (report == null || report.Status != ReportStatus.Submitted)
             return false;
 
-        var oldStatus = report.Status;
-        report.Status = ReportStatus.UnderReview;
-        report.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-
-        await AddStatusHistoryAsync(reportId, oldStatus, ReportStatus.UnderReview, userId, "Review started");
-        return true;
-    }
-
-    public async Task<bool> RequestFeedbackAsync(int reportId, int userId, string comments)
-    {
-        var report = await _context.Reports.FindAsync(reportId);
-        if (report == null || report.Status != ReportStatus.UnderReview)
-            return false;
+        // Reset all approvals
+        var existingApprovals = await _context.ReportApprovals
+            .Where(a => a.ReportId == reportId)
+            .ToListAsync();
+        _context.ReportApprovals.RemoveRange(existingApprovals);
 
         var oldStatus = report.Status;
         report.Status = ReportStatus.FeedbackRequested;
@@ -159,46 +167,86 @@ public class ReportService
         return true;
     }
 
-    public async Task<Report?> ReviseReportAsync(int originalReportId, Report revisedReport, int userId)
-    {
-        var original = await _context.Reports.FindAsync(originalReportId);
-        if (original == null || original.Status != ReportStatus.FeedbackRequested)
-            return null;
-
-        // Create the revision as a new report linked to original
-        revisedReport.AuthorId = userId;
-        revisedReport.CommitteeId = original.CommitteeId;
-        revisedReport.OriginalReportId = original.OriginalReportId ?? original.Id;
-        revisedReport.Version = original.Version + 1;
-        revisedReport.Status = ReportStatus.Revised;
-        revisedReport.CreatedAt = DateTime.UtcNow;
-        revisedReport.ReportType = original.ReportType;
-        revisedReport.IsConfidential = original.IsConfidential;
-
-        _context.Reports.Add(revisedReport);
-
-        // Mark original as Revised
-        var oldStatus = original.Status;
-        original.Status = ReportStatus.Revised;
-        original.UpdatedAt = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync();
-
-        await AddStatusHistoryAsync(original.Id, oldStatus, ReportStatus.Revised, userId,
-            $"Revised — new version {revisedReport.Version} created (Report #{revisedReport.Id})");
-        await AddStatusHistoryAsync(revisedReport.Id, ReportStatus.Draft, ReportStatus.Revised, userId,
-            $"Revision of Report #{original.Id} (v{original.Version})");
-
-        _logger.LogInformation("Report {OriginalId} revised as {NewId} (v{Version}) by user {UserId}",
-            original.Id, revisedReport.Id, revisedReport.Version, userId);
-
-        return revisedReport;
-    }
-
-    public async Task<bool> ApproveReportAsync(int reportId, int userId, string? comments = null)
+    /// <summary>
+    /// Record a per-member approval. If all required members have approved, auto-transitions to Approved.
+    /// </summary>
+    public async Task<bool> ApproveByMemberAsync(int reportId, int userId, string? comments = null)
     {
         var report = await _context.Reports.FindAsync(reportId);
-        if (report == null || (report.Status != ReportStatus.UnderReview && report.Status != ReportStatus.Submitted))
+        if (report == null || report.Status != ReportStatus.Submitted)
+            return false;
+
+        // Cannot approve own report
+        if (report.AuthorId == userId)
+            return false;
+
+        // Must be a member of the committee
+        if (!await IsUserMemberOfCommitteeAsync(userId, report.CommitteeId))
+            return false;
+
+        // Check if already approved
+        var alreadyApproved = await _context.ReportApprovals
+            .AnyAsync(a => a.ReportId == reportId && a.UserId == userId);
+        if (alreadyApproved) return false;
+
+        // Record the approval
+        var approval = new ReportApproval
+        {
+            ReportId = reportId,
+            UserId = userId,
+            ApprovedAt = DateTime.UtcNow,
+            Comments = comments
+        };
+        _context.ReportApprovals.Add(approval);
+        await _context.SaveChangesAsync();
+
+        await AddStatusHistoryAsync(reportId, ReportStatus.Submitted, ReportStatus.Submitted, userId,
+            comments ?? "Member approval recorded");
+
+        _logger.LogInformation("Report {Id} approved by member {UserId}", reportId, userId);
+
+        // Check if all required members have approved
+        await TryAutoApproveAsync(reportId);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Check if all required approvers have approved; if so, transition to Approved.
+    /// </summary>
+    private async Task TryAutoApproveAsync(int reportId)
+    {
+        var report = await _context.Reports.FindAsync(reportId);
+        if (report == null || report.Status != ReportStatus.Submitted)
+            return;
+
+        var pending = await GetPendingApproversAsync(reportId);
+        if (!pending.Any())
+        {
+            report.Status = ReportStatus.Approved;
+            report.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            await AddStatusHistoryAsync(reportId, ReportStatus.Submitted, ReportStatus.Approved, report.AuthorId,
+                "All committee members approved — report ready for summarization");
+
+            _logger.LogInformation("Report {Id} auto-approved (all members approved)", reportId);
+        }
+    }
+
+    /// <summary>
+    /// Head can finalize (force-approve) a report after 3 days, even with pending approvals.
+    /// </summary>
+    public async Task<bool> FinalizeByHeadAsync(int reportId, int userId, string? comments = null)
+    {
+        var report = await _context.Reports.FindAsync(reportId);
+        if (report == null || report.Status != ReportStatus.Submitted)
+            return false;
+
+        if (!await IsUserHeadOfCommitteeAsync(userId, report.CommitteeId))
+            return false;
+
+        if (!await CanHeadFinalizeAsync(reportId))
             return false;
 
         var oldStatus = report.Status;
@@ -206,26 +254,65 @@ public class ReportService
         report.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
+        var pending = await GetPendingApproversAsync(reportId);
+        var detail = $"Finalized by committee head after 3-day deadline ({pending.Count} pending approvals bypassed)";
         await AddStatusHistoryAsync(reportId, oldStatus, ReportStatus.Approved, userId,
-            comments ?? "Report approved");
+            comments ?? detail);
 
-        _logger.LogInformation("Report {Id} approved by user {UserId}", reportId, userId);
+        _logger.LogInformation("Report {Id} finalized by head {UserId}", reportId, userId);
         return true;
     }
 
-    public async Task<bool> ArchiveReportAsync(int reportId, int userId)
+    /// <summary>
+    /// Head can finalize if the report has been Submitted for at least 3 days.
+    /// </summary>
+    public async Task<bool> CanHeadFinalizeAsync(int reportId)
     {
         var report = await _context.Reports.FindAsync(reportId);
-        if (report == null || report.Status != ReportStatus.Approved)
+        if (report == null || report.Status != ReportStatus.Submitted || !report.SubmittedAt.HasValue)
             return false;
 
-        var oldStatus = report.Status;
-        report.Status = ReportStatus.Archived;
-        report.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+        var daysSinceSubmission = (DateTime.UtcNow - report.SubmittedAt.Value).TotalDays;
+        return daysSinceSubmission >= 3;
+    }
 
-        await AddStatusHistoryAsync(reportId, oldStatus, ReportStatus.Archived, userId, "Report archived");
-        return true;
+    // ── Approval Queries ──
+
+    /// <summary>
+    /// Get all approvals recorded for a report.
+    /// </summary>
+    public async Task<List<ReportApproval>> GetApprovalsAsync(int reportId)
+    {
+        return await _context.ReportApprovals
+            .Include(a => a.User)
+            .Where(a => a.ReportId == reportId)
+            .OrderBy(a => a.ApprovedAt)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Get committee members who haven't yet approved (excluding the author).
+    /// </summary>
+    public async Task<List<User>> GetPendingApproversAsync(int reportId)
+    {
+        var report = await _context.Reports.FindAsync(reportId);
+        if (report == null) return new();
+
+        var approvedUserIds = await _context.ReportApprovals
+            .Where(a => a.ReportId == reportId)
+            .Select(a => a.UserId)
+            .ToListAsync();
+
+        // All active committee members except the author
+        return await _context.CommitteeMemberships
+            .Include(m => m.User)
+            .Where(m => m.CommitteeId == report.CommitteeId
+                     && m.EffectiveTo == null
+                     && m.UserId != report.AuthorId
+                     && !approvedUserIds.Contains(m.UserId))
+            .Select(m => m.User)
+            .OrderBy(u => u.Name)
+            .ToListAsync();
     }
 
     // ── Attachments ──
@@ -289,30 +376,24 @@ public class ReportService
         return await IsUserHeadOfCommitteeAsync(userId, committee.ParentCommitteeId.Value);
     }
 
-    public async Task<bool> CanUserReviewReportAsync(int userId, int reportCommitteeId)
+    /// <summary>
+    /// Any active committee member (except the author) can review/approve a submitted report.
+    /// </summary>
+    public async Task<bool> CanUserReviewReportAsync(int userId, int reportCommitteeId, int authorId)
     {
-        // User can review if they are head of the report's committee or its parent
-        var isHead = await IsUserHeadOfCommitteeAsync(userId, reportCommitteeId);
-        var isParentHead = await IsUserHeadOfParentCommitteeAsync(userId, reportCommitteeId);
-
-        // Also check for SystemAdmin or Chairman roles
-        var user = await _context.Users.FindAsync(userId);
-        var isPrivileged = user?.SystemRole == SystemRole.SystemAdmin
-                        || user?.SystemRole == SystemRole.Chairman;
-
-        return isHead || isParentHead || isPrivileged;
+        if (userId == authorId) return false;
+        return await IsUserMemberOfCommitteeAsync(userId, reportCommitteeId);
     }
 
     // ── Stats ──
 
-    public async Task<(int total, int draft, int submitted, int underReview, int approved)> GetReportStatsAsync()
+    public async Task<(int total, int draft, int submitted, int approved)> GetReportStatsAsync()
     {
-        var total = await _context.Reports.CountAsync(r => r.Status != ReportStatus.Archived);
+        var total = await _context.Reports.CountAsync();
         var draft = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Draft);
         var submitted = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Submitted);
-        var underReview = await _context.Reports.CountAsync(r => r.Status == ReportStatus.UnderReview);
         var approved = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Approved);
-        return (total, draft, submitted, underReview, approved);
+        return (total, draft, submitted, approved);
     }
 
     public async Task<List<Committee>> GetUserCommitteesAsync(int userId)
@@ -357,7 +438,7 @@ public class ReportService
         foreach (var sourceId in sourceReportIds)
         {
             var source = await _context.Reports.FindAsync(sourceId);
-            if (source != null && (source.Status == ReportStatus.Approved || source.Status == ReportStatus.Submitted))
+            if (source != null && source.Status == ReportStatus.Approved)
             {
                 var oldStatus = source.Status;
                 source.Status = ReportStatus.Summarized;
@@ -377,8 +458,8 @@ public class ReportService
     }
 
     /// <summary>
-    /// Gets reports available to be summarized: approved/submitted reports from
-    /// the specified committee and its sub-committees.
+    /// Gets approved reports from the specified committee and its sub-committees
+    /// that are available to be summarized.
     /// </summary>
     public async Task<List<Report>> GetSummarizableReportsAsync(int committeeId)
     {
@@ -389,7 +470,7 @@ public class ReportService
             .Include(r => r.Author)
             .Include(r => r.Committee)
             .Where(r => committeeIds.Contains(r.CommitteeId)
-                     && (r.Status == ReportStatus.Approved || r.Status == ReportStatus.Submitted)
+                     && r.Status == ReportStatus.Approved
                      && r.ReportType == ReportType.Detailed)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
@@ -474,7 +555,6 @@ public class ReportService
 
     /// <summary>
     /// Computes how many levels deep this report is in the summarization chain.
-    /// 0 = raw report, 1 = summary of raw reports, 2 = summary of summaries, etc.
     /// </summary>
     public async Task<int> GetSummarizationDepthAsync(int reportId)
     {

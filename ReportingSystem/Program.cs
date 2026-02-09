@@ -122,22 +122,16 @@ using (var scope = app.Services.CreateScope())
         await context.Database.EnsureCreatedAsync();
         logger.LogInformation("Database is ready.");
 
-        // Seed the database with initial data
-        logger.LogInformation("Seeding database with initial data...");
-        await SeedData.InitializeAsync(context);
-        await OrganizationSeeder.SeedAsync(context);
+        // Seed admin user only
         await UserSeeder.SeedAdminUsersAsync(context);
 
-        // Seed default report templates
-        var templateService = services.GetRequiredService<ReportTemplateService>();
-        await templateService.SeedDefaultTemplatesAsync();
-
-        // Seed default knowledge base categories
-        var knowledgeService = services.GetRequiredService<KnowledgeBaseService>();
-        await knowledgeService.SeedDefaultCategoriesAsync();
-
-        // Seed demo/transactional data (reports, directives, meetings, etc.)
-        // logger.LogInformation("Seeding demo data...");
+        // Organization, templates, knowledge base, and demo data seeding commented out
+        // await SeedData.InitializeAsync(context);
+        // await OrganizationSeeder.SeedAsync(context);
+        // var templateService = services.GetRequiredService<ReportTemplateService>();
+        // await templateService.SeedDefaultTemplatesAsync();
+        // var knowledgeService = services.GetRequiredService<KnowledgeBaseService>();
+        // await knowledgeService.SeedDefaultCategoriesAsync();
         // await DemoDataSeeder.SeedAsync(context);
 
         logger.LogInformation("Database seeding completed.");

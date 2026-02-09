@@ -86,5 +86,8 @@ public enum AuditActionType
 
     // Directive-specific
     DirectiveForwarded,
-    DirectiveAcknowledged
+    DirectiveAcknowledged,
+
+    // Report-specific
+    ReportApproved
 }

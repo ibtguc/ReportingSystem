@@ -51,11 +51,9 @@
             {
                 ReportingSystem.Models.ReportStatus.Draft => "bg-secondary",
                 ReportingSystem.Models.ReportStatus.Submitted => "bg-primary",
-                ReportingSystem.Models.ReportStatus.UnderReview => "bg-warning text-dark",
                 ReportingSystem.Models.ReportStatus.FeedbackRequested => "bg-danger",
-                ReportingSystem.Models.ReportStatus.Revised => "bg-info",
                 ReportingSystem.Models.ReportStatus.Approved => "bg-success",
-                ReportingSystem.Models.ReportStatus.Archived => "bg-dark",
+                ReportingSystem.Models.ReportStatus.Summarized => "bg-purple",
                 _ => "bg-secondary"
             };
             var typeClass = Model.Report.ReportType switch
@@ -256,7 +254,7 @@
             }
         </div>
 
-        <!-- Sidebar: Actions & Status History -->
+        <!-- Sidebar: Actions, Approvals & Status History -->
         <div class="col-lg-4">
             <!-- Drill-Down & Summary Actions -->
             @if (Model.Report.ReportType == ReportingSystem.Models.ReportType.Summary || Model.Report.ReportType == ReportingSystem.Models.ReportType.ExecutiveSummary)
@@ -269,6 +267,83 @@
                         @if (Model.SummarizationDepth > 0)
                         {
                             <span class="badge bg-warning text-dark text-center">Summarization Depth: @Model.SummarizationDepth</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Collective Approval Panel -->
+            @if (Model.Report.Status == ReportingSystem.Models.ReportStatus.Submitted ||
+                 Model.Report.Status == ReportingSystem.Models.ReportStatus.Approved ||
+                 Model.Report.Status == ReportingSystem.Models.ReportStatus.Summarized)
+            {
+                <div class="card shadow-sm mb-3 border-start border-4 border-success">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-people-fill"></i> Committee Approval</h5>
+                    </div>
+                    <div class="card-body">
+                        @{
+                            var totalRequired = Model.Approvals.Count + Model.PendingApprovers.Count;
+                            var approvedCount = Model.Approvals.Count;
+                        }
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold">@approvedCount / @totalRequired approved</span>
+                            @if (Model.Report.Status == ReportingSystem.Models.ReportStatus.Approved)
+                            {
+                                <span class="badge bg-success">Approved</span>
+                            }
+                            else if (Model.Report.Status == ReportingSystem.Models.ReportStatus.Submitted)
+                            {
+                                <span class="badge bg-primary">Awaiting Approvals</span>
+                            }
+                        </div>
+                        <!-- Progress bar -->
+                        @if (totalRequired > 0)
+                        {
+                            var pct = (int)(approvedCount * 100.0 / totalRequired);
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: @(pct)%"></div>
+                            </div>
+                        }
+                        <!-- Approved members -->
+                        @foreach (var approval in Model.Approvals)
+                        {
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span class="small">@approval.User.Name</span>
+                                <span class="text-muted small ms-auto">@approval.ApprovedAt.ToString("MMM dd")</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(approval.Comments))
+                            {
+                                <div class="small fst-italic text-muted ms-4 mb-1">@approval.Comments</div>
+                            }
+                        }
+                        <!-- Pending members -->
+                        @foreach (var user in Model.PendingApprovers)
+                        {
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="bi bi-hourglass text-warning me-2"></i>
+                                <span class="small text-muted">@user.Name</span>
+                                <span class="text-muted small ms-auto">Pending</span>
+                            </div>
+                        }
+
+                        @if (Model.Report.Status == ReportingSystem.Models.ReportStatus.Submitted && Model.Report.SubmittedAt.HasValue)
+                        {
+                            var daysSinceSubmit = (DateTime.UtcNow - Model.Report.SubmittedAt.Value).TotalDays;
+                            var daysRemaining = Math.Max(0, 3 - daysSinceSubmit);
+                            @if (daysRemaining > 0)
+                            {
+                                <div class="text-muted small mt-2">
+                                    <i class="bi bi-clock"></i> Head can finalize in @daysRemaining.ToString("F0") day(s)
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-warning small mt-2">
+                                    <i class="bi bi-exclamation-triangle"></i> 3-day deadline passed — head can finalize
+                                </div>
+                            }
                         }
                     </div>
                 </div>
@@ -288,8 +363,8 @@
                     {
                         <form method="post" asp-page-handler="Submit" asp-route-id="@Model.Report.Id">
                             <button type="submit" class="btn btn-primary w-100"
-                                    onclick="return confirm('Submit this report for review?');">
-                                <i class="bi bi-send"></i> Submit for Review
+                                    onclick="return confirm('Submit this report for collective approval?');">
+                                <i class="bi bi-send"></i> Submit for Approval
                             </button>
                         </form>
                         @if (Model.SubmitRecipients.Any())
@@ -302,14 +377,27 @@
                     }
                     @if (Model.CanReview && Model.Report.Status == ReportingSystem.Models.ReportStatus.Submitted)
                     {
-                        <form method="post" asp-page-handler="StartReview" asp-route-id="@Model.Report.Id">
-                            <button type="submit" class="btn btn-warning w-100">
-                                <i class="bi bi-search"></i> Start Review
-                            </button>
-                        </form>
-                    }
-                    @if (Model.CanReview && Model.Report.Status == ReportingSystem.Models.ReportStatus.UnderReview)
-                    {
+                        @if (!Model.HasAlreadyApproved)
+                        {
+                            <!-- Approve -->
+                            <div class="border rounded p-2">
+                                <form method="post" asp-page-handler="Approve" asp-route-id="@Model.Report.Id">
+                                    <label class="form-label small fw-semibold">Approve Report</label>
+                                    <textarea asp-for="ApprovalComments" class="form-control form-control-sm mb-2" rows="2"
+                                              placeholder="Optional comments..."></textarea>
+                                    <button type="submit" class="btn btn-success btn-sm w-100"
+                                            onclick="return confirm('Record your approval for this report?');">
+                                        <i class="bi bi-check-circle"></i> Approve
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-success py-2 mb-0 small">
+                                <i class="bi bi-check-circle-fill"></i> You have already approved this report.
+                            </div>
+                        }
                         <!-- Request Feedback -->
                         <div class="border rounded p-2">
                             <form method="post" asp-page-handler="RequestFeedback" asp-route-id="@Model.Report.Id">
@@ -324,38 +412,31 @@
                                 <i class="bi bi-bell"></i> Will notify: @Model.Report.Author.Name
                             </div>
                         </div>
-                        <!-- Approve -->
-                        <div class="border rounded p-2">
-                            <form method="post" asp-page-handler="Approve" asp-route-id="@Model.Report.Id">
-                                <label class="form-label small fw-semibold">Approve Report</label>
-                                <textarea asp-for="ApprovalComments" class="form-control form-control-sm mb-2" rows="2"
-                                          placeholder="Optional comments..."></textarea>
-                                <button type="submit" class="btn btn-success btn-sm w-100"
-                                        onclick="return confirm('Approve this report?');">
-                                    <i class="bi bi-check-circle"></i> Approve
-                                </button>
-                            </form>
-                            <div class="small text-muted mt-1">
-                                <i class="bi bi-bell"></i> Will notify: @Model.Report.Author.Name
+                        <!-- Head Finalize -->
+                        @if (Model.CanFinalize)
+                        {
+                            <div class="border rounded p-2 border-warning">
+                                <form method="post" asp-page-handler="Finalize" asp-route-id="@Model.Report.Id">
+                                    <label class="form-label small fw-semibold text-warning">Head Override: Finalize</label>
+                                    <textarea asp-for="ApprovalComments" class="form-control form-control-sm mb-2" rows="2"
+                                              placeholder="Reason for early finalization..."></textarea>
+                                    <button type="submit" class="btn btn-warning btn-sm w-100"
+                                            onclick="return confirm('Finalize this report? This bypasses remaining approvals.');">
+                                        <i class="bi bi-lightning-charge"></i> Finalize (Head Override)
+                                    </button>
+                                </form>
                             </div>
-                        </div>
+                        }
                     }
                     @if (Model.IsAuthor && Model.Report.Status == ReportingSystem.Models.ReportStatus.FeedbackRequested)
                     {
-                        <a asp-page="Edit" asp-route-id="@Model.Report.Id" asp-route-revise="true" class="btn btn-info">
-                            <i class="bi bi-pencil-square"></i> Create Revision
+                        <a asp-page="Edit" asp-route-id="@Model.Report.Id" class="btn btn-info">
+                            <i class="bi bi-pencil-square"></i> Revise & Resubmit
                         </a>
                     }
-                    @if (Model.CanReview && Model.Report.Status == ReportingSystem.Models.ReportStatus.Approved)
-                    {
-                        <form method="post" asp-page-handler="Archive" asp-route-id="@Model.Report.Id">
-                            <button type="submit" class="btn btn-dark btn-sm w-100"
-                                    onclick="return confirm('Archive this report?');">
-                                <i class="bi bi-archive"></i> Archive
-                            </button>
-                        </form>
-                    }
-                    @if (!Model.CanEdit && !Model.CanSubmit && !Model.CanReview && Model.Report.Status != ReportingSystem.Models.ReportStatus.FeedbackRequested)
+                    @if (!Model.CanEdit && !Model.CanSubmit && !Model.CanReview
+                        && Model.Report.Status != ReportingSystem.Models.ReportStatus.FeedbackRequested
+                        && Model.Report.Status != ReportingSystem.Models.ReportStatus.Submitted)
                     {
                         <p class="text-muted small mb-0">No actions available for this report in its current state.</p>
                     }

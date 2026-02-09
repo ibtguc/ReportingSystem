@@ -13,12 +13,9 @@ public enum ReportStatus
 {
     Draft,
     Submitted,
-    UnderReview,
     FeedbackRequested,
-    Revised,
-    Summarized,
     Approved,
-    Archived
+    Summarized
 }
 
 public class Report
@@ -95,4 +92,28 @@ public class Report
     /// When this report IS a source — links to summaries that reference it.
     /// </summary>
     public ICollection<ReportSourceLink> SummaryLinks { get; set; } = new List<ReportSourceLink>();
+
+    /// <summary>
+    /// Per-member approvals for collective committee sign-off.
+    /// </summary>
+    public ICollection<ReportApproval> Approvals { get; set; } = new List<ReportApproval>();
+}
+
+/// <summary>
+/// Tracks individual committee member approvals for a report.
+/// All non-author members must approve before the report reaches "Approved" status.
+/// </summary>
+public class ReportApproval
+{
+    public int Id { get; set; }
+    public int ReportId { get; set; }
+    public int UserId { get; set; }
+    public DateTime ApprovedAt { get; set; } = DateTime.UtcNow;
+
+    [StringLength(500)]
+    public string? Comments { get; set; }
+
+    // Navigation
+    public Report Report { get; set; } = null!;
+    public User User { get; set; } = null!;
 }

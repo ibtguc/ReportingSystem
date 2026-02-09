@@ -23,7 +23,7 @@ public class DashboardService
         data.PendingExecutiveSummaries = await _context.Reports
             .Include(r => r.Author).Include(r => r.Committee)
             .Where(r => r.ReportType == ReportType.ExecutiveSummary
-                && (r.Status == ReportStatus.Submitted || r.Status == ReportStatus.UnderReview))
+                && r.Status == ReportStatus.Submitted)
             .OrderByDescending(r => r.CreatedAt)
             .Take(10)
             .ToListAsync();
@@ -103,7 +103,7 @@ public class DashboardService
 
         // Cross-stream status
         data.ReportsAwaitingReview = await _context.Reports
-            .CountAsync(r => r.Status == ReportStatus.Submitted || r.Status == ReportStatus.UnderReview);
+            .CountAsync(r => r.Status == ReportStatus.Submitted);
         data.ActiveDirectives = await _context.Directives
             .CountAsync(d => d.Status != DirectiveStatus.Closed);
         data.UpcomingMeetings = await _context.Meetings
@@ -133,7 +133,7 @@ public class DashboardService
         data.PendingReports = await _context.Reports
             .Include(r => r.Author).Include(r => r.Committee)
             .Where(r => headCommitteeIds.Contains(r.CommitteeId)
-                && (r.Status == ReportStatus.Submitted || r.Status == ReportStatus.UnderReview))
+                && r.Status == ReportStatus.Submitted)
             .OrderByDescending(r => r.CreatedAt)
             .Take(15)
             .ToListAsync();
@@ -180,7 +180,7 @@ public class DashboardService
         // My draft reports
         data.DraftReports = await _context.Reports
             .Include(r => r.Committee)
-            .Where(r => r.AuthorId == userId && (r.Status == ReportStatus.Draft || r.Status == ReportStatus.Revised))
+            .Where(r => r.AuthorId == userId && r.Status == ReportStatus.Draft)
             .OrderByDescending(r => r.CreatedAt)
             .Take(5)
             .ToListAsync();

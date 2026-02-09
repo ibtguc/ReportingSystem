@@ -46,7 +46,7 @@ public class IndexModel : PageModel
         var userId = GetUserId();
 
         // Load stats
-        ArchivedReports = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Archived);
+        ArchivedReports = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Summarized);
         ClosedDirectives = await _context.Directives.CountAsync(d => d.Status == DirectiveStatus.Closed);
         FinalizedMeetings = await _context.Meetings.CountAsync(m => m.Status == MeetingStatus.Finalized);
 
@@ -73,7 +73,7 @@ public class IndexModel : PageModel
         var query = _context.Reports
             .Include(r => r.Author)
             .Include(r => r.Committee)
-            .Where(r => r.Status == ReportStatus.Archived);
+            .Where(r => r.Status == ReportStatus.Summarized);
 
         if (CommitteeId.HasValue)
             query = query.Where(r => r.CommitteeId == CommitteeId.Value);

@@ -64,7 +64,7 @@ public class AnalyticsService
                     a.Status != ActionItemStatus.Completed && a.Status != ActionItemStatus.Verified),
 
             // Compliance: reports approved vs total submitted
-            ReportsApproved = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Approved || r.Status == ReportStatus.Archived),
+            ReportsApproved = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Approved || r.Status == ReportStatus.Summarized),
             ReportsSubmitted = await _context.Reports.CountAsync(r => r.Status != ReportStatus.Draft),
 
             // Knowledge base
@@ -129,7 +129,7 @@ public class AnalyticsService
                     d.Status != DirectiveStatus.Closed && d.Status != DirectiveStatus.Verified),
                 PendingReports = await _context.Reports.CountAsync(r =>
                     r.CommitteeId == committee.Id &&
-                    (r.Status == ReportStatus.Submitted || r.Status == ReportStatus.UnderReview))
+                    r.Status == ReportStatus.Submitted)
             });
         }
 

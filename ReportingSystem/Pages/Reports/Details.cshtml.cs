@@ -30,6 +30,11 @@ public class DetailsModel : PageModel
     public bool CanSubmit { get; set; }
     public bool CanReview { get; set; }
     public bool IsAuthor { get; set; }
+    public bool IsHead { get; set; }
+    public bool CanFinalize { get; set; }
+    public bool HasAlreadyApproved { get; set; }
+    public List<ReportApproval> Approvals { get; set; } = new();
+    public List<User> PendingApprovers { get; set; } = new();
     public List<ReportSourceLink> SourceLinks { get; set; } = new();
     public List<Report> SummariesOfThis { get; set; } = new();
     public int SummarizationDepth { get; set; }
@@ -61,6 +66,13 @@ public class DetailsModel : PageModel
         Report = report;
         await ComputePermissions();
 
+        // Load approval tracking
+        Approvals = report.Approvals.OrderBy(a => a.ApprovedAt).ToList();
+        PendingApprovers = await _reportService.GetPendingApproversAsync(id);
+        CanFinalize = IsHead && report.Status == ReportStatus.Submitted
+            && await _reportService.CanHeadFinalizeAsync(id);
+        HasAlreadyApproved = Approvals.Any(a => a.UserId == GetUserId());
+
         // Phase 4: Load summarization data
         SourceLinks = await _reportService.GetSourceLinksAsync(id);
         SummariesOfThis = await _reportService.GetSummariesOfReportAsync(id);
@@ -81,26 +93,12 @@ public class DetailsModel : PageModel
         var success = await _reportService.SubmitReportAsync(id, userId);
         if (success && report != null)
         {
-            await _auditService.LogStatusChangeAsync("Report", id, null, "Draft", "Submitted", userId, User.Identity?.Name);
+            var oldStatus = report.Status == ReportStatus.FeedbackRequested ? "FeedbackRequested" : "Draft";
+            await _auditService.LogStatusChangeAsync("Report", id, null, oldStatus, "Submitted", userId, User.Identity?.Name);
             await _notificationService.NotifyReportSubmittedAsync(id, report.Title, report.AuthorId, report.CommitteeId);
         }
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
-            success ? "Report submitted for review." : "Unable to submit report.";
-        return RedirectToPage(new { id });
-    }
-
-    public async Task<IActionResult> OnPostStartReviewAsync(int id)
-    {
-        var userId = GetUserId();
-        var report = await _reportService.GetReportByIdAsync(id);
-        var success = await _reportService.StartReviewAsync(id, userId);
-        if (success && report != null)
-        {
-            await _auditService.LogStatusChangeAsync("Report", id, null, "Submitted", "UnderReview", userId, User.Identity?.Name);
-            await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Under Review");
-        }
-        TempData[success ? "SuccessMessage" : "ErrorMessage"] =
-            success ? "Review started." : "Unable to start review.";
+            success ? "Report submitted for collective approval." : "Unable to submit report.";
         return RedirectToPage(new { id });
     }
 
@@ -112,7 +110,7 @@ public class DetailsModel : PageModel
         var success = await _reportService.RequestFeedbackAsync(id, userId, comments);
         if (success && report != null)
         {
-            await _auditService.LogStatusChangeAsync("Report", id, null, "UnderReview", "FeedbackRequested", userId, User.Identity?.Name, comments);
+            await _auditService.LogStatusChangeAsync("Report", id, null, "Submitted", "FeedbackRequested", userId, User.Identity?.Name, comments);
             await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Feedback Requested");
         }
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
@@ -124,29 +122,37 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var report = await _reportService.GetReportByIdAsync(id);
-        var success = await _reportService.ApproveReportAsync(id, userId, ApprovalComments);
+        var success = await _reportService.ApproveByMemberAsync(id, userId, ApprovalComments);
         if (success && report != null)
         {
-            await _auditService.LogStatusChangeAsync("Report", id, null, "UnderReview", "Approved", userId, User.Identity?.Name, ApprovalComments);
-            await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Approved");
+            await _auditService.LogAsync(AuditActionType.ReportApproved, "Report", id,
+                userId: userId, userName: User.Identity?.Name, details: ApprovalComments ?? "Member approval");
+
+            // Check if report has moved to Approved (all members approved)
+            var updated = await _reportService.GetReportByIdAsync(id);
+            if (updated?.Status == ReportStatus.Approved)
+            {
+                await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Approved");
+            }
         }
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
-            success ? "Report approved." : "Unable to approve report.";
+            success ? "Your approval has been recorded." : "Unable to approve report.";
         return RedirectToPage(new { id });
     }
 
-    public async Task<IActionResult> OnPostArchiveAsync(int id)
+    public async Task<IActionResult> OnPostFinalizeAsync(int id)
     {
         var userId = GetUserId();
         var report = await _reportService.GetReportByIdAsync(id);
-        var success = await _reportService.ArchiveReportAsync(id, userId);
+        var success = await _reportService.FinalizeByHeadAsync(id, userId, ApprovalComments);
         if (success && report != null)
         {
-            await _auditService.LogStatusChangeAsync("Report", id, null, "Approved", "Archived", userId, User.Identity?.Name);
-            await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Archived");
+            await _auditService.LogStatusChangeAsync("Report", id, null, "Submitted", "Approved", userId, User.Identity?.Name,
+                ApprovalComments ?? "Finalized by head after 3-day deadline");
+            await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Approved (Finalized by Head)");
         }
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
-            success ? "Report archived." : "Unable to archive report.";
+            success ? "Report finalized and approved by head." : "Unable to finalize report.";
         return RedirectToPage(new { id });
     }
 
@@ -173,8 +179,9 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         IsAuthor = Report.AuthorId == userId;
-        CanEdit = IsAuthor && Report.Status == ReportStatus.Draft;
-        CanSubmit = IsAuthor && (Report.Status == ReportStatus.Draft || Report.Status == ReportStatus.Revised);
-        CanReview = await _reportService.CanUserReviewReportAsync(userId, Report.CommitteeId);
+        IsHead = await _reportService.IsUserHeadOfCommitteeAsync(userId, Report.CommitteeId);
+        CanEdit = IsAuthor && (Report.Status == ReportStatus.Draft || Report.Status == ReportStatus.FeedbackRequested);
+        CanSubmit = IsAuthor && (Report.Status == ReportStatus.Draft || Report.Status == ReportStatus.FeedbackRequested);
+        CanReview = await _reportService.CanUserReviewReportAsync(userId, Report.CommitteeId, Report.AuthorId);
     }
 }

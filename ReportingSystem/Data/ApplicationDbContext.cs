@@ -25,6 +25,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Attachment> Attachments { get; set; }
     public DbSet<ReportStatusHistory> ReportStatusHistories { get; set; }
     public DbSet<ReportSourceLink> ReportSourceLinks { get; set; }
+    public DbSet<ReportApproval> ReportApprovals { get; set; }
 
     // Directives
     public DbSet<Directive> Directives { get; set; }
@@ -219,6 +220,22 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.SourceReport)
                 .WithMany(r => r.SummaryLinks)
                 .HasForeignKey(e => e.SourceReportId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ReportApproval
+        modelBuilder.Entity<ReportApproval>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ReportId, e.UserId }).IsUnique();
+            entity.HasIndex(e => e.ReportId);
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.Approvals)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

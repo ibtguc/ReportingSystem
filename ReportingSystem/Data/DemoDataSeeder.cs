@@ -243,8 +243,8 @@ public static class DemoDataSeeder
             "Access to updated ABET 2025 criteria documentation",
             "Faculty Development Center coordination for rubric workshops");
         H(r1, ReportStatus.Draft, ReportStatus.Submitted, lamiaRefaat, 44);
-        H(r1, ReportStatus.Submitted, ReportStatus.UnderReview, dirAcadProg, 42);
-        H(r1, ReportStatus.UnderReview, ReportStatus.Approved, dirAcadProg, 38, "Thorough review. Approved for summarization.");
+        H(r1, ReportStatus.Submitted, ReportStatus.Submitted, dirAcadProg, 42);
+        H(r1, ReportStatus.Submitted, ReportStatus.Approved, dirAcadProg, 38, "Thorough review. Approved for summarization.");
 
         var r2 = R("Faculty Recruitment Progress — Fall 2025 Cohort",
             ReportType.Detailed, ReportStatus.Approved,
@@ -255,8 +255,8 @@ public static class DemoDataSeeder
             "HR Directorate fast-track processing for visa-required candidates",
             "Consider visiting professor arrangements as interim solution");
         H(r2, ReportStatus.Draft, ReportStatus.Submitted, yasserNasr, 41);
-        H(r2, ReportStatus.Submitted, ReportStatus.UnderReview, dirAcadProg, 40);
-        H(r2, ReportStatus.UnderReview, ReportStatus.Approved, dirAcadProg, 37, "Approved. Salary adjustment recommendation forwarded to Finance.");
+        H(r2, ReportStatus.Submitted, ReportStatus.Submitted, dirAcadProg, 40);
+        H(r2, ReportStatus.Submitted, ReportStatus.Approved, dirAcadProg, 37, "Approved. Salary adjustment recommendation forwarded to Finance.");
 
         var r3 = R("Mid-Term Examination Logistics Report",
             ReportType.Detailed, ReportStatus.Approved,
@@ -265,8 +265,8 @@ public static class DemoDataSeeder
             "Procure dedicated exam scheduling software for Spring 2026",
             "Budget allocation for exam management system (est. EGP 120,000)");
         H(r3, ReportStatus.Draft, ReportStatus.Submitted, soniaGuirguis, 39);
-        H(r3, ReportStatus.Submitted, ReportStatus.UnderReview, dirAcadProg, 38);
-        H(r3, ReportStatus.UnderReview, ReportStatus.Approved, dirAcadProg, 35);
+        H(r3, ReportStatus.Submitted, ReportStatus.Submitted, dirAcadProg, 38);
+        H(r3, ReportStatus.Submitted, ReportStatus.Approved, dirAcadProg, 35);
 
         var r4 = R("E-Learning Platform Utilization — Q4 2025",
             ReportType.Detailed, ReportStatus.Approved,
@@ -275,8 +275,8 @@ public static class DemoDataSeeder
             "Expand server capacity for Spring 2026 enrollment surge",
             "2 additional application servers, CDN subscription upgrade");
         H(r4, ReportStatus.Draft, ReportStatus.Submitted, magedBotros, 37);
-        H(r4, ReportStatus.Submitted, ReportStatus.UnderReview, dirAcadProg, 36);
-        H(r4, ReportStatus.UnderReview, ReportStatus.Approved, dirAcadProg, 33);
+        H(r4, ReportStatus.Submitted, ReportStatus.Submitted, dirAcadProg, 36);
+        H(r4, ReportStatus.Submitted, ReportStatus.Approved, dirAcadProg, 33);
 
         // ── L3 Process Reports (Sector 3: Technology — feedback loop) ──
 
@@ -289,8 +289,8 @@ public static class DemoDataSeeder
             "Coordination with all directorates for endpoint compliance",
             "Board-level briefing recommended for ransomware preparedness");
         H(r5, ReportStatus.Draft, ReportStatus.Submitted, karimTawfik, 49);
-        H(r5, ReportStatus.Submitted, ReportStatus.UnderReview, dirITInfra, 47);
-        H(r5, ReportStatus.UnderReview, ReportStatus.Approved, dirITInfra, 43);
+        H(r5, ReportStatus.Submitted, ReportStatus.Submitted, dirITInfra, 47);
+        H(r5, ReportStatus.Submitted, ReportStatus.Approved, dirITInfra, 43);
 
         var r6 = R("Network Infrastructure Upgrade Progress",
             ReportType.Detailed, ReportStatus.FeedbackRequested,
@@ -300,8 +300,8 @@ public static class DemoDataSeeder
             "Additional contractor crew for parallel installation",
             "Facilities Directorate coordination for conduit access");
         H(r6, ReportStatus.Draft, ReportStatus.Submitted, dirITInfra, 29);
-        H(r6, ReportStatus.Submitted, ReportStatus.UnderReview, gsTech, 28);
-        H(r6, ReportStatus.UnderReview, ReportStatus.FeedbackRequested, gsTech, 25,
+        H(r6, ReportStatus.Submitted, ReportStatus.Submitted, gsTech, 28);
+        H(r6, ReportStatus.Submitted, ReportStatus.FeedbackRequested, gsTech, 25,
             "Need more detail on budget impact of the 3-week delay. Please add cost variance analysis and revised timeline.");
 
         var r7 = R("Network Infrastructure Upgrade Progress (Revised)",
@@ -313,8 +313,8 @@ public static class DemoDataSeeder
             version: 2);
         r7.OriginalReport = r6;
         H(r7, ReportStatus.Draft, ReportStatus.Submitted, dirITInfra, 21);
-        H(r7, ReportStatus.Submitted, ReportStatus.UnderReview, gsTech, 20);
-        H(r7, ReportStatus.UnderReview, ReportStatus.Approved, gsTech, 18, "Comprehensive revision. Approved.");
+        H(r7, ReportStatus.Submitted, ReportStatus.Submitted, gsTech, 20);
+        H(r7, ReportStatus.Submitted, ReportStatus.Approved, gsTech, 18, "Comprehensive revision. Approved.");
 
         // ── L3 Process Reports (Sector 4: Finance) ──
 
@@ -327,13 +327,13 @@ public static class DemoDataSeeder
         H(r8, ReportStatus.Draft, ReportStatus.Submitted, dirFinance, 11);
 
         var r9 = R("FY2026 Budget Framework Proposal",
-            ReportType.Detailed, ReportStatus.UnderReview,
+            ReportType.Detailed, ReportStatus.Submitted,
             dirFinance, budgeting, 15,
             "<h3>Budget Framework</h3><p>Proposed FY2026 operating budget: EGP 485M (7.2% increase from FY2025). Capital expenditure requests total EGP 62M across 23 projects.</p><h4>Key Assumptions</h4><ul><li>Enrollment growth: 4.5%</li><li>Tuition increase: 6% (aligned with CPI)</li><li>Staff cost inflation: 8%</li><li>Energy cost increase: 12%</li></ul><p>Deficit funding gap of EGP 18M identified — requires either revenue enhancement or scope reduction in capital projects.</p>",
             "Present budget options to Top Level Committee for strategic guidance",
             "Finance committee workshop sessions (3 half-days)");
         H(r9, ReportStatus.Draft, ReportStatus.Submitted, dirFinance, 14);
-        H(r9, ReportStatus.Submitted, ReportStatus.UnderReview, gsFinance, 13, "Under review by GS Finance & Governance.");
+        H(r9, ReportStatus.Submitted, ReportStatus.Submitted, gsFinance, 13, "Under review by GS Finance & Governance.");
 
         var r10 = R("Internal Controls Assessment — Draft",
             ReportType.Detailed, ReportStatus.Draft,
@@ -349,8 +349,8 @@ public static class DemoDataSeeder
             "Increase CS program capacity by 50 seats for Fall 2026",
             "Additional CS lab infrastructure and faculty hiring");
         H(r11, ReportStatus.Draft, ReportStatus.Submitted, dirStudAffairs, 34);
-        H(r11, ReportStatus.Submitted, ReportStatus.UnderReview, gsStudent, 33);
-        H(r11, ReportStatus.UnderReview, ReportStatus.Approved, gsStudent, 30);
+        H(r11, ReportStatus.Submitted, ReportStatus.Submitted, gsStudent, 33);
+        H(r11, ReportStatus.Submitted, ReportStatus.Approved, gsStudent, 30);
 
         var r12 = R("Student Mental Health Services — Quarterly Report",
             ReportType.Detailed, ReportStatus.Approved,
@@ -378,8 +378,8 @@ public static class DemoDataSeeder
             "Approve CS faculty recruitment budget increase and exam system procurement",
             "Combined budget request: EGP 170,000 (recruitment) + EGP 120,000 (exam system)");
         H(r14, ReportStatus.Draft, ReportStatus.Submitted, dirAcadProg, 27);
-        H(r14, ReportStatus.Submitted, ReportStatus.UnderReview, gsAcademic, 26);
-        H(r14, ReportStatus.UnderReview, ReportStatus.Approved, gsAcademic, 24, "Excellent summary. Forwarded budget requests to Finance.");
+        H(r14, ReportStatus.Submitted, ReportStatus.Submitted, gsAcademic, 26);
+        H(r14, ReportStatus.Submitted, ReportStatus.Approved, gsAcademic, 24, "Excellent summary. Forwarded budget requests to Finance.");
 
         var r15 = R("Research & Graduate Studies — Q4 2025 Summary",
             ReportType.Summary, ReportStatus.Approved,
@@ -395,8 +395,8 @@ public static class DemoDataSeeder
             "<h3>Directorate Summary</h3><p>Network upgrade Phase 2 at 72% completion. Cybersecurity posture improved with zero breaches. ISO 27001 recertification on track.</p><p>Key metrics: 99.8% network uptime, 12,847 blocked intrusions, 48-hour mean time to patch.</p>",
             "Approve zero-trust architecture initiative for FY2026");
         H(r16, ReportStatus.Draft, ReportStatus.Submitted, dirITInfra, 15);
-        H(r16, ReportStatus.Submitted, ReportStatus.UnderReview, gsTech, 14);
-        H(r16, ReportStatus.UnderReview, ReportStatus.Approved, gsTech, 12);
+        H(r16, ReportStatus.Submitted, ReportStatus.Submitted, gsTech, 14);
+        H(r16, ReportStatus.Submitted, ReportStatus.Approved, gsTech, 12);
 
         // ── L1 Directorate Summary Reports ──
 
@@ -407,8 +407,8 @@ public static class DemoDataSeeder
             "Approve cross-directorate budget for CS recruitment and exam system",
             "EGP 290,000 aggregate from Academic Programs Directorate");
         H(r17, ReportStatus.Draft, ReportStatus.Submitted, gsAcademic, 17);
-        H(r17, ReportStatus.Submitted, ReportStatus.UnderReview, chairman, 16);
-        H(r17, ReportStatus.UnderReview, ReportStatus.Approved, chairman, 14, "Approved. CS recruitment is institutional priority.");
+        H(r17, ReportStatus.Submitted, ReportStatus.Submitted, chairman, 16);
+        H(r17, ReportStatus.Submitted, ReportStatus.Approved, chairman, 14, "Approved. CS recruitment is institutional priority.");
 
         var r18 = R("Technology & Innovation Sector — Q4 2025 Executive Summary",
             ReportType.Summary, ReportStatus.Approved,
@@ -439,16 +439,16 @@ public static class DemoDataSeeder
             "<h3>Chairman's Office — Institutional Performance</h3><p>The institution demonstrated robust performance across all 5 sectors in Q4 2025. Key institutional metrics:</p><table><tr><th>Metric</th><th>Target</th><th>Actual</th></tr><tr><td>Student Enrollment</td><td>2,200</td><td>2,340</td></tr><tr><td>Research Grants Won</td><td>EGP 1.5M</td><td>EGP 2.1M</td></tr><tr><td>Infrastructure Uptime</td><td>99.5%</td><td>99.8%</td></tr><tr><td>Budget Utilization</td><td>95%</td><td>92%</td></tr></table><p>Three items require Chairman's decision: CS faculty budget, zero-trust security investment, and clinical psychologist hire.</p>",
             "Approve all three escalated budget requests totaling EGP 750,000");
         H(r21, ReportStatus.Draft, ReportStatus.Submitted, chiefStaff, 9);
-        H(r21, ReportStatus.Submitted, ReportStatus.UnderReview, chairman, 8);
-        H(r21, ReportStatus.UnderReview, ReportStatus.Approved, chairman, 6, "Approved. Schedule implementation reviews for each item.");
+        H(r21, ReportStatus.Submitted, ReportStatus.Submitted, chairman, 8);
+        H(r21, ReportStatus.Submitted, ReportStatus.Approved, chairman, 6, "Approved. Schedule implementation reviews for each item.");
 
         var r22 = R("Administration & Operations Sector — Q4 2025 Summary",
-            ReportType.Summary, ReportStatus.UnderReview,
+            ReportType.Summary, ReportStatus.Submitted,
             gsAdmin, topLevel, 7,
             "<h3>Sector Executive Summary</h3><p>Facilities maintenance completed 94% of scheduled preventive tasks. HR processed 67 new hires. Procurement cycle time reduced by 12%. Food safety compliance at 100%.</p><p>Energy costs rose 15% — exceeding budget by EGP 1.2M. Solar panel project proposal attached for FY2026 consideration.</p>",
             "Evaluate solar panel ROI for campus energy independence");
         H(r22, ReportStatus.Draft, ReportStatus.Submitted, gsAdmin, 6);
-        H(r22, ReportStatus.Submitted, ReportStatus.UnderReview, chairman, 5);
+        H(r22, ReportStatus.Submitted, ReportStatus.Submitted, chairman, 5);
 
         // ── Confidential Report ──
 
@@ -470,8 +470,8 @@ public static class DemoDataSeeder
             "Prioritize Materials Science lab equipment upgrade in FY2026 capital budget",
             "Equipment replacement budget: EGP 850,000");
         H(r24, ReportStatus.Draft, ReportStatus.Submitted, manalRizk, 29);
-        H(r24, ReportStatus.Submitted, ReportStatus.UnderReview, dirQuality, 28);
-        H(r24, ReportStatus.UnderReview, ReportStatus.Approved, dirQuality, 26);
+        H(r24, ReportStatus.Submitted, ReportStatus.Submitted, dirQuality, 28);
+        H(r24, ReportStatus.Submitted, ReportStatus.Approved, dirQuality, 26);
 
         // ── Research Grants ──
 
@@ -496,12 +496,12 @@ public static class DemoDataSeeder
         // ── Archived Report ──
 
         var r27 = R("Q3 2025 Institutional Performance Report (Archived)",
-            ReportType.ExecutiveSummary, ReportStatus.Archived,
+            ReportType.ExecutiveSummary, ReportStatus.Summarized,
             chiefStaff, topLevel, 95,
             "<h3>Q3 2025 Institutional Summary</h3><p>Archived. This report covers the Q3 2025 institutional performance metrics. Superseded by Q4 2025 report.</p>");
         H(r27, ReportStatus.Draft, ReportStatus.Submitted, chiefStaff, 94);
         H(r27, ReportStatus.Submitted, ReportStatus.Approved, chairman, 90);
-        H(r27, ReportStatus.Approved, ReportStatus.Archived, admin, 60, "Archived per retention policy.");
+        H(r27, ReportStatus.Approved, ReportStatus.Summarized, admin, 60, "Archived per retention policy.");
 
         // ── Additional Draft Reports ──
 
