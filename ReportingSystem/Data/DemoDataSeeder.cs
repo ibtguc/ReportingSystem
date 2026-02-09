@@ -595,7 +595,7 @@ public static class DemoDataSeeder
                 ForwardingAnnotation = annotation,
                 Deadline = deadline,
                 IsConfidential = confidential,
-                ParentDirectiveId = parent?.Id,
+                ParentDirective = parent,
                 CreatedAt = D(daysAgoCreated),
                 UpdatedAt = status > DirectiveStatus.Issued ? D(daysAgoCreated - 1) : null,
                 AcknowledgedAt = status >= DirectiveStatus.Acknowledged ? D(daysAgoCreated - 2) : null,
