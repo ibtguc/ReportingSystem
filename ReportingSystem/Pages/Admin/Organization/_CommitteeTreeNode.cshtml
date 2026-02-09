@@ -31,7 +31,7 @@
 
         <span class="badge @levelBadge.Item1 me-2">@levelBadge.Item2</span>
 
-        <a asp-page="Committees/Details" asp-route-id="@committee.Id" class="text-decoration-none fw-semibold me-2">
+        <a asp-page="Committees/Details" asp-route-id="@committee.Id" asp-route-returnTo="org" class="text-decoration-none fw-semibold me-2">
             @committee.Name
         </a>
 
@@ -57,7 +57,7 @@
         </small>
 
         <div class="btn-group btn-group-sm ms-2">
-            <a asp-page="Committees/Details" asp-route-id="@committee.Id" class="btn btn-outline-info btn-sm" title="Details">
+            <a asp-page="Committees/Details" asp-route-id="@committee.Id" asp-route-returnTo="org" class="btn btn-outline-info btn-sm" title="Details">
                 <i class="bi bi-eye"></i>
             </a>
             <a asp-page="Committees/Edit" asp-route-id="@committee.Id" class="btn btn-outline-primary btn-sm" title="Edit">

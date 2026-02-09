@@ -28,6 +28,16 @@ public class DetailsModel : PageModel
     [BindProperty]
     public CommitteeRole NewMemberRole { get; set; }
 
+    /// <summary>
+    /// Tracks which page the user came from: "org" for Org Tree, default is Committees list.
+    /// </summary>
+    [BindProperty(SupportsGet = true)]
+    public string? ReturnTo { get; set; }
+
+    public string BackUrl => ReturnTo == "org" ? "/Admin/Organization" : "/Admin/Organization/Committees";
+    public string BackLabel => ReturnTo == "org" ? "Back to Org Tree" : "Back to Committees";
+    public string BackIcon => ReturnTo == "org" ? "bi-diagram-3" : "bi-arrow-left";
+
     public async Task<IActionResult> OnGetAsync(int? id)
     {
         if (id == null) return NotFound();
