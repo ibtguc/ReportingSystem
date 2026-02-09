@@ -292,6 +292,13 @@
                                 <i class="bi bi-send"></i> Submit for Review
                             </button>
                         </form>
+                        @if (Model.SubmitRecipients.Any())
+                        {
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-bell"></i> Will notify:
+                                @string.Join(", ", Model.SubmitRecipients.Select(u => u.Name))
+                            </div>
+                        }
                     }
                     @if (Model.CanReview && Model.Report.Status == ReportingSystem.Models.ReportStatus.Submitted)
                     {
@@ -313,6 +320,9 @@
                                     <i class="bi bi-arrow-return-left"></i> Request Revision
                                 </button>
                             </form>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-bell"></i> Will notify: @Model.Report.Author.Name
+                            </div>
                         </div>
                         <!-- Approve -->
                         <div class="border rounded p-2">
@@ -325,6 +335,9 @@
                                     <i class="bi bi-check-circle"></i> Approve
                                 </button>
                             </form>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-bell"></i> Will notify: @Model.Report.Author.Name
+                            </div>
                         </div>
                     }
                     @if (Model.IsAuthor && Model.Report.Status == ReportingSystem.Models.ReportStatus.FeedbackRequested)

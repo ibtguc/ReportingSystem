@@ -11,10 +11,12 @@ namespace ReportingSystem.Pages.Meetings;
 public class CreateModel : PageModel
 {
     private readonly MeetingService _meetingService;
+    private readonly NotificationService _notificationService;
 
-    public CreateModel(MeetingService meetingService)
+    public CreateModel(MeetingService meetingService, NotificationService notificationService)
     {
         _meetingService = meetingService;
+        _notificationService = notificationService;
     }
 
     [BindProperty]
@@ -62,6 +64,16 @@ public class CreateModel : PageModel
         if (AddCommitteeMembers)
         {
             await _meetingService.AddAttendeesFromCommitteeAsync(meeting.Id, meeting.CommitteeId);
+        }
+
+        // Notify all attendees
+        var created = await _meetingService.GetMeetingByIdAsync(meeting.Id);
+        if (created != null)
+        {
+            foreach (var attendee in created.Attendees.Where(a => a.UserId != userId))
+            {
+                await _notificationService.NotifyMeetingInvitationAsync(meeting.Id, meeting.Title, attendee.UserId);
+            }
         }
 
         TempData["SuccessMessage"] = $"Meeting \"{meeting.Title}\" scheduled successfully.";

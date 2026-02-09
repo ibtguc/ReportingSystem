@@ -12,11 +12,13 @@ public class CreateModel : PageModel
 {
     private readonly DirectiveService _directiveService;
     private readonly ReportService _reportService;
+    private readonly NotificationService _notificationService;
 
-    public CreateModel(DirectiveService directiveService, ReportService reportService)
+    public CreateModel(DirectiveService directiveService, ReportService reportService, NotificationService notificationService)
     {
         _directiveService = directiveService;
         _reportService = reportService;
+        _notificationService = notificationService;
     }
 
     [BindProperty]
@@ -75,6 +77,9 @@ public class CreateModel : PageModel
         }
 
         var directive = await _directiveService.CreateDirectiveAsync(Directive, userId);
+
+        await _notificationService.NotifyDirectiveIssuedAsync(
+            directive.Id, directive.Title, directive.TargetCommitteeId, directive.TargetUserId);
 
         TempData["SuccessMessage"] = $"Directive \"{directive.Title}\" issued successfully.";
         return RedirectToPage("Details", new { id = directive.Id });

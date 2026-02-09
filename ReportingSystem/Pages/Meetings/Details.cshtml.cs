@@ -15,13 +15,16 @@ public class DetailsModel : PageModel
     private readonly MeetingService _meetingService;
     private readonly ConfidentialityService _confidentialityService;
     private readonly AuditService _auditService;
+    private readonly NotificationService _notificationService;
     private readonly ApplicationDbContext _context;
 
-    public DetailsModel(MeetingService meetingService, ConfidentialityService confidentialityService, AuditService auditService, ApplicationDbContext context)
+    public DetailsModel(MeetingService meetingService, ConfidentialityService confidentialityService,
+        AuditService auditService, NotificationService notificationService, ApplicationDbContext context)
     {
         _meetingService = meetingService;
         _confidentialityService = confidentialityService;
         _auditService = auditService;
+        _notificationService = notificationService;
         _context = context;
     }
 
@@ -85,7 +88,10 @@ public class DetailsModel : PageModel
 
     public async Task<IActionResult> OnPostAddAttendeeAsync(int id)
     {
+        var meeting = await _meetingService.GetMeetingByIdAsync(id);
         await _meetingService.AddAttendeeAsync(id, AddAttendeeUserId);
+        if (meeting != null)
+            await _notificationService.NotifyMeetingInvitationAsync(id, meeting.Title, AddAttendeeUserId);
         TempData["SuccessMessage"] = "Attendee added.";
         return RedirectToPage(new { id });
     }
@@ -99,10 +105,24 @@ public class DetailsModel : PageModel
 
     public async Task<IActionResult> OnPostAddCommitteeMembersAsync(int id)
     {
-        var meeting = await _context.Meetings.FindAsync(id);
+        var meeting = await _meetingService.GetMeetingByIdAsync(id);
         if (meeting == null) return NotFound();
 
+        // Track existing attendees to only notify new ones
+        var existingUserIds = meeting.Attendees.Select(a => a.UserId).ToHashSet();
+
         await _meetingService.AddAttendeesFromCommitteeAsync(id, meeting.CommitteeId);
+
+        // Reload to get newly added attendees
+        var updated = await _meetingService.GetMeetingByIdAsync(id);
+        if (updated != null)
+        {
+            foreach (var attendee in updated.Attendees.Where(a => !existingUserIds.Contains(a.UserId)))
+            {
+                await _notificationService.NotifyMeetingInvitationAsync(id, updated.Title, attendee.UserId);
+            }
+        }
+
         TempData["SuccessMessage"] = "Committee members invited.";
         return RedirectToPage(new { id });
     }
@@ -223,6 +243,13 @@ public class DetailsModel : PageModel
         }
 
         await _meetingService.CreateActionItemAsync(NewActionItem);
+
+        if (NewActionItem.AssignedToId != GetUserId())
+        {
+            await _notificationService.NotifyActionItemAssignedAsync(
+                NewActionItem.Id, NewActionItem.Title, NewActionItem.AssignedToId, id);
+        }
+
         TempData["SuccessMessage"] = "Action item created.";
         return RedirectToPage(new { id });
     }

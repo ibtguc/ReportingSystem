@@ -135,15 +135,33 @@ public class NotificationService
 
     public async Task NotifyReportSubmittedAsync(int reportId, string reportTitle, int authorId, int committeeId)
     {
-        // Notify committee heads
-        var heads = await _context.CommitteeMemberships
+        // Notify heads of the report's own committee
+        var recipientIds = await _context.CommitteeMemberships
             .Where(m => m.CommitteeId == committeeId && m.Role == CommitteeRole.Head && m.EffectiveTo == null)
             .Select(m => m.UserId)
             .ToListAsync();
 
-        foreach (var headId in heads)
+        // Also notify ALL members of the parent committee
+        var parentCommitteeId = await _context.Committees
+            .Where(c => c.Id == committeeId)
+            .Select(c => c.ParentCommitteeId)
+            .FirstOrDefaultAsync();
+
+        if (parentCommitteeId.HasValue)
         {
-            await CreateNotificationAsync(headId.ToString(), NotificationType.ReportSubmitted,
+            var parentMembers = await _context.CommitteeMemberships
+                .Where(m => m.CommitteeId == parentCommitteeId.Value && m.EffectiveTo == null)
+                .Select(m => m.UserId)
+                .ToListAsync();
+            recipientIds.AddRange(parentMembers);
+        }
+
+        // Deduplicate and exclude the author
+        recipientIds = recipientIds.Distinct().Where(id => id != authorId).ToList();
+
+        foreach (var userId in recipientIds)
+        {
+            await CreateNotificationAsync(userId.ToString(), NotificationType.ReportSubmitted,
                 "Report Submitted", $"Report \"{reportTitle}\" has been submitted for review.",
                 $"/Reports/Details/{reportId}", NotificationPriority.Normal, reportId);
         }
@@ -154,6 +172,47 @@ public class NotificationService
         await CreateNotificationAsync(authorId.ToString(), NotificationType.ReportStatusChanged,
             $"Report {newStatus}", $"Your report \"{reportTitle}\" status changed to {newStatus}.",
             $"/Reports/Details/{reportId}", NotificationPriority.Normal, reportId);
+    }
+
+    /// <summary>
+    /// Returns the list of users who would be notified when a report in the given committee is submitted.
+    /// Used to display "will be notified" info before submission.
+    /// </summary>
+    public async Task<List<User>> GetReportSubmissionRecipientsAsync(int committeeId, int authorId)
+    {
+        // Same-committee heads
+        var ids = await _context.CommitteeMemberships
+            .Where(m => m.CommitteeId == committeeId && m.Role == CommitteeRole.Head && m.EffectiveTo == null)
+            .Select(m => m.UserId)
+            .ToListAsync();
+
+        // All parent committee members
+        var parentCommitteeId = await _context.Committees
+            .Where(c => c.Id == committeeId)
+            .Select(c => c.ParentCommitteeId)
+            .FirstOrDefaultAsync();
+
+        if (parentCommitteeId.HasValue)
+        {
+            var parentMembers = await _context.CommitteeMemberships
+                .Where(m => m.CommitteeId == parentCommitteeId.Value && m.EffectiveTo == null)
+                .Select(m => m.UserId)
+                .ToListAsync();
+            ids.AddRange(parentMembers);
+        }
+
+        var recipientIds = ids.Distinct().Where(id => id != authorId).ToList();
+        return await _context.Users.Where(u => recipientIds.Contains(u.Id)).OrderBy(u => u.Name).ToListAsync();
+    }
+
+    /// <summary>
+    /// Notify the issuer when a directive's status changes (target acknowledges, starts, implements, etc.)
+    /// </summary>
+    public async Task NotifyDirectiveStatusChangedAsync(int directiveId, string directiveTitle, int issuerId, string newStatus)
+    {
+        await CreateNotificationAsync(issuerId.ToString(), NotificationType.DirectiveIssued,
+            $"Directive {newStatus}", $"Directive \"{directiveTitle}\" has been {newStatus.ToLower()}.",
+            $"/Directives/Details/{directiveId}", NotificationPriority.Normal, directiveId);
     }
 
     public async Task NotifyDirectiveIssuedAsync(int directiveId, string directiveTitle, int targetCommitteeId, int? targetUserId)

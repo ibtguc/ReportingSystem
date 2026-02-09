@@ -12,13 +12,16 @@ public class DetailsModel : PageModel
     private readonly ReportService _reportService;
     private readonly ConfidentialityService _confidentialityService;
     private readonly AuditService _auditService;
+    private readonly NotificationService _notificationService;
     private readonly IWebHostEnvironment _env;
 
-    public DetailsModel(ReportService reportService, ConfidentialityService confidentialityService, AuditService auditService, IWebHostEnvironment env)
+    public DetailsModel(ReportService reportService, ConfidentialityService confidentialityService,
+        AuditService auditService, NotificationService notificationService, IWebHostEnvironment env)
     {
         _reportService = reportService;
         _confidentialityService = confidentialityService;
         _auditService = auditService;
+        _notificationService = notificationService;
         _env = env;
     }
 
@@ -30,6 +33,7 @@ public class DetailsModel : PageModel
     public List<ReportSourceLink> SourceLinks { get; set; } = new();
     public List<Report> SummariesOfThis { get; set; } = new();
     public int SummarizationDepth { get; set; }
+    public List<User> SubmitRecipients { get; set; } = new();
 
     [BindProperty]
     public string? FeedbackComments { get; set; }
@@ -63,15 +67,23 @@ public class DetailsModel : PageModel
         if (report.ReportType == ReportType.Summary || report.ReportType == ReportType.ExecutiveSummary)
             SummarizationDepth = await _reportService.GetSummarizationDepthAsync(id);
 
+        // Load notification recipients for the submit button display
+        if (CanSubmit)
+            SubmitRecipients = await _notificationService.GetReportSubmissionRecipientsAsync(report.CommitteeId, report.AuthorId);
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostSubmitAsync(int id)
     {
         var userId = GetUserId();
+        var report = await _reportService.GetReportByIdAsync(id);
         var success = await _reportService.SubmitReportAsync(id, userId);
-        if (success)
+        if (success && report != null)
+        {
             await _auditService.LogStatusChangeAsync("Report", id, null, "Draft", "Submitted", userId, User.Identity?.Name);
+            await _notificationService.NotifyReportSubmittedAsync(id, report.Title, report.AuthorId, report.CommitteeId);
+        }
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Report submitted for review." : "Unable to submit report.";
         return RedirectToPage(new { id });
@@ -80,9 +92,13 @@ public class DetailsModel : PageModel
     public async Task<IActionResult> OnPostStartReviewAsync(int id)
     {
         var userId = GetUserId();
+        var report = await _reportService.GetReportByIdAsync(id);
         var success = await _reportService.StartReviewAsync(id, userId);
-        if (success)
+        if (success && report != null)
+        {
             await _auditService.LogStatusChangeAsync("Report", id, null, "Submitted", "UnderReview", userId, User.Identity?.Name);
+            await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Under Review");
+        }
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Review started." : "Unable to start review.";
         return RedirectToPage(new { id });
@@ -92,9 +108,13 @@ public class DetailsModel : PageModel
     {
         var userId = GetUserId();
         var comments = FeedbackComments ?? "Feedback requested — please revise.";
+        var report = await _reportService.GetReportByIdAsync(id);
         var success = await _reportService.RequestFeedbackAsync(id, userId, comments);
-        if (success)
+        if (success && report != null)
+        {
             await _auditService.LogStatusChangeAsync("Report", id, null, "UnderReview", "FeedbackRequested", userId, User.Identity?.Name, comments);
+            await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Feedback Requested");
+        }
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Feedback requested from author." : "Unable to request feedback.";
         return RedirectToPage(new { id });
@@ -103,9 +123,13 @@ public class DetailsModel : PageModel
     public async Task<IActionResult> OnPostApproveAsync(int id)
     {
         var userId = GetUserId();
+        var report = await _reportService.GetReportByIdAsync(id);
         var success = await _reportService.ApproveReportAsync(id, userId, ApprovalComments);
-        if (success)
+        if (success && report != null)
+        {
             await _auditService.LogStatusChangeAsync("Report", id, null, "UnderReview", "Approved", userId, User.Identity?.Name, ApprovalComments);
+            await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Approved");
+        }
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Report approved." : "Unable to approve report.";
         return RedirectToPage(new { id });
@@ -114,9 +138,13 @@ public class DetailsModel : PageModel
     public async Task<IActionResult> OnPostArchiveAsync(int id)
     {
         var userId = GetUserId();
+        var report = await _reportService.GetReportByIdAsync(id);
         var success = await _reportService.ArchiveReportAsync(id, userId);
-        if (success)
+        if (success && report != null)
+        {
             await _auditService.LogStatusChangeAsync("Report", id, null, "Approved", "Archived", userId, User.Identity?.Name);
+            await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Archived");
+        }
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
             success ? "Report archived." : "Unable to archive report.";
         return RedirectToPage(new { id });

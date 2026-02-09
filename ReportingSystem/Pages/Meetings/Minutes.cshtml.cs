@@ -10,10 +10,12 @@ namespace ReportingSystem.Pages.Meetings;
 public class MinutesModel : PageModel
 {
     private readonly MeetingService _meetingService;
+    private readonly NotificationService _notificationService;
 
-    public MinutesModel(MeetingService meetingService)
+    public MinutesModel(MeetingService meetingService, NotificationService notificationService)
     {
         _meetingService = meetingService;
+        _notificationService = notificationService;
     }
 
     public Meeting Meeting { get; set; } = null!;
@@ -118,6 +120,17 @@ public class MinutesModel : PageModel
         }
 
         await _meetingService.SubmitMinutesAsync(id, MinutesContent);
+
+        // Notify all attendees that minutes are ready for confirmation
+        var updated = await _meetingService.GetMeetingByIdAsync(id);
+        if (updated != null)
+        {
+            var attendeeIds = updated.Attendees
+                .Where(a => a.UserId != userId)
+                .Select(a => a.UserId)
+                .ToList();
+            await _notificationService.NotifyMinutesSubmittedAsync(id, updated.Title, attendeeIds);
+        }
 
         TempData["SuccessMessage"] = "Minutes submitted for attendee confirmation.";
         return RedirectToPage("Details", new { id });
