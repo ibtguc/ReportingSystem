@@ -137,8 +137,8 @@ using (var scope = app.Services.CreateScope())
         await knowledgeService.SeedDefaultCategoriesAsync();
 
         // Seed demo/transactional data (reports, directives, meetings, etc.)
-        logger.LogInformation("Seeding demo data...");
-        await DemoDataSeeder.SeedAsync(context);
+        // logger.LogInformation("Seeding demo data...");
+        // await DemoDataSeeder.SeedAsync(context);
 
         logger.LogInformation("Database seeding completed.");
     }
