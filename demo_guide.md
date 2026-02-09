@@ -1,6 +1,6 @@
-# ORS Demo Guide — Q4 2025 Institutional Reporting Cycle
+# ORS Demo Guide — Organizational Reporting System
 
-This guide walks through a complete system demo using the pre-seeded data. The demo covers the full reporting, summarization, feedback, directive, and meeting workflow across 6 user personas at different organizational levels.
+This guide walks through the system's organizational structure and core workflows. The system starts with a fully seeded organization (users, committees, memberships) and empty transactional tables, ready for live data entry during the demo.
 
 ---
 
@@ -10,6 +10,14 @@ This guide walks through a complete system demo using the pre-seeded data. The d
 2. Run the application: `dotnet run --project ReportingSystem`
 3. Open `https://localhost:5001` (or the configured URL)
 4. Log in using any email listed below (magic link authentication — no password needed)
+
+> **Optional — Enable Pre-Seeded Demo Data:**
+> To start with 30 reports, 15 directives, 8 meetings, notifications, and audit log entries already populated, uncomment these two lines in `Program.cs` (around line 140):
+> ```csharp
+> logger.LogInformation("Seeding demo data...");
+> await DemoDataSeeder.SeedAsync(context);
+> ```
+> Then delete `db/reporting.db` and restart. See [Appendix: Full Demo Data Walkthrough](#appendix-full-demo-data-walkthrough) for the detailed scenario guide.
 
 ---
 
@@ -32,187 +40,144 @@ This guide walks through a complete system demo using the pre-seeded data. The d
 
 ---
 
-## Demo Scenario Overview
+## What's Pre-Seeded
 
-The demo data simulates a complete **Q4 2025 quarterly reporting cycle** across a 5-sector, 350+ person educational institution. The data includes:
+The database starts with a fully populated organizational structure:
 
-- **30 Reports** at various stages (Draft through Archived), spanning L3 process reports up to L0 executive summaries
-- **15 Directives** including a 4-level chain from Chairman to L2, corrective actions, urgent cybersecurity directive, and overdue items
-- **8 Meetings** (finalized, in-progress, scheduled, cancelled) with agenda items, decisions, and action items
-- **Confidentiality markings** on sensitive items with access grants
-- **25+ Notifications** across multiple users
-- **30+ Audit log entries** tracking key system events
+| Entity | Count | Description |
+|--------|-------|-------------|
+| Users | ~158 | Chairman, Chairman's Office (4), 5 GS, 19 Directors, ~100 L2/L3 staff, 3 admins |
+| Committees | ~185 | Full hierarchy: 1 Top Level, 5 L0, 19 L1, ~65 L2, ~100 L3 |
+| Memberships | ~500+ | Heads + Members for each committee |
+| Shadow Assignments | 5 | GS-level shadow assignments |
+| Report Templates | 5 | Default templates (Quarterly, Monthly, etc.) |
+| Knowledge Categories | Default | Category hierarchy for knowledge base |
+
+**Empty tables** (ready for live data entry): Reports, Directives, Meetings, Notifications, Audit Log, Confidentiality Markings, Access Grants, Knowledge Articles.
 
 ---
 
 ## Step-by-Step Demo Walkthrough
 
-### Act 1: The L2 Function Member's View (Report Author)
+### Act 1: Exploring the Organization Structure
+
+**Login as: System Administrator** (`admin@org.edu`)
+
+1. **Organization > Committee Tree** — The new top-down visual tree:
+   - Committees displayed as cards in horizontal layers by level (L0 → L1 → L2 → L3)
+   - Each card shows the committee name, sector badge, head name, and member count
+   - Click the **person icon button** on any card to toggle the staff member list
+   - Each member name is a clickable link to their user details page
+   - Use the **View**, **Edit**, and **Delete** icon buttons for CRUD operations
+2. **Organization > Org Tree** — The nested collapsible tree view:
+   - Expand/Collapse All button
+   - Chairman and Chairman's Office section at the top
+   - Stats cards: committees, users, memberships, shadow assignments
+3. **Organization > Committees** — Table/list view:
+   - Filter by Hierarchy Level (L0–L4) and Sector
+   - See head names, member counts, parent committees
+4. **Click a committee** (e.g., "Academic Programs Directorate") — Full details:
+   - Head and member lists with roles
+   - Sub-committees listing
+   - Add/remove member functionality
+
+**Key Talking Points:**
+- Three views of the same data: visual tree, nested tree, filterable table
+- 5-sector hierarchy: Academic Affairs, Administration, Technology, Finance, Student Experience
+- ~185 committees with ~500+ membership assignments
+
+---
+
+### Act 2: Creating a Report (L2 Member Perspective)
 
 **Login as: Dr. Lamia Refaat** (`l.refaat@org.edu`)
 
-This demonstrates the perspective of a committee member who writes detailed reports.
-
-1. **Dashboard** — View personal dashboard showing assigned committees and activity
-2. **Reports > All Reports** — See the list of reports. Note the "Q4 Course Design Review" report by Dr. Refaat in **Approved** status
-3. **Click the report** — View the full report with:
-   - Rich HTML body content describing the 12-course review
-   - Suggested Action, Needed Resources, and Needed Support sections
-   - **Status History tab** — See the full lifecycle: Draft → Submitted → UnderReview → Approved
-   - Each status change shows who made it and when
-4. **Reports > New Report** — Show the report creation form:
-   - Template picker (if templates are seeded)
-   - Rich text editor (Quill) for body content
-   - Committee selector
-   - Optional sections (Suggested Action, Resources, etc.)
-5. **Meetings > Action Items** — Show that Dr. Refaat has a **completed** action item: "Complete ABET realignment for ME301, EE405, CE210" from the Academic Programs review meeting
+1. **Dashboard** — Personal dashboard showing assigned committees
+2. **Reports > New Report** — Create a new report:
+   - Select a **template** (e.g., "Quarterly Departmental Report")
+   - Choose the **committee** (Curriculum Development)
+   - Fill in the **title** and use the **Quill rich text editor** for the body
+   - Add optional sections: Suggested Action, Needed Resources, Needed Support, Special Remarks
+   - Save as **Draft** or **Submit** directly
+3. **Reports > All Reports** — See the newly created report in the list
+4. **Click the report** — View it with status history showing Draft/Submitted
 
 **Key Talking Points:**
-- Bottom-up reporting: L2 members create detailed reports that feed into summaries
+- Template-driven reports with configurable required fields
 - Rich text editing with Quill editor
-- Full status audit trail for every report
+- Reports flow bottom-up through the hierarchy
 
 ---
 
-### Act 2: The L1 Director's View (Summarizer & Meeting Chair)
+### Act 3: Report Review & Summarization (L1 Director Perspective)
 
 **Login as: Dr. Farid Zaki** (`f.zaki@org.edu`)
 
-This shows how a directorate head reviews reports, creates summaries, and runs meetings.
-
-1. **Reports > All Reports** — Filter by Academic Programs committee. See both:
-   - 4 detailed L3 reports (Course Design, Faculty Recruitment, Exam Logistics, E-Learning)
-   - 1 summary report: "Academic Programs — Q4 2025 Summary Report" in **Approved** status
-2. **Click the Summary Report** — Note:
-   - Report type is "Summary" (not Detailed)
-   - Body aggregates key findings from all 4 source reports
-   - Combined budget request (EGP 290,000) escalates to next level
-3. **Reports > Create Summary** — Show the summary creation workflow:
-   - Select source reports to summarize
-   - System links sources via ReportSourceLink
-4. **Meetings > All Meetings** — See the "Academic Programs Directorate — Q4 Review Meeting" in **Finalized** status
-5. **Click the meeting** — Explore:
-   - **Agenda** — 3 items with allocated times and presenters
-   - **Attendees** — 5 members, all confirmed
-   - **Decisions** — 2 decisions (ABET realignment direction + digital exam expansion approval)
-   - **Action Items** — 2 items, both completed and verified
-   - **Minutes** — Full minutes content
-6. **Directives > All Directives** — See the "CS Faculty Recruitment" directive chain:
-   - D2: "CS Faculty Recruitment — Academic Programs Action" (Closed)
-   - D3: "Prepare CS Faculty Job Specifications" (Implemented)
-   - Note the parent-child chain and forwarding annotations
+1. **Reports > All Reports** — See submitted reports from L2 members in the Academic Programs directorate
+2. **Review a report** — Open a submitted report and change status:
+   - Submitted → UnderReview → Approved (or FeedbackRequested for revision)
+3. **Reports > Create Summary** — Demonstrate the summarization workflow:
+   - Select multiple approved source reports
+   - System creates a summary report linked to sources via ReportSourceLink
+   - Summary aggregates key findings from subordinate reports
+4. **Show the chain** — Click into a summary to see linked source reports
 
 **Key Talking Points:**
-- Summarization: L1 directors aggregate L3 reports into directorate summaries
-- Meeting workflow: schedule → conduct → minutes → review → finalize
-- Directive chains flow top-down with annotations at each level
-
----
-
-### Act 3: The Feedback Loop (Report Revision)
-
-**Login as: Dr. Yasmin Farouk** (`y.farouk@org.edu`)
-
-This demonstrates the feedback and revision cycle.
-
-1. **Reports > All Reports** — Find two related reports:
-   - "Network Infrastructure Upgrade Progress" — Status: **FeedbackRequested**
-   - "Network Infrastructure Upgrade Progress (Revised)" — Status: **Approved**
-2. **Click the FeedbackRequested report** — View status history:
-   - Draft → Submitted → UnderReview → **FeedbackRequested**
-   - The feedback comment reads: "Need more detail on budget impact of the 3-week delay"
-3. **Click the Revised report** — Note:
-   - Version: 2 (shows it's a revision)
-   - Links to original report
-   - Status history shows it went through review and was approved
-   - Special Remarks: "Revised per GS Technology feedback — added cost variance analysis"
-4. **Notifications** — See unread notifications including:
-   - Action item: "Submit zero-trust architecture proposal"
-   - Urgent directive: "Ransomware Preparedness assessment"
-5. **Directives > All Directives** — See the urgent ransomware directive (InProgress)
-
-**Key Talking Points:**
+- Summarization: L1 directors aggregate L2/L3 reports into directorate summaries
 - Reports can be sent back for revision with specific feedback
-- Revised reports link to originals, preserving full history
-- Version tracking maintains complete audit trail
+- Source links create a traceable chain from detail to summary
 
 ---
 
-### Act 4: The GS / Sector Head View (Cross-Directorate Oversight)
+### Act 4: Issuing Directives & Running Meetings
 
-**Login as: Prof. Amira Shalaby** (`a.shalaby@org.edu`)
+**Login as: Dr. Hassan El-Sayed** (`h.elsayed@org.edu`) or any GS/Director
 
-This shows the General Secretary's cross-directorate view.
+1. **Directives > Issue Directive** — Create a directive:
+   - Select type (Instruction, Approval, CorrectiveAction, Feedback, InformationNotice)
+   - Set priority (Normal, High, Urgent)
+   - Choose target committee and optional target user
+   - Set deadline
+   - Optionally link to a parent directive (for forwarding/chain)
+2. **Directives > All Directives** — View the directive with its status (Issued)
+3. **Login as the target** — Acknowledge, progress through statuses
+4. **Directives > Track Overdue** — Show overdue tracking view (empty until deadlines pass)
 
-1. **Dashboard** — High-level overview of Academic Affairs sector activity
-2. **Reports > All Reports** — See reports from all Academic directorates:
-   - Academic Programs summary (Approved)
-   - Research & Graduate Studies summary (Approved)
-   - QA audit results (Approved)
-   - The sector executive summary she authored (Approved by Chairman)
-3. **Click "Academic Affairs Sector — Q4 Executive Summary"** — This is the L1→L0 summary:
-   - Aggregates data from 3 directorate summaries
-   - Highlights risks and escalations (CS faculty shortage)
-   - Budget request forwarded to Chairman
-   - Source links show the 3 source reports
-4. **Directives > All Directives** — See directives issued and received:
-   - Issued D2 (CS Faculty Recruitment to Academic Programs) — now Closed
-   - Issued D8 (Exam System Procurement approval) — Closed
-   - Received D13 (Research Collaboration Framework) — just Issued
-5. **Search** — Search for "faculty recruitment" to demonstrate cross-content search
+5. **Meetings > Schedule Meeting** — Create a meeting:
+   - Set committee, moderator, date/time, location
+   - Add agenda items with time allocations and presenters
+   - Invite attendees (RSVP workflow)
+6. **Run the meeting lifecycle:**
+   - Scheduled → InProgress → MinutesEntry (add discussion notes, decisions, action items)
+   - MinutesReview (attendees confirm/abstain) → Finalized
+7. **Meetings > Action Items** — Track assigned action items across meetings
 
 **Key Talking Points:**
-- GS sees all activity in their sector across multiple directorates
-- Summary reports chain upward: L3 → L2 → L1 → L0
-- Directives and feedback flow back down
+- 5 directive types, 3 priority levels, 7-status workflow
+- Directives chain top-down with forwarding annotations
+- Full meeting lifecycle with structured minutes, decisions, and action items
 
 ---
 
-### Act 5: The Chairman & Chairman's Office View (Top-Level Decisions)
+### Act 5: Analytics, Search & Knowledge Base
 
 **Login as: Dr. Hassan El-Sayed** (`h.elsayed@org.edu`)
 
-This is the top-level executive view.
-
-1. **Dashboard** — Institutional overview across all 5 sectors
-2. **Analytics** — Show the Analytics dashboard:
-   - **Organization Overview** cards — Total reports, directives, meetings, users, committees
-   - **Monthly Activity Trends** — Bar chart showing 12-month activity
-   - **Status Distribution** — Doughnut charts for reports, directives, and meetings
-   - **Compliance Metrics** — Directive on-time rates, action item completion
-   - **Committee Activity Table** — Per-committee metrics
-3. **Reports > All Reports** — See all submitted sector executive summaries:
-   - Academic Affairs (Approved)
-   - Technology & Innovation (Approved)
-   - Finance & Governance (Submitted — pending review)
-   - Student Experience (Submitted — pending review)
-   - Administration & Operations (UnderReview)
-   - Institutional Performance Report (Approved)
-4. **Click the Institutional Performance Report** — The comprehensive Q4 executive summary:
-   - Performance table with targets vs. actuals
-   - Three items requiring Chairman's decision
-   - Source links to sector reports
-5. **Directives > All Directives** — Chairman-issued directives:
-   - D1: CS Faculty Recruitment (Closed — completed successfully)
-   - D5: Ransomware Preparedness (Acknowledged — in progress)
-   - D9: Clinical Psychologist Position (Just Issued)
-6. **Directives > Track Overdue** — Show the overdue directive:
-   - "Network Upgrade Phase 3 Planning" — deadline passed 5 days ago
-7. **Meetings > All Meetings** — See:
-   - Q4 Quarterly Review (Finalized with decisions)
-   - FY2026 Budget Workshop (Scheduled for 14 days out)
-8. **Notifications** — Show unread notifications for pending sector reports
-
-**Now switch to: Nadia Kamel** (`n.kamel@org.edu`) — Chairman's Office
-
-9. **Show the CO perspective** — Same top-level visibility
-10. **Confidentiality > Navigate to a confidential item** — CO with Rank 1 can see all confidential items
+1. **Analytics** — Dashboard with Chart.js visualizations:
+   - Organization overview cards with 30-day trend comparison
+   - Monthly activity trends (bar chart)
+   - Status distribution (doughnut charts)
+   - Compliance metrics (on-time rates)
+   - Committee activity table
+   > Note: Charts populate as reports, directives, and meetings are created
+2. **Search** — Unified search across all content types
+3. **Knowledge > Browse** — Knowledge base with categories, search, and tags
+4. **Administration > Knowledge Base** — Bulk index approved reports and closed directives into articles
 
 **Key Talking Points:**
-- Chairman sees the full institutional picture via executive summaries
-- Analytics dashboard provides data-driven oversight
-- Directive chains track compliance from issuance to closure
-- Overdue tracking ensures accountability
+- Data-driven analytics dashboard for executive oversight
+- Unified search spans reports, directives, meetings, and action items
+- Knowledge base auto-indexes approved organizational content
 
 ---
 
@@ -220,73 +185,74 @@ This is the top-level executive view.
 
 **Login as: System Administrator** (`admin@org.edu`)
 
-This demonstrates confidentiality controls and administrative features.
+1. **Administration > Users** — View all ~158 users with roles and status
+2. **Administration > Report Templates** — View/edit 5 default templates
+3. **Administration > Database Backups** — Backup management
+4. **Administration > Audit Log** — Browse audit trail (populates as users take actions)
 
-1. **Administration > Audit Log** — Browse the full audit trail:
-   - Logins, report status changes, directive events, meeting lifecycle
-   - Filter by action type, user, or date range
-2. **Administration > Users** — View all 351 users with roles and status
-3. **Administration > Database Backups** — Show backup management
-4. **Administration > Report Templates** — Show configured report templates
-5. **Administration > Knowledge Base** — Show KB admin:
-   - Categories management
-   - Bulk Index Content button — indexes approved reports and closed directives
-6. **Knowledge Base** (main nav) — Browse knowledge articles:
-   - After bulk indexing, approved non-confidential reports appear as articles
-   - Search, category filter, and view counts
-7. **Confidentiality Demo:**
-   - Find "Staff Disciplinary Investigation" report — it's marked **Confidential**
-   - As SystemAdmin, full access is available
-   - **Login as a regular L2 user** (e.g., `l.refaat@org.edu`) — the report should NOT appear in their report list
-   - **Login as GS Finance** (`a.soliman@org.edu`) — the report IS visible because of the explicit access grant
+**Confidentiality Demo** (requires a report to exist):
+1. Create or find a report, then navigate to **Confidentiality > Mark**
+2. Mark it as confidential — access restricted by hierarchy
+3. Grant explicit access to specific users
+4. Login as different users to verify access control
 
 **Key Talking Points:**
 - Full audit trail for compliance and accountability
 - Confidentiality markings restrict access based on hierarchy level
+- Chairman's Office access is rank-based (Rank 1 sees all)
 - Explicit access grants allow sharing with specific users
-- Knowledge base auto-indexes approved organizational content
 
 ---
 
-## Data Summary for Reference
+## Tips for a Successful Demo
 
-### Reports by Status
-| Status | Count | Examples |
-|--------|-------|---------|
-| Approved | 18 | Course Design Review, Faculty Recruitment, Sector Summaries |
-| Submitted | 4 | Financial Statements, Career Fair, KPI Dashboard, Sector Reports |
-| UnderReview | 2 | Budget Framework, Admin Sector Summary |
-| FeedbackRequested | 1 | Network Upgrade (original) |
-| Draft | 2 | Internal Controls, Student Clubs |
-| Archived | 1 | Q3 Institutional Report |
+1. **Start with the Committee Tree** — The visual tree view immediately shows the organizational scope and hierarchy.
 
-### Directives by Status
-| Status | Count | Examples |
-|--------|-------|---------|
-| Closed | 4 | CS Faculty chain (D1, D2), Exam System (D8), Budget Notice (D10) |
-| InProgress | 4 | Procurement Controls (D4), Ransomware IT (D6), Network Phase 3 (D11), Financial Controls (D14) |
-| Implemented | 1 | CS Job Specs (D3) |
-| Acknowledged | 2 | Ransomware (D5), HR Performance Review (D15) |
-| Delivered | 2 | Energy Feedback (D7), Solar Study (D12) |
-| Issued | 2 | Clinical Psychologist (D9), Research Collaboration (D13) |
+2. **Create data live** — Walk through report creation, directive issuance, and meeting scheduling to demonstrate actual workflows rather than just viewing static data.
 
-### Meetings by Status
-| Status | Count | Examples |
-|--------|-------|---------|
-| Finalized | 3 | Q4 Quarterly Review, Academic Programs Review, QA Audit Review |
-| MinutesReview | 1 | Emergency Security Meeting |
-| MinutesEntry | 1 | Finance Monthly Close |
-| Scheduled | 2 | Student Affairs Planning, Budget Workshop |
-| Cancelled | 1 | Cybersecurity Standup |
+3. **Switch between user levels** — Show the same data from L2, L1, and L0 perspectives to demonstrate the hierarchical reporting chain. Keep browser tabs open for each persona.
 
-### Key Directive Chain (D1 → D2 → D3)
+4. **Follow a complete workflow** — Create a report at L2, review it at L1, summarize it, then issue a directive based on it.
+
+5. **Show analytics after creating data** — The Analytics dashboard is most impressive after the audience has seen what data feeds into it.
+
+6. **Confidentiality is a differentiator** — The access control model (hierarchy-based + explicit grants + Chairman's Office rank) is sophisticated.
+
+---
+
+## Appendix: Full Demo Data Walkthrough
+
+To enable the full pre-seeded demo data (30 reports, 15 directives, 8 meetings, etc.), uncomment `DemoDataSeeder.SeedAsync(context)` in `Program.cs`, delete `db/reporting.db`, and restart.
+
+The pre-seeded data simulates a complete **Q4 2025 quarterly reporting cycle** including:
+
+| Data | Count | Highlights |
+|------|-------|------------|
+| Reports | 30 | L3 process → L2 function → L1 sector → L0 institutional summaries |
+| Report Status Histories | ~100+ | Full lifecycle trails for each report |
+| Report Source Links | ~10 | Summary-to-source linking |
+| Directives | 15 | 4-level chain (D1→D2→D3), corrective actions, urgent, overdue |
+| Directive Status Histories | ~40+ | Full status trails |
+| Meetings | 8 | Finalized, MinutesReview, MinutesEntry, Scheduled, Cancelled |
+| Agenda Items | ~20 | With presenters and discussion notes |
+| Attendees | ~28 | RSVP and confirmation statuses |
+| Decisions | ~9 | Approval, Direction, Resolution, Deferral types |
+| Action Items | ~8 | Various statuses including completed and overdue |
+| Confidentiality Markings | 2 | On report + directive |
+| Access Grants | 3 | Explicit sharing |
+| Notifications | ~25 | Across 10 users, mixed read/unread |
+| Audit Log Entries | ~30 | Logins, status changes, searches |
+
+### Key Demo Data Chains
+
+**Directive Chain (D1 → D2 → D3):**
 ```
 Chairman → Top Level: "Prioritize CS Faculty Recruitment" (Closed)
   └→ GS Academic → Academic Programs: "CS Faculty — Action" (Closed)
       └→ Dir Academic Programs → Curriculum Dev: "Prepare Job Specs" (Implemented)
 ```
 
-### Report Summarization Chain
+**Report Summarization Chain:**
 ```
 L3 Process Reports:
   ├── Course Design Review (Approved)
@@ -304,20 +270,31 @@ L0 Institutional Report:
   └── Q4 2025 Institutional Performance Report (Approved)
 ```
 
----
+### Seeded Reports by Status
+| Status | Count | Examples |
+|--------|-------|---------|
+| Approved | 18 | Course Design Review, Faculty Recruitment, Sector Summaries |
+| Submitted | 4 | Financial Statements, Career Fair, KPI Dashboard |
+| UnderReview | 2 | Budget Framework, Admin Sector Summary |
+| FeedbackRequested | 1 | Network Upgrade (original) |
+| Draft | 2 | Internal Controls, Student Clubs |
+| Archived | 1 | Q3 Institutional Report |
 
-## Tips for a Successful Demo
+### Seeded Directives by Status
+| Status | Count | Examples |
+|--------|-------|---------|
+| Closed | 4 | CS Faculty chain (D1, D2), Exam System (D8), Budget Notice (D10) |
+| InProgress | 4 | Procurement Controls (D4), Ransomware IT (D6), Network Phase 3 (D11) |
+| Implemented | 1 | CS Job Specs (D3) |
+| Acknowledged | 2 | Ransomware (D5), HR Performance Review (D15) |
+| Delivered | 2 | Energy Feedback (D7), Solar Study (D12) |
+| Issued | 2 | Clinical Psychologist (D9), Research Collaboration (D13) |
 
-1. **Start from the bottom up** — Show L2 member creating reports first, then zoom out to L1 summaries, L0 executive view. This builds understanding of the reporting hierarchy.
-
-2. **Use the feedback loop** — The Network Upgrade report pair (FeedbackRequested + Revised) is the best example of the quality assurance workflow.
-
-3. **Follow the directive chain** — The CS Faculty Recruitment directive (D1→D2→D3) demonstrates how instructions propagate through the hierarchy with annotations.
-
-4. **Highlight the meeting lifecycle** — The Q4 Quarterly Review meeting shows the complete flow: agenda → attendance → discussion notes → decisions → action items → minutes confirmation → finalization.
-
-5. **Show analytics last** — The Analytics dashboard is most impressive after the audience understands what data feeds into it.
-
-6. **Confidentiality is a differentiator** — The access control model (hierarchy-based + explicit grants) is sophisticated. Show it with the disciplinary report.
-
-7. **Keep browser tabs open** — Pre-open tabs for each user persona to enable quick switching during the demo.
+### Seeded Meetings by Status
+| Status | Count | Examples |
+|--------|-------|---------|
+| Finalized | 3 | Q4 Quarterly Review, Academic Programs Review, QA Audit Review |
+| MinutesReview | 1 | Emergency Security Meeting |
+| MinutesEntry | 1 | Finance Monthly Close |
+| Scheduled | 2 | Student Affairs Planning, Budget Workshop |
+| Cancelled | 1 | Cybersecurity Standup |
