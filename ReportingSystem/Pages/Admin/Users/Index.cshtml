@@ -52,7 +52,7 @@
                             @foreach (var user in Model.Users)
                             {
                                 <tr>
-                                    <td><strong>@user.Name</strong></td>
+                                    <td><a asp-page="Details" asp-route-id="@user.Id" class="text-decoration-none"><strong>@user.Name</strong></a></td>
                                     <td>
                                         <a href="mailto:@user.Email">@user.Email</a>
                                     </td>

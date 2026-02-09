@@ -82,7 +82,7 @@
     </div>
     <div class="card-body">
         <div class="row mb-3">
-            <div class="col-md-3"><strong>Issued by:</strong> @Model.Directive.Issuer.Name</div>
+            <div class="col-md-3"><strong>Issued by:</strong> <a asp-page="/Admin/Users/Details" asp-route-id="@Model.Directive.IssuerId" asp-route-returnTo="directive" class="text-decoration-none">@Model.Directive.Issuer.Name</a></div>
             <div class="col-md-3"><strong>Target:</strong> @Model.Directive.TargetCommittee.Name</div>
             <div class="col-md-3">
                 <strong>Deadline:</strong>
@@ -103,7 +103,7 @@
         @if (Model.Directive.TargetUser != null)
         {
             <div class="mb-3">
-                <strong>Assigned to:</strong> @Model.Directive.TargetUser.Name
+                <strong>Assigned to:</strong> <a asp-page="/Admin/Users/Details" asp-route-id="@Model.Directive.TargetUser.Id" asp-route-returnTo="directive" class="text-decoration-none">@Model.Directive.TargetUser.Name</a>
             </div>
         }
 
@@ -137,7 +137,7 @@
                 <a asp-page="Details" asp-route-id="@Model.Directive.ParentDirective.Id">
                     #@Model.Directive.ParentDirective.Id — @Model.Directive.ParentDirective.Title
                 </a>
-                <small class="text-muted">by @Model.Directive.ParentDirective.Issuer.Name</small>
+                <small class="text-muted">by <a asp-page="/Admin/Users/Details" asp-route-id="@Model.Directive.ParentDirective.IssuerId" asp-route-returnTo="directive" class="text-decoration-none">@Model.Directive.ParentDirective.Issuer.Name</a></small>
             </div>
         }
     </div>

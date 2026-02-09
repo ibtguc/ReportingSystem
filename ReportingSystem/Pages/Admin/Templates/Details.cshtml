@@ -74,7 +74,7 @@
                         </div>
                         <div class="col-md-3">
                             <strong>Created:</strong><br />
-                            @Model.Template.CreatedAt.ToString("d MMM yyyy") by @Model.Template.CreatedBy?.Name
+                            @Model.Template.CreatedAt.ToString("d MMM yyyy") by @if (Model.Template.CreatedBy != null) { <a asp-page="/Admin/Users/Details" asp-route-id="@Model.Template.CreatedById" class="text-decoration-none">@Model.Template.CreatedBy.Name</a> }
                         </div>
                     </div>
 

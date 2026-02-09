@@ -212,8 +212,8 @@
                                     @foreach (var shadow in Model.Shadows)
                                     {
                                         <tr>
-                                            <td>@shadow.PrincipalUser.Name</td>
-                                            <td>@shadow.ShadowUser.Name</td>
+                                            <td><a asp-page="/Admin/Users/Details" asp-route-id="@shadow.PrincipalUserId" asp-route-returnTo="committee" asp-route-committeeId="@Model.Committee.Id" class="text-decoration-none">@shadow.PrincipalUser.Name</a></td>
+                                            <td><a asp-page="/Admin/Users/Details" asp-route-id="@shadow.ShadowUserId" asp-route-returnTo="committee" asp-route-committeeId="@Model.Committee.Id" class="text-decoration-none">@shadow.ShadowUser.Name</a></td>
                                             <td><small>@shadow.EffectiveFrom.ToString("yyyy-MM-dd")</small></td>
                                         </tr>
                                     }

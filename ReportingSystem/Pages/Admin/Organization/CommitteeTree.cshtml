@@ -112,7 +112,7 @@
                                         {
                                             <div class="text-muted mb-1" style="font-size: 0.7rem;">
                                                 <i class="bi bi-person-fill"></i>
-                                                @string.Join(", ", heads.Select(h => h.User.Name))
+                                                @foreach (var h in heads) { if (h != heads.First()) { <text>, </text> } <a asp-page="/Admin/Users/Details" asp-route-id="@h.UserId" asp-route-returnTo="tree" class="text-decoration-none">@h.User.Name</a> }
                                             </div>
                                         }
 

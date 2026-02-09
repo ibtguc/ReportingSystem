@@ -33,7 +33,7 @@
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-sm-4">Marked By</dt>
-                    <dd class="col-sm-8">@Model.ActiveMarking.MarkedBy.Name</dd>
+                    <dd class="col-sm-8"><a asp-page="/Admin/Users/Details" asp-route-id="@Model.ActiveMarking.MarkedById" asp-route-returnTo="confidentiality" class="text-decoration-none">@Model.ActiveMarking.MarkedBy.Name</a></dd>
 
                     <dt class="col-sm-4">Marked At</dt>
                     <dd class="col-sm-8">@Model.ActiveMarking.MarkedAt.ToString("MMM dd, yyyy HH:mm")</dd>

@@ -53,7 +53,7 @@
             </h2>
             <p class="text-muted mb-0">
                 <i class="bi bi-people"></i> @meeting.Committee.Name |
-                <i class="bi bi-person"></i> Moderator: @meeting.Moderator.Name |
+                <i class="bi bi-person"></i> Moderator: <a asp-page="/Admin/Users/Details" asp-route-id="@meeting.ModeratorId" asp-route-returnTo="meeting" class="text-decoration-none">@meeting.Moderator.Name</a> |
                 <i class="bi bi-clock"></i> @meeting.ScheduledAt.ToString("MMM dd, yyyy HH:mm") (@(meeting.DurationMinutes) min)
                 @if (!string.IsNullOrEmpty(meeting.Location))
                 {
@@ -173,7 +173,7 @@
                                                 <i class="bi bi-clock"></i> @item.AllocatedMinutes min
                                                 @if (item.Presenter != null)
                                                 {
-                                                    <text> | <i class="bi bi-person"></i> @item.Presenter.Name</text>
+                                                    <text> | <i class="bi bi-person"></i> <a asp-page="/Admin/Users/Details" asp-route-id="@item.PresenterId" asp-route-returnTo="meeting" class="text-decoration-none">@item.Presenter.Name</a></text>
                                                 }
                                                 @if (item.LinkedReport != null)
                                                 {
@@ -393,7 +393,7 @@
                                                     <br /><small class="text-muted">@ai.Description</small>
                                                 }
                                             </td>
-                                            <td>@ai.AssignedTo.Name</td>
+                                            <td><a asp-page="/Admin/Users/Details" asp-route-id="@ai.AssignedToId" asp-route-returnTo="meeting" class="text-decoration-none">@ai.AssignedTo.Name</a></td>
                                             <td>
                                                 @if (ai.Deadline.HasValue)
                                                 {
@@ -474,7 +474,7 @@
                         {
                             <div class="list-group-item d-flex justify-content-between align-items-center">
                                 <div>
-                                    <strong>@attendee.User.Name</strong>
+                                    <a asp-page="/Admin/Users/Details" asp-route-id="@attendee.UserId" asp-route-returnTo="meeting" class="text-decoration-none"><strong>@attendee.User.Name</strong></a>
                                     @if (attendee.UserId == meeting.ModeratorId)
                                     {
                                         <span class="badge bg-primary ms-1">Moderator</span>

@@ -24,8 +24,11 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label asp-for="Committee.HierarchyLevel" class="form-label">Hierarchy Level</label>
-                                <select asp-for="Committee.HierarchyLevel" class="form-select"
-                                        asp-items="Html.GetEnumSelectList<ReportingSystem.Models.HierarchyLevel>()">
+                                <select asp-for="Committee.HierarchyLevel" class="form-select">
+                                    <option value="@((int)ReportingSystem.Models.HierarchyLevel.TopLevel)">TopLevel</option>
+                                    <option value="@((int)ReportingSystem.Models.HierarchyLevel.Directors)">Directors</option>
+                                    <option value="@((int)ReportingSystem.Models.HierarchyLevel.Functions)">Functions</option>
+                                    <option value="@((int)ReportingSystem.Models.HierarchyLevel.Processes)">Processes</option>
                                 </select>
                             </div>
 

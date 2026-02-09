@@ -86,10 +86,10 @@
                         {
                             <tr>
                                 <td>
-                                    <strong>@grant.GrantedTo.Name</strong>
+                                    <a asp-page="/Admin/Users/Details" asp-route-id="@grant.GrantedToUserId" asp-route-returnTo="confidentiality" class="text-decoration-none"><strong>@grant.GrantedTo.Name</strong></a>
                                     <br /><small class="text-muted">@grant.GrantedTo.SystemRole</small>
                                 </td>
-                                <td>@grant.GrantedBy.Name</td>
+                                <td><a asp-page="/Admin/Users/Details" asp-route-id="@grant.GrantedById" asp-route-returnTo="confidentiality" class="text-decoration-none">@grant.GrantedBy.Name</a></td>
                                 <td>@(grant.Reason ?? "—")</td>
                                 <td>@grant.GrantedAt.ToString("MMM dd, yyyy HH:mm")</td>
                                 <td>

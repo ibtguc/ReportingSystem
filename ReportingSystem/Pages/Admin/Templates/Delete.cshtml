@@ -51,7 +51,7 @@
                         <dd class="col-sm-8">@Model.UsageCount report@(Model.UsageCount != 1 ? "s" : "")</dd>
 
                         <dt class="col-sm-4">Created</dt>
-                        <dd class="col-sm-8">@Model.Template.CreatedAt.ToString("d MMM yyyy") by @Model.Template.CreatedBy?.Name</dd>
+                        <dd class="col-sm-8">@Model.Template.CreatedAt.ToString("d MMM yyyy") by @if (Model.Template.CreatedBy != null) { <a asp-page="/Admin/Users/Details" asp-route-id="@Model.Template.CreatedById" class="text-decoration-none">@Model.Template.CreatedBy.Name</a> }</dd>
                     </dl>
 
                     <form method="post" class="d-flex justify-content-between mt-4">

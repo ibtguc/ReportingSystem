@@ -32,7 +32,7 @@
             </h2>
             <div class="text-muted">
                 <span class="me-3"><i class="bi bi-people"></i> @Model.Report.Committee.Name</span>
-                <span class="me-3"><i class="bi bi-person"></i> @Model.Report.Author.Name</span>
+                <span class="me-3"><i class="bi bi-person"></i> <a asp-page="/Admin/Users/Details" asp-route-id="@Model.Report.AuthorId" asp-route-returnTo="report" class="text-decoration-none">@Model.Report.Author.Name</a></span>
                 <span class="me-3"><i class="bi bi-calendar"></i> @Model.Report.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
                 <span class="me-3">v@(Model.Report.Version)</span>
             </div>
