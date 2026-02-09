@@ -136,6 +136,17 @@
 </div>
 
 @section Scripts {
+<style>
+    @@keyframes highlight-pulse {
+        0%   { background-color: rgba(255, 193, 7, 0.5); }
+        50%  { background-color: rgba(255, 193, 7, 0.2); }
+        100% { background-color: transparent; }
+    }
+    .highlight-pulse {
+        animation: highlight-pulse 2s ease-in-out;
+        border-radius: 4px;
+    }
+</style>
 <script>
     function toggleChildren(id) {
         var el = document.getElementById('children-' + id);
@@ -164,6 +175,35 @@
                 icon.classList.add('bi-chevron-right');
             }
         });
+    }
+
+    @if (Model.Highlight.HasValue)
+    {
+        <text>
+        (function() {
+            var ancestorIds = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HighlightAncestorIds));
+            ancestorIds.forEach(function(id) {
+                var el = document.getElementById('children-' + id);
+                var icon = document.getElementById('icon-' + id);
+                if (el) {
+                    el.classList.remove('d-none');
+                    if (icon) {
+                        icon.classList.remove('bi-chevron-right');
+                        icon.classList.add('bi-chevron-down');
+                    }
+                }
+            });
+
+            var node = document.getElementById('node-@Model.Highlight.Value');
+            if (node) {
+                setTimeout(function() {
+                    node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    var row = node.querySelector('.d-flex');
+                    if (row) row.classList.add('highlight-pulse');
+                }, 200);
+            }
+        })();
+        </text>
     }
 </script>
 }

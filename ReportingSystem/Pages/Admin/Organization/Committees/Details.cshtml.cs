@@ -37,7 +37,7 @@ public class DetailsModel : PageModel
 
     public string BackUrl => ReturnTo switch
     {
-        "org" => "/Admin/Organization",
+        "org" => $"/Admin/Organization?highlight={Committee.Id}",
         "dashboard" => "/Dashboard",
         "tree" => "/Admin/Organization/CommitteeTree",
         _ => "/Admin/Organization/Committees"

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ReportingSystem.Models;
 using ReportingSystem.Services;
@@ -18,6 +19,11 @@ public class IndexModel : PageModel
     public User? Chairman { get; set; }
     public (int committees, int users, int memberships, int shadows) Stats { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public int? Highlight { get; set; }
+
+    public List<int> HighlightAncestorIds { get; set; } = new();
+
     public async Task OnGetAsync()
     {
         AllCommittees = await _orgService.GetHierarchyTreeAsync();
@@ -29,6 +35,23 @@ public class IndexModel : PageModel
             .Where(u => u.SystemRole == SystemRole.ChairmanOffice)
             .OrderBy(u => u.ChairmanOfficeRank)
             .ToList();
+
+        if (Highlight.HasValue)
+        {
+            ComputeAncestorChain(Highlight.Value);
+        }
+    }
+
+    private void ComputeAncestorChain(int committeeId)
+    {
+        var lookup = AllCommittees.ToDictionary(c => c.Id);
+        if (!lookup.TryGetValue(committeeId, out var current)) return;
+
+        while (current.ParentCommitteeId.HasValue)
+        {
+            HighlightAncestorIds.Add(current.ParentCommitteeId.Value);
+            if (!lookup.TryGetValue(current.ParentCommitteeId.Value, out current)) break;
+        }
     }
 
     public List<Committee> GetRootCommittees()
