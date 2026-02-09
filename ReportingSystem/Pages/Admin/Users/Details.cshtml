@@ -97,8 +97,8 @@
                     }
 
                     <div class="d-flex justify-content-between mt-4">
-                        <a asp-page="Index" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> Back to List
+                        <a href="@Model.BackUrl" class="btn btn-secondary">
+                            <i class="bi @Model.BackIcon"></i> @Model.BackLabel
                         </a>
                         <div>
                             <a asp-page="Edit" asp-route-id="@Model.User.Id" class="btn btn-primary">

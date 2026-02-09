@@ -127,7 +127,7 @@
 
                                         <!-- Action buttons -->
                                         <div class="btn-group btn-group-sm w-100">
-                                            <a asp-page="Committees/Details" asp-route-id="@committee.Id"
+                                            <a asp-page="Committees/Details" asp-route-id="@committee.Id" asp-route-returnTo="tree"
                                                class="btn btn-outline-info py-0" title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
@@ -166,7 +166,7 @@
                                                             {
                                                                 <i class="bi bi-person me-1 text-muted"></i>
                                                             }
-                                                            <a asp-page="/Admin/Users/Details" asp-route-id="@m.UserId"
+                                                            <a asp-page="/Admin/Users/Details" asp-route-id="@m.UserId" asp-route-returnTo="tree"
                                                                class="text-decoration-none text-truncate"
                                                                title="@m.User.Name — @m.User.Email">
                                                                 @m.User.Name

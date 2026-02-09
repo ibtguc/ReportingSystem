@@ -29,14 +29,35 @@ public class DetailsModel : PageModel
     public CommitteeRole NewMemberRole { get; set; }
 
     /// <summary>
-    /// Tracks which page the user came from: "org" for Org Tree, default is Committees list.
+    /// Tracks which page the user came from so the back button returns correctly.
+    /// Values: "org" (Org Tree), "dashboard" (Dashboard), "tree" (Committee Tree), default (Committees list).
     /// </summary>
     [BindProperty(SupportsGet = true)]
     public string? ReturnTo { get; set; }
 
-    public string BackUrl => ReturnTo == "org" ? "/Admin/Organization" : "/Admin/Organization/Committees";
-    public string BackLabel => ReturnTo == "org" ? "Back to Org Tree" : "Back to Committees";
-    public string BackIcon => ReturnTo == "org" ? "bi-diagram-3" : "bi-arrow-left";
+    public string BackUrl => ReturnTo switch
+    {
+        "org" => "/Admin/Organization",
+        "dashboard" => "/Dashboard",
+        "tree" => "/Admin/Organization/CommitteeTree",
+        _ => "/Admin/Organization/Committees"
+    };
+
+    public string BackLabel => ReturnTo switch
+    {
+        "org" => "Back to Org Tree",
+        "dashboard" => "Back to Dashboard",
+        "tree" => "Back to Committee Tree",
+        _ => "Back to Committees"
+    };
+
+    public string BackIcon => ReturnTo switch
+    {
+        "org" => "bi-diagram-3",
+        "dashboard" => "bi-speedometer2",
+        "tree" => "bi-diagram-2",
+        _ => "bi-arrow-left"
+    };
 
     public async Task<IActionResult> OnGetAsync(int? id)
     {
@@ -63,21 +84,21 @@ public class DetailsModel : PageModel
         await _orgService.AddMembershipAsync(membership);
 
         TempData["SuccessMessage"] = "Member added successfully!";
-        return RedirectToPage("Details", new { id });
+        return RedirectToPage("Details", new { id, returnTo = ReturnTo });
     }
 
     public async Task<IActionResult> OnPostRemoveMemberAsync(int id, int membershipId)
     {
         await _orgService.RemoveMembershipAsync(membershipId);
         TempData["SuccessMessage"] = "Member removed successfully!";
-        return RedirectToPage("Details", new { id });
+        return RedirectToPage("Details", new { id, returnTo = ReturnTo });
     }
 
     public async Task<IActionResult> OnPostToggleRoleAsync(int id, int membershipId, CommitteeRole newRole)
     {
         await _orgService.UpdateMembershipRoleAsync(membershipId, newRole);
         TempData["SuccessMessage"] = "Member role updated!";
-        return RedirectToPage("Details", new { id });
+        return RedirectToPage("Details", new { id, returnTo = ReturnTo });
     }
 
     private void LoadMembershipData()
