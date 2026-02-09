@@ -465,6 +465,8 @@ OrganizationSeeder seeds the full ORS_Test_Data.md dataset:
 - **DrillDownNode DTO**: Defined after ReportService class in same file, used for recursive tree rendering
 - **DirectivePropagationNode DTO**: Defined after DirectiveService class in same file, used for propagation tree
 - **AgendaItemNotes DTO**: Defined after MinutesModel page model class in same file, used for per-item discussion notes
+- **Rich text editing**: Quill v2.0.2 via CDN (`@section Styles` for CSS, `@section Scripts` for JS). Hidden textarea syncs on form submit. Layout already has `@await RenderSectionAsync("Styles", required: false)` at line 10.
+- **Template seeding**: `ReportTemplateService.SeedDefaultTemplatesAsync()` called in Program.cs after user/org seeding; idempotent (checks `AnyAsync(t => t.IsDefault)`)
 
 ## Git
 
@@ -490,12 +492,20 @@ CRITICAL CONTEXT:
 - All DB ops are async/await
 - [BindProperty] for form binding, TempData for flash messages
 - ModelState.Remove() for navigation properties in POST handlers
+- CommitteeMembership has NO `IsActive` property — use `cm.EffectiveTo == null` for active members
+- Notification.UserId is `string` (not int) — legacy pattern from Phase 1
+- DateTime? fields (e.g. UpdatedAt) need `?? fallback` when assigning to DateTime properties
 
-ENVIRONMENT SETUP (sandboxed — run if .NET SDK not installed):
-  apt-get update -qq && apt-get install -y -qq dotnet-sdk-8.0
-  echo "nameserver 8.8.8.8" > /etc/resolv.conf
-  export no_proxy="${no_proxy:+$no_proxy,}api.nuget.org,nuget.org,www.nuget.org"
-  dotnet build ReportingSystem/ReportingSystem.csproj
+ENVIRONMENT SETUP (sandboxed — NuGet proxy auth fails with dotnet restore):
+  # If dotnet restore fails with NU1301/proxy 401, use offline restore:
+  # 1. Download .nupkg files via curl (which works through the proxy):
+  #    curl -sO https://api.nuget.org/v3-flatcontainer/{id}/{ver}/{id}.{ver}.nupkg
+  # 2. Set up local NuGet source:
+  #    dotnet nuget disable source nuget.org
+  #    dotnet nuget add source /tmp/nuget-packages --name local-packages
+  # 3. Restore and build:
+  #    dotnet restore && dotnet build --no-restore
+  # Note: Must also download transitive dependencies (97 packages for current project)
 
 COMPLETED PHASES:
 - Phase 1 (Infrastructure): Auth (magic link), backup, notifications, user CRUD
