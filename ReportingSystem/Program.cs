@@ -136,6 +136,10 @@ using (var scope = app.Services.CreateScope())
         var knowledgeService = services.GetRequiredService<KnowledgeBaseService>();
         await knowledgeService.SeedDefaultCategoriesAsync();
 
+        // Seed demo/transactional data (reports, directives, meetings, etc.)
+        logger.LogInformation("Seeding demo data...");
+        await DemoDataSeeder.SeedAsync(context);
+
         logger.LogInformation("Database seeding completed.");
     }
     catch (Exception ex)
