@@ -4,7 +4,7 @@
 
 ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows, structured meeting management, confidentiality controls, and full audit trail.
 
-**Current Status**: Phases 1-10 Complete — Phase 11 (Knowledge Base & AI) is NEXT
+**Current Status**: All 11 Phases COMPLETE + Demo Data Seeded
 
 ## Tech Stack
 
@@ -57,17 +57,19 @@ dotnet build ReportingSystem/ReportingSystem.csproj
 ```
 ReportingSystem/
 ├── Data/
-│   ├── ApplicationDbContext.cs      # EF Core DbContext (~420 lines)
+│   ├── ApplicationDbContext.cs      # EF Core DbContext (~460 lines)
 │   │                                 # DbSets: Users, MagicLinks, Committees, CommitteeMemberships,
 │   │                                 # ShadowAssignments, Reports, ReportTemplates, Attachments,
 │   │                                 # ReportStatusHistories, ReportSourceLinks, Directives,
 │   │                                 # DirectiveStatusHistories, Meetings, MeetingAgendaItems,
 │   │                                 # MeetingAttendees, MeetingDecisions, ActionItems,
 │   │                                 # ConfidentialityMarkings, AccessGrants, AuditLogs,
-│   │                                 # Notifications, DatabaseBackups
+│   │                                 # Notifications, DatabaseBackups, KnowledgeCategories,
+│   │                                 # KnowledgeArticles
 │   ├── SeedData.cs                  # Placeholder for domain seeding
 │   ├── UserSeeder.cs                # Seeds 3 admin users
-│   └── OrganizationSeeder.cs        # Seeds ~155 users, ~185 committees, memberships (853 lines)
+│   ├── OrganizationSeeder.cs        # Seeds ~155 users, ~185 committees, memberships (853 lines)
+│   └── DemoDataSeeder.cs            # Seeds 30 reports, 15 directives, 8 meetings, notifications, audit log (~1300 lines)
 ├── Filters/
 │   └── AutomaticBackupFilter.cs     # Pre-POST/PUT/DELETE backup trigger
 ├── Models/
@@ -91,13 +93,16 @@ ReportingSystem/
 │   ├── AccessGrant.cs               # Explicit access grants for confidential items (Phase 7)
 │   ├── AuditLog.cs                  # Append-only audit log + AuditActionType enum (Phase 8)
 │   ├── Notification.cs              # In-app notifications + enhanced NotificationType enum (Phase 9)
-│   └── DatabaseBackup.cs            # Backup records
+│   ├── DatabaseBackup.cs            # Backup records
+│   ├── KnowledgeCategory.cs         # Hierarchical categories with parent, icon, sort order (Phase 11)
+│   └── KnowledgeArticle.cs          # Articles with source linking, tags, view count (Phase 11)
 ├── Pages/
 │   ├── Admin/
 │   │   ├── Dashboard.cshtml(.cs)    # Stats: org + report + directive + meeting counts
 │   │   ├── Backup/Index             # Backup management (SystemAdmin only)
 │   │   ├── Users/                   # CRUD: Index, Create, Edit, Details, Delete
 │   │   ├── Templates/               # Report template CRUD: Index, Create, Edit, Details, Delete (Phase 10)
+│   │   ├── Knowledge/               # KB admin: dashboard, bulk index, categories CRUD (Phase 11)
 │   │   └── Organization/
 │   │       ├── Index                # Org tree visualization
 │   │       ├── _CommitteeTreeNode   # Recursive tree partial
@@ -136,7 +141,12 @@ ReportingSystem/
 │   │   └── Index                    # Role-specific dashboard (Chairman/Office/Head/Personal) (Phase 9)
 │   ├── Notifications/
 │   │   └── Index                    # Notification center with read/unread, filtering (Phase 9)
-│   ├── Shared/_Layout.cshtml        # Nav: Dashboard, Organization, Reports, Directives, Meetings, Search, Administration, User
+│   ├── Knowledge/
+│   │   ├── Index                    # Browse articles: search, category filter, pagination, stats (Phase 11)
+│   │   └── Article                  # Article detail: body, metadata, source links, tags (Phase 11)
+│   ├── Analytics/
+│   │   └── Index                    # Charts dashboard: overview, trends, status, compliance, committees (Phase 11)
+│   ├── Shared/_Layout.cshtml        # Nav: Dashboard, Organization, Reports, Directives, Meetings, Knowledge, Analytics, Search, Administration, User
 │   ├── Index.cshtml                 # Landing → redirects to Dashboard or Login
 │   └── Error.cshtml
 ├── Services/
@@ -153,11 +163,15 @@ ReportingSystem/
 │   ├── AuditService.cs             # Append-only audit logging, query/export, item history (~200 lines) (Phase 8)
 │   ├── SearchService.cs            # Unified full-text search across all content types (~280 lines) (Phase 8)
 │   ├── DashboardService.cs        # Role-specific dashboards (Chairman/Office/Head/Personal) (~250 lines) (Phase 9)
-│   └── ReportTemplateService.cs   # Template CRUD, committee-scoped lookup, default seeding (~200 lines) (Phase 10)
+│   ├── ReportTemplateService.cs   # Template CRUD, committee-scoped lookup, default seeding (~200 lines) (Phase 10)
+│   ├── KnowledgeBaseService.cs    # Article CRUD, bulk indexing, category management, search (~300 lines) (Phase 11)
+│   └── AnalyticsService.cs        # Overview, trends, compliance, committee metrics (~250 lines) (Phase 11)
+├── ApiEndpoints.cs                  # REST API extension method: /api/* endpoints (~210 lines) (Phase 11)
 ├── wwwroot/                         # Static files (Bootstrap, jQuery, uploads/)
-├── Program.cs                       # App configuration & DI (~140 lines)
+├── Program.cs                       # App configuration & DI (~160 lines)
 ├── appsettings.json                 # Production config
-└── appsettings.Development.json     # Dev config (SQLite)
+├── appsettings.Development.json     # Dev config (SQLite)
+└── demo_guide.md                    # 6-act demo walkthrough with 12 user personas
 ```
 
 ---
@@ -294,8 +308,23 @@ Chairman/CEO
 - [x] Navigation: Report Templates link added to Administration dropdown
 - [x] Bug fixes: ConfidentialityService IsActive→EffectiveTo==null, Archives DateTime? conversion
 
-### Phase 11: Knowledge Base & AI (Future)
-**Goal**: Knowledge base, AI summarization, REST API, mobile app (SRS Phase 4)
+### Phase 11: Knowledge Base, Analytics & REST API [COMPLETE]
+- [x] Models: KnowledgeCategory (hierarchical with parent, icon, sort order), KnowledgeArticle (title, body, summary, source linking to reports/directives, tags, view count, published flag)
+- [x] KnowledgeBaseService: article CRUD, category management, bulk indexing (auto-creates articles from approved reports + closed directives), search/filter, stats, view count tracking
+- [x] AnalyticsService: organization overview (counts + 30-day trends), monthly activity trends (12-month bar chart data), status distributions, compliance metrics (directive on-time rate, action item completion), committee activity metrics
+- [x] Knowledge Base pages: Browse (search, category filter, pagination, stats cards, most viewed/recent), Article detail (body, metadata sidebar, source links, tags), Admin (dashboard with stats, bulk index button, categories CRUD)
+- [x] Analytics page: Chart.js 4.4.1 overview cards, monthly trends bar chart, status doughnut charts, compliance progress bars, committee metrics table
+- [x] REST API (ApiEndpoints.cs): 10+ endpoints at `/api/*` — reports, directives, meetings, committees, search, analytics (overview, trends, compliance, committees), knowledge (articles, categories, bulk-index)
+- [x] All API endpoints require authorization, support pagination (page + pageSize params)
+- [x] Layout nav: Knowledge Base + Analytics links in main nav, Knowledge Admin in Administration dropdown
+
+### Demo Data [COMPLETE]
+- [x] DemoDataSeeder.cs (~1300 lines): comprehensive transactional data for system demos
+- [x] 30 reports across L3→L0 with full status histories, ReportSourceLinks, feedback/revision pairs, confidential items
+- [x] 15 directives including 4-level chain (D1→D2→D3), corrective actions, urgent cybersecurity, overdue items
+- [x] 8 meetings (Finalized, MinutesReview, MinutesEntry, Scheduled, Cancelled) with agenda, attendees, decisions, action items
+- [x] 2 confidentiality markings, 3 access grants, 25+ notifications, 30+ audit log entries
+- [x] demo_guide.md: 6-act demo walkthrough across 12 user personas with data reference tables
 
 ---
 
@@ -325,6 +354,8 @@ Chairman/CEO
 | `AuditLog` | 8 | Timestamp, UserId, UserName, ActionType, ItemType, ItemId, ItemTitle, BeforeValue, AfterValue, Details, IpAddress, SessionId, CommitteeId | — (append-only) |
 | `Notification` | 1 | UserId, Type, Title, Message, IsRead, Priority | — |
 | `DatabaseBackup` | 1 | Name, FileName, FilePath, Type, CreatedBy | — |
+| `KnowledgeCategory` | 11 | Name, Description, ParentCategoryId, IconClass, SortOrder, IsActive | → ParentCategory, SubCategories, Articles |
+| `KnowledgeArticle` | 11 | Title, Body, Summary, CategoryId, SourceType (Report/Directive/Manual), SourceItemId, CommitteeId, Tags, ViewCount, IsPublished, CreatedById | → Category, Committee, CreatedBy |
 
 ### Key Enums
 - `SystemRole`: SystemAdmin, Chairman, ChairmanOffice, CommitteeUser
@@ -344,6 +375,7 @@ Chairman/CEO
 - `ActionItemStatus`: Assigned, InProgress, Completed, Verified
 - `ConfidentialItemType`: Report, Directive, Meeting
 - `AuditActionType`: Login, Logout, Create, Update, Delete, StatusChange, AccessGranted, AccessDenied, AccessRevoked, ConfidentialityMarked, ConfidentialityUnmarked, RoleChanged, MembershipAdded, MembershipRemoved, SearchPerformed, Export, MeetingStarted, MinutesSubmitted, MinutesConfirmed, MinutesFinalized, DirectiveForwarded, DirectiveAcknowledged
+- `KnowledgeSourceType`: Report, Directive, Manual
 
 ## Services (with key methods)
 
@@ -363,6 +395,8 @@ Chairman/CEO
 | `SearchService` | SearchAsync (unified search across Reports, Directives, Meetings, ActionItems with keyword, date, committee, status, type filtering) |
 | `DashboardService` | GetChairmanDashboardAsync, GetOfficeDashboardAsync, GetCommitteeHeadDashboardAsync, GetPersonalDashboardAsync |
 | `ReportTemplateService` | GetTemplatesAsync, GetTemplateByIdAsync, GetTemplatesForCommitteeAsync, CreateTemplateAsync, UpdateTemplateAsync, DeleteTemplateAsync, GetTemplateUsageCountAsync, SeedDefaultTemplatesAsync |
+| `KnowledgeBaseService` | GetArticlesAsync, GetArticleByIdAsync, GetCategoriesAsync, GetCategoryByIdAsync, CreateCategoryAsync, UpdateCategoryAsync, BulkIndexContentAsync, IncrementViewCountAsync, GetStatsAsync, GetMostViewedAsync, GetRecentArticlesAsync |
+| `AnalyticsService` | GetOrganizationOverviewAsync, GetMonthlyTrendsAsync, GetStatusDistributionsAsync, GetComplianceMetricsAsync, GetCommitteeMetricsAsync |
 
 ## Pages (Route Map)
 
@@ -413,10 +447,29 @@ Chairman/CEO
 | Template Delete | `/Admin/Templates/Delete/{id}` | GET, POST |
 | Dashboard | `/Dashboard` | GET (role-adaptive: Chairman/Office/Head/Personal) |
 | Notifications | `/Notifications` | GET (UnreadOnly), POST:MarkRead/MarkAllRead |
+| Knowledge Browse | `/Knowledge` | GET (search, CategoryId, page) |
+| Knowledge Article | `/Knowledge/Article/{id}` | GET (increments view count) |
+| KB Admin | `/Admin/Knowledge` | GET (stats, articles, categories), POST:BulkIndex |
+| KB Create Category | `/Admin/Knowledge/CreateCategory` | GET, POST |
+| KB Edit Category | `/Admin/Knowledge/EditCategory/{id}` | GET, POST |
+| Analytics | `/Analytics` | GET (overview, trends, status distributions, compliance, committee metrics) |
+| **REST API** | `/api/reports` | GET (page, pageSize) |
+| | `/api/reports/{id}` | GET |
+| | `/api/directives` | GET (page, pageSize) |
+| | `/api/meetings` | GET (page, pageSize) |
+| | `/api/committees` | GET |
+| | `/api/search?q=` | GET (q, page, pageSize) |
+| | `/api/analytics/overview` | GET |
+| | `/api/analytics/trends` | GET |
+| | `/api/analytics/compliance` | GET |
+| | `/api/analytics/committees` | GET |
+| | `/api/knowledge/articles` | GET (page, pageSize) |
+| | `/api/knowledge/categories` | GET |
+| | `/api/knowledge/bulk-index` | POST |
 
 ## Authorization
 
-- `/Admin/*`, `/Reports/*`, `/Directives/*`, `/Meetings/*`, `/Confidentiality/*`, `/Search/*`, `/Archives/*`, `/Dashboard/*`, and `/Notifications/*` → `[Authorize]` (any authenticated user)
+- `/Admin/*`, `/Reports/*`, `/Directives/*`, `/Meetings/*`, `/Confidentiality/*`, `/Search/*`, `/Archives/*`, `/Dashboard/*`, `/Notifications/*`, `/Knowledge/*`, `/Analytics/*`, and `/api/*` → `[Authorize]` (any authenticated user)
 - `/Admin/Backup/*` → `SystemAdminOnly` policy
 - `/Auth/*` and `/` → `[AllowAnonymous]`
 - Report actions: committee membership checks (submit), head-of-committee/parent checks (review)
@@ -443,13 +496,21 @@ Chairman/CEO
 { "EmailSettings": { "Enabled": false, "TenantId": "", "ClientId": "", "ClientSecret": "", "SenderUserId": "", "SenderEmail": "", "SenderName": "" } }
 ```
 
-## Seeded Data (Phase 2)
+## Seeded Data
 
-OrganizationSeeder seeds the full ORS_Test_Data.md dataset:
+**OrganizationSeeder** (Phase 2) seeds the full ORS_Test_Data.md dataset:
 - 1 System Admin (admin@org.edu), 1 Chairman, 4 Chairman's Office members (ranked 1-4)
 - 5 L0 General Secretaries + 5 shadows
 - 19 L1 Directorates across 5 sectors, ~65 L2 Functions, ~100 L3 Processes
 - ~500+ memberships (heads + members), 5 shadow assignments, cross-committee memberships
+
+**DemoDataSeeder** (Post Phase 11) seeds comprehensive transactional demo data:
+- 30 reports (L3 process → L2 function → L1 sector → L0 institutional) with status histories and source links
+- 15 directives with 4-level chain (D1→D2→D3), corrective actions, urgent items, overdue items
+- 8 meetings with agendas, attendees, decisions, action items across multiple statuses
+- 2 confidentiality markings, 3 access grants
+- 25+ notifications across 10 users, 30+ audit log entries
+- See `demo_guide.md` for the 6-act demo walkthrough with 12 user personas
 
 ## Development Patterns
 
@@ -467,6 +528,12 @@ OrganizationSeeder seeds the full ORS_Test_Data.md dataset:
 - **AgendaItemNotes DTO**: Defined after MinutesModel page model class in same file, used for per-item discussion notes
 - **Rich text editing**: Quill v2.0.2 via CDN (`@section Styles` for CSS, `@section Scripts` for JS). Hidden textarea syncs on form submit. Layout already has `@await RenderSectionAsync("Styles", required: false)` at line 10.
 - **Template seeding**: `ReportTemplateService.SeedDefaultTemplatesAsync()` called in Program.cs after user/org seeding; idempotent (checks `AnyAsync(t => t.IsDefault)`)
+- **User.Name** (NOT `FullName`): The User model property is `Name`, not `FullName` — common source of build errors
+- **SearchService.SearchAsync**: Takes `(SearchQuery query, int userId)` — SearchQuery has `.Keywords`, SearchResults has `.Items` (List) and `.TotalCount`
+- **_ViewImports.cshtml**: Needs `@using ReportingSystem.Models` for enum types (e.g., `KnowledgeSourceType`) in Razor views
+- **ApiEndpoints.cs**: Extension method in `namespace ReportingSystem;` — Program.cs needs explicit `using ReportingSystem;`
+- **Chart.js**: Version 4.4.1 via CDN, used in Analytics/Index.cshtml for bar and doughnut charts
+- **DemoDataSeeder**: Uses `D(daysAgo)` helper for relative timestamps, `UserByEmail()`/`UserByName()`/`Comm()` for entity lookups; idempotent (checks `Reports.AnyAsync()`)
 
 ## Git
 
@@ -482,6 +549,8 @@ Use this prompt when starting a new Claude Code session to resume work on this p
 ```
 You are continuing development of the ORS (Organizational Reporting System) — an ASP.NET Core 8.0 Razor Pages web app for hierarchical organizational reporting.
 
+ALL 11 PHASES ARE COMPLETE. The system is fully functional with comprehensive demo data.
+
 CRITICAL CONTEXT:
 - Branch: claude/ors-development-continued-1LlZI
 - This is Razor Pages (NOT MVC). Pages live in /Pages/, not /Controllers/.
@@ -492,9 +561,18 @@ CRITICAL CONTEXT:
 - All DB ops are async/await
 - [BindProperty] for form binding, TempData for flash messages
 - ModelState.Remove() for navigation properties in POST handlers
+
+COMMON GOTCHAS (these have caused build errors in past sessions):
+- User model has `Name` property (NOT `FullName`) — always use `.Name`
 - CommitteeMembership has NO `IsActive` property — use `cm.EffectiveTo == null` for active members
 - Notification.UserId is `string` (not int) — legacy pattern from Phase 1
 - DateTime? fields (e.g. UpdatedAt) need `?? fallback` when assigning to DateTime properties
+- SearchService.SearchAsync takes `(SearchQuery query, int userId)` — SearchQuery has `.Keywords`, SearchResults has `.Items` and `.TotalCount`
+- _ViewImports.cshtml needs `@using ReportingSystem.Models` for enum types in Razor views
+- ApiEndpoints.cs extension method is in `namespace ReportingSystem;` — Program.cs needs explicit `using ReportingSystem;`
+- DTOs are defined after service classes in the same file (SearchResults in SearchService.cs, DashboardData in DashboardService.cs, etc.)
+- New page folders need `AuthorizeFolder` in Program.cs conventions
+- Services registered as `AddScoped<>` in Program.cs
 
 ENVIRONMENT SETUP (sandboxed — NuGet proxy auth fails with dotnet restore):
   # If dotnet restore fails with NU1301/proxy 401, use offline restore:
@@ -507,7 +585,7 @@ ENVIRONMENT SETUP (sandboxed — NuGet proxy auth fails with dotnet restore):
   #    dotnet restore && dotnet build --no-restore
   # Note: Must also download transitive dependencies (97 packages for current project)
 
-COMPLETED PHASES:
+COMPLETED PHASES (all 11):
 - Phase 1 (Infrastructure): Auth (magic link), backup, notifications, user CRUD
 - Phase 2 (Organization): Committee hierarchy (L0-L4 tree), memberships, shadows, seeder with ~155 users
 - Phase 3 (Report Lifecycle): Report CRUD, 8-status workflow (Draft→Submitted→UnderReview→Approved→Archived), attachments, versioning, status history
@@ -518,21 +596,21 @@ COMPLETED PHASES:
 - Phase 8 (Search, Archives & Audit): AuditLog model (append-only), unified search across all content types, archive management, comprehensive audit logging (login/logout, status changes, searches, exports), CSV export
 - Phase 9 (Dashboards & Notifications): Role-specific dashboards (Chairman/Office/Head/Personal), enhanced notification system with event-driven helpers, notification center with badge counts
 - Phase 10 (Report Templates & Polish): ReportTemplate model with scope/section config, 5 default templates seeded, Admin/Templates CRUD, template picker on Report Create, Quill rich text editor on Create/Edit, template-driven required field validation
+- Phase 11 (Knowledge Base, Analytics & REST API): KnowledgeCategory + KnowledgeArticle models, bulk indexing from approved content, Analytics dashboard with Chart.js, REST API at /api/* (reports, directives, meetings, committees, search, analytics, knowledge)
+
+DEMO DATA:
+- DemoDataSeeder.cs (~1300 lines) seeds 30 reports, 15 directives, 8 meetings, confidentiality markings, access grants, 25+ notifications, 30+ audit log entries
+- demo_guide.md provides a 6-act walkthrough across 12 user personas (L2 member, L1 director, feedback loop, GS oversight, Chairman view, admin/confidentiality)
+- Key demo accounts: h.elsayed@org.edu (Chairman), a.shalaby@org.edu (GS Academic), f.zaki@org.edu (Director), l.refaat@org.edu (L2 member), admin@org.edu (SystemAdmin)
+- To re-seed: delete db/reporting.db and restart
 
 CURRENT STATE:
-- 22 model classes, 14 services, 41 page models, 51+ Razor views
-- ConfidentialityService.cs (~350 lines) handles: mark/unmark, access checks, impact preview, explicit grants, filtering
-- MeetingService.cs (~420 lines) handles: meeting lifecycle, agenda, RSVP, minutes, confirmation, decisions, action items, overdue tracking
-- DirectiveService.cs (~340 lines) handles: directive CRUD, 7-status workflow, propagation tree, forwarding, overdue tracking, access control
-- ReportService.cs (547 lines) handles: report CRUD, status transitions, file attachments, summary creation, recursive drill-down tree building, access control checks
-- AuditService.cs (~200 lines) handles: append-only audit logging, query/filtering, CSV export, item history
-- SearchService.cs (~280 lines) handles: unified full-text search across reports, directives, meetings, action items
-- DashboardService.cs (~250 lines) handles: role-specific dashboard data aggregation for Chairman, Office, Committee Head, Personal
-- ReportTemplateService.cs (~200 lines) handles: template CRUD, committee-scoped lookup, default template seeding, usage tracking
-- ApplicationDbContext.cs (~450 lines) with 22 DbSets and full relationship configuration
-- OrganizationSeeder.cs (853 lines) seeds entire test dataset
+- 26 models, 16 services, 51+ page models, 65+ Razor views
+- REST API: 10+ endpoints at /api/* via ApiEndpoints.cs extension method
+- ApplicationDbContext.cs (~460 lines) with 24 DbSets and full relationship configuration
+- OrganizationSeeder.cs (853 lines) seeds ~155 users, ~185 committees
+- DemoDataSeeder.cs (~1300 lines) seeds comprehensive transactional demo data
+- Key large services: ReportService (547 lines), MeetingService (~420 lines), ConfidentialityService (~350 lines), DirectiveService (~340 lines), KnowledgeBaseService (~300 lines), AnalyticsService (~250 lines)
 
-NEXT: Phase 11 — Knowledge Base & AI (Future)
-
-Read claude.md for full roadmap, model definitions, service methods, and page routes.
+Read claude.md for full roadmap, model definitions, service methods, page routes, and REST API endpoints.
 ```
