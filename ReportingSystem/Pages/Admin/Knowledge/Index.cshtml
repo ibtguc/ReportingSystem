@@ -1,0 +1,167 @@
+@page
+@model ReportingSystem.Pages.Admin.Knowledge.IndexModel
+@{
+    ViewData["Title"] = "Knowledge Base Administration";
+}
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-gear"></i> Knowledge Base Administration</h2>
+            <div>
+                <a asp-page="/Admin/Knowledge/CreateCategory" class="btn btn-primary me-2">
+                    <i class="bi bi-folder-plus"></i> New Category
+                </a>
+                <form method="post" asp-page-handler="BulkIndex" class="d-inline">
+                    <button type="submit" class="btn btn-success"
+                            onclick="return confirm('This will index all eligible approved content into the knowledge base. Continue?')">
+                        <i class="bi bi-arrow-repeat"></i> Bulk Index Content
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Stats Overview -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">@Model.Stats.TotalArticles</h3>
+                <small class="text-muted">Published Articles</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-info">@Model.Stats.TotalCategories</h3>
+                <small class="text-muted">Active Categories</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">@Model.Stats.ManualArticles</h3>
+                <small class="text-muted">Manual Articles</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-dark">@Model.Stats.TotalViews</h3>
+                <small class="text-muted">Total Views</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Article Sources Breakdown -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-pie-chart"></i> Articles by Source</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <td><span class="badge bg-success">Reports</span></td>
+                            <td class="text-end fw-bold">@Model.Stats.ReportArticles</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-warning text-dark">Directives</span></td>
+                            <td class="text-end fw-bold">@Model.Stats.DirectiveArticles</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-info">Decisions</span></td>
+                            <td class="text-end fw-bold">@Model.Stats.DecisionArticles</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge bg-primary">Manual</span></td>
+                            <td class="text-end fw-bold">@Model.Stats.ManualArticles</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-star"></i> Most Viewed</div>
+            <div class="list-group list-group-flush">
+                @foreach (var article in Model.Stats.MostViewedArticles)
+                {
+                    <a asp-page="/Knowledge/Article" asp-route-id="@article.Id"
+                       class="list-group-item list-group-item-action d-flex justify-content-between">
+                        <span>@article.Title</span>
+                        <span class="badge bg-primary rounded-pill">@article.ViewCount</span>
+                    </a>
+                }
+                @if (!Model.Stats.MostViewedArticles.Any())
+                {
+                    <div class="list-group-item text-muted">No articles yet</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Categories Table -->
+<div class="card">
+    <div class="card-header"><i class="bi bi-folder"></i> Categories</div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Parent</th>
+                    <th class="text-center">Sort Order</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cat in Model.Categories)
+                {
+                    <tr>
+                        <td>
+                            <i class="bi @cat.Icon"></i> @cat.Name
+                        </td>
+                        <td class="text-muted">@(cat.Description ?? "—")</td>
+                        <td>@(cat.ParentCategory?.Name ?? "—")</td>
+                        <td class="text-center">@cat.SortOrder</td>
+                        <td class="text-center">
+                            <span class="badge bg-@(cat.IsActive ? "success" : "secondary")">
+                                @(cat.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a asp-page="/Admin/Knowledge/EditCategory" asp-route-id="@cat.Id"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Categories.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-3">No categories configured</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

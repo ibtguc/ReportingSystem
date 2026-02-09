@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using ReportingSystem;
 using ReportingSystem.Data;
 using ReportingSystem.Services;
 using ReportingSystem.Filters;
@@ -19,6 +20,8 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Archives");
     options.Conventions.AuthorizeFolder("/Dashboard");
     options.Conventions.AuthorizeFolder("/Notifications");
+    options.Conventions.AuthorizeFolder("/Knowledge");
+    options.Conventions.AuthorizeFolder("/Analytics");
 
     // Allow anonymous access to Auth pages (login, verify, logout)
     options.Conventions.AllowAnonymousToFolder("/Auth");
@@ -46,6 +49,8 @@ builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<ReportTemplateService>();
+builder.Services.AddScoped<KnowledgeBaseService>();
+builder.Services.AddScoped<AnalyticsService>();
 
 // Register background service for daily automatic backups
 builder.Services.AddHostedService<DailyBackupHostedService>();
@@ -127,6 +132,10 @@ using (var scope = app.Services.CreateScope())
         var templateService = services.GetRequiredService<ReportTemplateService>();
         await templateService.SeedDefaultTemplatesAsync();
 
+        // Seed default knowledge base categories
+        var knowledgeService = services.GetRequiredService<KnowledgeBaseService>();
+        await knowledgeService.SeedDefaultCategoriesAsync();
+
         logger.LogInformation("Database seeding completed.");
     }
     catch (Exception ex)
@@ -152,5 +161,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
+app.MapApiEndpoints();
 
 app.Run();

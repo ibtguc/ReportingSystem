@@ -1,0 +1,65 @@
+@page "{id:int}"
+@model ReportingSystem.Pages.Admin.Knowledge.EditCategoryModel
+@{
+    ViewData["Title"] = $"Edit Category: {Model.Category.Name}";
+}
+
+<div class="row mt-3">
+    <div class="col-lg-8 mx-auto">
+        <h2><i class="bi bi-pencil"></i> Edit Knowledge Category</h2>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <form method="post">
+                    <input type="hidden" asp-for="Category.Id" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Category.Name" class="form-label">Name <span class="text-danger">*</span></label>
+                        <input asp-for="Category.Name" class="form-control" />
+                        <span asp-validation-for="Category.Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Category.Description" class="form-label">Description</label>
+                        <textarea asp-for="Category.Description" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="Category.Icon" class="form-label">Icon Class</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi @Model.Category.Icon"></i></span>
+                                <input asp-for="Category.Icon" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Category.ParentCategoryId" class="form-label">Parent Category</label>
+                            <select asp-for="Category.ParentCategoryId" asp-items="Model.ParentCategories" class="form-select">
+                                <option value="">None (Top Level)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Category.SortOrder" class="form-label">Sort Order</label>
+                            <input asp-for="Category.SortOrder" class="form-control" type="number" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input asp-for="Category.IsActive" class="form-check-input" />
+                        <label asp-for="Category.IsActive" class="form-check-label">Active</label>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a asp-page="/Admin/Knowledge/Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

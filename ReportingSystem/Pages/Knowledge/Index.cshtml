@@ -1,0 +1,246 @@
+@page
+@model ReportingSystem.Pages.Knowledge.IndexModel
+@{
+    ViewData["Title"] = "Knowledge Base";
+}
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-book"></i> Knowledge Base</h2>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body py-2">
+                <h4 class="mb-0">@Model.Stats.TotalArticles</h4>
+                <small>Articles</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body py-2">
+                <h4 class="mb-0">@Model.Stats.TotalCategories</h4>
+                <small>Categories</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body py-2">
+                <h4 class="mb-0">@Model.Stats.ReportArticles</h4>
+                <small>From Reports</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center bg-warning text-dark">
+            <div class="card-body py-2">
+                <h4 class="mb-0">@Model.Stats.DirectiveArticles</h4>
+                <small>From Directives</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center bg-secondary text-white">
+            <div class="card-body py-2">
+                <h4 class="mb-0">@Model.Stats.DecisionArticles</h4>
+                <small>Decisions</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center bg-dark text-white">
+            <div class="card-body py-2">
+                <h4 class="mb-0">@Model.Stats.TotalViews</h4>
+                <small>Total Views</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filter -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" name="Search" value="@Model.Search"
+                                   placeholder="Search articles by title, content, or tags..." />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select name="CategoryId" class="form-select">
+                            <option value="">All Categories</option>
+                            @foreach (var cat in Model.Categories)
+                            {
+                                <option value="@cat.Id" selected="@(Model.CategoryId == cat.Id)">
+                                    @cat.Name (@cat.Articles.Count)
+                                </option>
+                                @foreach (var sub in cat.SubCategories)
+                                {
+                                    <option value="@sub.Id" selected="@(Model.CategoryId == sub.Id)">
+                                        &nbsp;&nbsp;&mdash; @sub.Name
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Articles Grid -->
+<div class="row">
+    @if (!Model.Articles.Any())
+    {
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                @if (!string.IsNullOrEmpty(Model.Search) || Model.CategoryId.HasValue)
+                {
+                    <span>No articles match your search criteria. Try adjusting your filters.</span>
+                }
+                else
+                {
+                    <span>No knowledge articles published yet. Articles are automatically created when reports are approved and directives are closed.</span>
+                }
+            </div>
+        </div>
+    }
+    @foreach (var article in Model.Articles)
+    {
+        <div class="col-md-4 col-lg-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="badge bg-@GetSourceBadgeColor(article.SourceType)">
+                            @article.SourceType
+                        </span>
+                        <small class="text-muted">
+                            <i class="bi bi-eye"></i> @article.ViewCount
+                        </small>
+                    </div>
+                    <h6 class="card-title">
+                        <a asp-page="/Knowledge/Article" asp-route-id="@article.Id" class="text-decoration-none">
+                            @article.Title
+                        </a>
+                    </h6>
+                    @if (!string.IsNullOrEmpty(article.Summary))
+                    {
+                        <p class="card-text small text-muted">@article.Summary</p>
+                    }
+                    @if (article.Category != null)
+                    {
+                        <span class="badge bg-light text-dark">
+                            <i class="bi @article.Category.Icon"></i> @article.Category.Name
+                        </span>
+                    }
+                </div>
+                <div class="card-footer text-muted small">
+                    <i class="bi bi-calendar"></i> @article.CreatedAt.ToString("dd MMM yyyy")
+                    @if (article.CreatedBy != null)
+                    {
+                        <span class="float-end">@article.CreatedBy.Name</span>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Pagination -->
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Knowledge base pagination">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-page="/Knowledge/Index"
+                   asp-route-page="@(Model.CurrentPage - 1)"
+                   asp-route-categoryId="@Model.CategoryId"
+                   asp-route-search="@Model.Search">Previous</a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                    <a class="page-link" asp-page="/Knowledge/Index"
+                       asp-route-page="@i"
+                       asp-route-categoryId="@Model.CategoryId"
+                       asp-route-search="@Model.Search">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                <a class="page-link" asp-page="/Knowledge/Index"
+                   asp-route-page="@(Model.CurrentPage + 1)"
+                   asp-route-categoryId="@Model.CategoryId"
+                   asp-route-search="@Model.Search">Next</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+<!-- Most Viewed & Recent Sidebar -->
+@if (Model.Stats.MostViewedArticles.Any() || Model.Stats.RecentArticles.Any())
+{
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-star"></i> Most Viewed</div>
+                <div class="list-group list-group-flush">
+                    @foreach (var article in Model.Stats.MostViewedArticles)
+                    {
+                        <a asp-page="/Knowledge/Article" asp-route-id="@article.Id"
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            @article.Title
+                            <span class="badge bg-primary rounded-pill">@article.ViewCount views</span>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-clock"></i> Recently Added</div>
+                <div class="list-group list-group-flush">
+                    @foreach (var article in Model.Stats.RecentArticles)
+                    {
+                        <a asp-page="/Knowledge/Article" asp-route-id="@article.Id"
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            @article.Title
+                            <span class="badge bg-secondary rounded-pill">@article.CreatedAt.ToString("dd MMM")</span>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@functions {
+    string GetSourceBadgeColor(KnowledgeSourceType sourceType)
+    {
+        return sourceType switch
+        {
+            KnowledgeSourceType.Report => "success",
+            KnowledgeSourceType.Directive => "warning",
+            KnowledgeSourceType.MeetingDecision => "info",
+            KnowledgeSourceType.Manual => "primary",
+            _ => "secondary"
+        };
+    }
+}

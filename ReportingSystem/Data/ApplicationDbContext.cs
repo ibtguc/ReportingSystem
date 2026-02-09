@@ -47,6 +47,10 @@ public class ApplicationDbContext : DbContext
     // Notifications
     public DbSet<Notification> Notifications { get; set; }
 
+    // Knowledge Base
+    public DbSet<KnowledgeCategory> KnowledgeCategories { get; set; }
+    public DbSet<KnowledgeArticle> KnowledgeArticles { get; set; }
+
     // Backup
     public DbSet<DatabaseBackup> DatabaseBackups { get; set; }
 
@@ -421,6 +425,42 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.IsRead });
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => e.Type);
+        });
+
+        // Configure KnowledgeCategory
+        modelBuilder.Entity<KnowledgeCategory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.ParentCategoryId);
+            entity.HasOne(e => e.ParentCategory)
+                .WithMany(e => e.SubCategories)
+                .HasForeignKey(e => e.ParentCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure KnowledgeArticle
+        modelBuilder.Entity<KnowledgeArticle>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.CategoryId);
+            entity.HasIndex(e => e.IsPublished);
+            entity.HasIndex(e => e.SourceType);
+            entity.HasIndex(e => new { e.SourceType, e.SourceItemId });
+            entity.HasIndex(e => e.CommitteeId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasOne(e => e.Category)
+                .WithMany(c => c.Articles)
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Committee)
+                .WithMany()
+                .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Configure DatabaseBackup

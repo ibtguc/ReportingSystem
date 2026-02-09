@@ -1,0 +1,401 @@
+@page
+@model ReportingSystem.Pages.Analytics.IndexModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Analytics & Insights";
+}
+
+<div class="row mt-3">
+    <div class="col-12">
+        <h2><i class="bi bi-graph-up"></i> Analytics & Insights</h2>
+    </div>
+</div>
+
+<!-- Organization Overview -->
+<div class="row mt-3 mb-4">
+    <div class="col-12">
+        <h5 class="text-muted">Organization Overview</h5>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-primary">
+            <div class="card-body py-3">
+                <h3 class="text-primary mb-0">@Model.Overview.TotalReports</h3>
+                <small class="text-muted">Total Reports</small>
+                <div class="mt-1">
+                    @{ var reportTrend = Model.Overview.ReportsLast30Days - Model.Overview.ReportsPrev30Days; }
+                    <small class="@(reportTrend >= 0 ? "text-success" : "text-danger")">
+                        <i class="bi bi-@(reportTrend >= 0 ? "arrow-up" : "arrow-down")"></i>
+                        @Math.Abs(reportTrend) vs prev 30d
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-warning">
+            <div class="card-body py-3">
+                <h3 class="text-warning mb-0">@Model.Overview.TotalDirectives</h3>
+                <small class="text-muted">Total Directives</small>
+                <div class="mt-1">
+                    @{ var dirTrend = Model.Overview.DirectivesLast30Days - Model.Overview.DirectivesPrev30Days; }
+                    <small class="@(dirTrend >= 0 ? "text-success" : "text-danger")">
+                        <i class="bi bi-@(dirTrend >= 0 ? "arrow-up" : "arrow-down")"></i>
+                        @Math.Abs(dirTrend) vs prev 30d
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-info">
+            <div class="card-body py-3">
+                <h3 class="text-info mb-0">@Model.Overview.TotalMeetings</h3>
+                <small class="text-muted">Total Meetings</small>
+                <div class="mt-1">
+                    @{ var mtgTrend = Model.Overview.MeetingsLast30Days - Model.Overview.MeetingsPrev30Days; }
+                    <small class="@(mtgTrend >= 0 ? "text-success" : "text-danger")">
+                        <i class="bi bi-@(mtgTrend >= 0 ? "arrow-up" : "arrow-down")"></i>
+                        @Math.Abs(mtgTrend) vs prev 30d
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-success">
+            <div class="card-body py-3">
+                <h3 class="text-success mb-0">@Model.Overview.TotalUsers</h3>
+                <small class="text-muted">Active Users</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-secondary">
+            <div class="card-body py-3">
+                <h3 class="text-secondary mb-0">@Model.Overview.TotalCommittees</h3>
+                <small class="text-muted">Active Committees</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-dark">
+            <div class="card-body py-3">
+                <h3 class="text-dark mb-0">@Model.Overview.KnowledgeArticles</h3>
+                <small class="text-muted">KB Articles</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overdue Alerts -->
+@if (Model.Overview.OverdueDirectives > 0 || Model.Overview.OverdueActionItems > 0)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-danger d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                <div>
+                    <strong>Attention Required:</strong>
+                    @if (Model.Overview.OverdueDirectives > 0)
+                    {
+                        <span>@Model.Overview.OverdueDirectives overdue directive(s)</span>
+                    }
+                    @if (Model.Overview.OverdueDirectives > 0 && Model.Overview.OverdueActionItems > 0)
+                    {
+                        <span> and </span>
+                    }
+                    @if (Model.Overview.OverdueActionItems > 0)
+                    {
+                        <span>@Model.Overview.OverdueActionItems overdue action item(s)</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Monthly Activity Trend Chart -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-bar-chart"></i> Monthly Activity Trends (Last 12 Months)</div>
+            <div class="card-body">
+                <canvas id="monthlyTrendChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Distributions -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-file-earmark-text"></i> Reports by Status</div>
+            <div class="card-body">
+                <canvas id="reportStatusChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-megaphone"></i> Directives by Status</div>
+            <div class="card-body">
+                <canvas id="directiveStatusChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-calendar-event"></i> Meetings by Status</div>
+            <div class="card-body">
+                <canvas id="meetingStatusChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Compliance Metrics -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-check2-circle"></i> Directive Compliance</div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4 class="text-success">@Model.Compliance.DirectivesClosedOnTime</h4>
+                        <small class="text-muted">Closed On Time</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-danger">@Model.Compliance.DirectivesClosedOverdue</h4>
+                        <small class="text-muted">Closed Late</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-warning">@Model.Compliance.DirectivesCurrentlyOverdue</h4>
+                        <small class="text-muted">Currently Overdue</small>
+                    </div>
+                </div>
+                @{
+                    var totalClosedDir = Model.Compliance.DirectivesClosedOnTime + Model.Compliance.DirectivesClosedOverdue;
+                    var onTimePercent = totalClosedDir > 0 ? (int)(Model.Compliance.DirectivesClosedOnTime * 100.0 / totalClosedDir) : 100;
+                }
+                <div class="progress mt-3" style="height: 25px;">
+                    <div class="progress-bar bg-success" style="width: @(onTimePercent)%">
+                        @(onTimePercent)% On Time
+                    </div>
+                    <div class="progress-bar bg-danger" style="width: @(100 - onTimePercent)%">
+                        @(100 - onTimePercent)% Late
+                    </div>
+                </div>
+                <div class="text-center mt-2">
+                    <small class="text-muted">@Model.Compliance.DirectivesStillOpen still open</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-list-task"></i> Action Item Compliance</div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4 class="text-success">@Model.Compliance.ActionItemsCompletedOnTime</h4>
+                        <small class="text-muted">Completed On Time</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-danger">@Model.Compliance.ActionItemsCompletedOverdue</h4>
+                        <small class="text-muted">Completed Late</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-warning">@Model.Compliance.ActionItemsStillOpen</h4>
+                        <small class="text-muted">Still Open</small>
+                    </div>
+                </div>
+                @{
+                    var totalCompActions = Model.Compliance.ActionItemsCompletedOnTime + Model.Compliance.ActionItemsCompletedOverdue;
+                    var actOnTimePercent = totalCompActions > 0 ? (int)(Model.Compliance.ActionItemsCompletedOnTime * 100.0 / totalCompActions) : 100;
+                }
+                <div class="progress mt-3" style="height: 25px;">
+                    <div class="progress-bar bg-success" style="width: @(actOnTimePercent)%">
+                        @(actOnTimePercent)% On Time
+                    </div>
+                    <div class="progress-bar bg-danger" style="width: @(100 - actOnTimePercent)%">
+                        @(100 - actOnTimePercent)% Late
+                    </div>
+                </div>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        Meetings: @Model.Compliance.MeetingsFinalized finalized, @Model.Compliance.MeetingsAwaitingConfirmation awaiting confirmation
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Approval Rate -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-clipboard-check"></i> Report Approval Rate</div>
+            <div class="card-body">
+                @{
+                    var approvalRate = Model.Overview.ReportsSubmitted > 0
+                        ? (int)(Model.Overview.ReportsApproved * 100.0 / Model.Overview.ReportsSubmitted) : 0;
+                }
+                <div class="text-center mb-2">
+                    <h2 class="text-@(approvalRate >= 80 ? "success" : approvalRate >= 50 ? "warning" : "danger")">
+                        @(approvalRate)%
+                    </h2>
+                    <small class="text-muted">
+                        @Model.Overview.ReportsApproved approved of @Model.Overview.ReportsSubmitted submitted
+                    </small>
+                </div>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-success" style="width: @(approvalRate)%">@(approvalRate)%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-activity"></i> 30-Day Activity</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <td>Reports Created</td>
+                            <td class="text-end fw-bold">@Model.Overview.ReportsLast30Days</td>
+                            <td class="text-end">
+                                <small class="text-muted">prev: @Model.Overview.ReportsPrev30Days</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Directives Issued</td>
+                            <td class="text-end fw-bold">@Model.Overview.DirectivesLast30Days</td>
+                            <td class="text-end">
+                                <small class="text-muted">prev: @Model.Overview.DirectivesPrev30Days</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Meetings Held</td>
+                            <td class="text-end fw-bold">@Model.Overview.MeetingsLast30Days</td>
+                            <td class="text-end">
+                                <small class="text-muted">prev: @Model.Overview.MeetingsPrev30Days</small>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Committee Metrics Table -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-diagram-3"></i> Committee Activity Metrics</div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Committee</th>
+                            <th>Level</th>
+                            <th class="text-center">Members</th>
+                            <th class="text-center">Reports</th>
+                            <th class="text-center">Directives</th>
+                            <th class="text-center">Meetings</th>
+                            <th class="text-center">Open Directives</th>
+                            <th class="text-center">Pending Reports</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cm in Model.CommitteeMetrics)
+                        {
+                            <tr>
+                                <td class="fw-bold">@cm.CommitteeName</td>
+                                <td><span class="badge bg-secondary">@cm.HierarchyLevel</span></td>
+                                <td class="text-center">@cm.MemberCount</td>
+                                <td class="text-center">@cm.ReportCount</td>
+                                <td class="text-center">@cm.DirectiveCount</td>
+                                <td class="text-center">@cm.MeetingCount</td>
+                                <td class="text-center">
+                                    @if (cm.OpenDirectives > 0)
+                                    {
+                                        <span class="badge bg-warning text-dark">@cm.OpenDirectives</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (cm.PendingReports > 0)
+                                    {
+                                        <span class="badge bg-info">@cm.PendingReports</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (!Model.CommitteeMetrics.Any())
+                        {
+                            <tr><td colspan="8" class="text-center text-muted py-3">No committee data available</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        // Monthly Trend Chart
+        const trendData = @Html.Raw(JsonSerializer.Serialize(Model.MonthlyTrends));
+        new Chart(document.getElementById('monthlyTrendChart'), {
+            type: 'bar',
+            data: {
+                labels: trendData.map(t => t.month),
+                datasets: [
+                    { label: 'Reports', data: trendData.map(t => t.reports), backgroundColor: 'rgba(13,110,253,0.7)' },
+                    { label: 'Directives', data: trendData.map(t => t.directives), backgroundColor: 'rgba(255,193,7,0.7)' },
+                    { label: 'Meetings', data: trendData.map(t => t.meetings), backgroundColor: 'rgba(13,202,240,0.7)' }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+
+        // Status Distribution Charts
+        const statusColors = ['#0d6efd','#198754','#ffc107','#dc3545','#6c757d','#0dcaf0','#6610f2','#d63384'];
+
+        function createDoughnut(canvasId, data) {
+            if (!data || data.length === 0) {
+                document.getElementById(canvasId).parentElement.innerHTML = '<p class="text-muted text-center">No data</p>';
+                return;
+            }
+            new Chart(document.getElementById(canvasId), {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(d => d.status),
+                    datasets: [{
+                        data: data.map(d => d.count),
+                        backgroundColor: statusColors.slice(0, data.length)
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        createDoughnut('reportStatusChart', @Html.Raw(JsonSerializer.Serialize(Model.Overview.ReportsByStatus)));
+        createDoughnut('directiveStatusChart', @Html.Raw(JsonSerializer.Serialize(Model.Overview.DirectivesByStatus)));
+        createDoughnut('meetingStatusChart', @Html.Raw(JsonSerializer.Serialize(Model.Overview.MeetingsByStatus)));
+    </script>
+}
