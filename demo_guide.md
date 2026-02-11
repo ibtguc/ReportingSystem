@@ -11,49 +11,143 @@ This guide walks through the system's organizational structure and core workflow
 3. Open `https://localhost:5001` (or the configured URL)
 4. Log in using any email listed below (magic link authentication — no password needed)
 
-> **Optional — Enable Pre-Seeded Demo Data:**
-> To start with 30 reports, 15 directives, 8 meetings, notifications, and audit log entries already populated, uncomment these two lines in `Program.cs` (around line 140):
-> ```csharp
-> logger.LogInformation("Seeding demo data...");
-> await DemoDataSeeder.SeedAsync(context);
-> ```
-> Then delete `db/reporting.db` and restart. See [Appendix: Full Demo Data Walkthrough](#appendix-full-demo-data-walkthrough) for the detailed scenario guide.
+---
+
+## Demo User Accounts (57 users)
+
+### Chairman & Chairman Office
+
+| User | Email | Role | Notes |
+|------|-------|------|-------|
+| AM | `am@org.edu` | Chairman | Top authority |
+| Ahmed Mansour | `ahmed.mansour@org.edu` | Chairman Office (Rank 1) | Co-head: Marketing & Outreach |
+| Moustafa Fouad | `moustafa.fouad@org.edu` | Chairman Office (Rank 2) | |
+| Marwa El Serafy | `marwa.elserafy@org.edu` | Chairman Office (Rank 3) | |
+| Samia El Ashiry | `samia.elashiry@org.edu` | Chairman Office (Rank 4) | Co-head: Marketing & Outreach |
+
+### Top Level Committee Heads (L0)
+
+| User | Email | Also Heads |
+|------|-------|------------|
+| Mohamed Ibrahim | `mohamed.ibrahim@org.edu` | Campus Administration (L1) |
+| Radwa Selim | `radwa.selim@org.edu` | HR (L1) |
+| Ghadir Nassar | `ghadir.nassar@org.edu` | Academic Quality & Accreditation (L1) |
+| Engy Galal | `engy.galal@org.edu` | — |
+| Karim Salme | `karim.salme@org.edu` | — |
+| Sherine Khalil | `sherine.khalil@org.edu` | Admission (L1), Admission Office (L2) |
+| Sherine Salamony | `sherine.salamony@org.edu` | Student Activities (L1) |
+
+### Named L2 Heads
+
+| User | Email | Heads |
+|------|-------|-------|
+| Ohoud Khadr | `ohoud.khadr@org.edu` | Music |
+| Yehia Razzaz | `yehia.razzaz@org.edu` | Sports, AWG |
+| Amr Baibars | `amr.baibars@org.edu` | Facility Management (co-head) |
+| Gen. Ibrahim Khalil | `ibrahim.khalil@org.edu` | Facility Management (co-head) |
+| Dalia El Mainouny | `dalia.elmainouny@org.edu` | Recruitment |
+| Ayman Rahmou | `ayman.rahmou@org.edu` | Compensation & Benefits |
+| Salma Ibrahim | `salma.ibrahim@org.edu` | Personnel |
+
+### Generated L2 Heads
+
+| User | Email | Heads |
+|------|-------|-------|
+| Hanan Mostafa | `hanan.mostafa@org.edu` | Curriculum |
+| Tarek Abdel Fattah | `tarek.abdelfattah@org.edu` | Probation & Mentoring |
+| Noha El Sayed | `noha.elsayed@org.edu` | Teaching & Evaluation Standard |
+| Layla Hassan | `layla.hassan@org.edu` | Theater |
+| Ramy Shawky | `ramy.shawky@org.edu` | Admission Services |
+| Hossam Badawy | `hossam.badawy@org.edu` | Security |
+| Mona Farid | `mona.farid@org.edu` | Agriculture |
+
+### L2 Committee Members
+
+| Committee | Members |
+|-----------|---------|
+| Curriculum | Amira Soliman (`amira.soliman@org.edu`), Bassem Youssef (`bassem.youssef@org.edu`) |
+| Probation & Mentoring | Fatma El Zahraa (`fatma.elzahraa@org.edu`), Omar Hashem (`omar.hashem@org.edu`) |
+| Teaching & Evaluation | Yasmin Abdel Rahman (`yasmin.abdelrahman@org.edu`), Khaled Mostafa (`khaled.mostafa@org.edu`) |
+| Music | Nadia Fawzy (`nadia.fawzy@org.edu`), Wael Abdel Meguid (`wael.abdelmeguid@org.edu`) |
+| Theater | Rania Samir (`rania.samir@org.edu`), Hazem Ashraf (`hazem.ashraf@org.edu`) |
+| Sports | Tamer El Naggar (`tamer.elnaggar@org.edu`), Dina Raafat (`dina.raafat@org.edu`) |
+| AWG | Sahar El Gendy (`sahar.elgendy@org.edu`), Hassan Mahmoud (`hassan.mahmoud@org.edu`) |
+| Marketing & Outreach | Lamia Youssef (`lamia.youssef@org.edu`), Mahmoud Farouk (`mahmoud.farouk@org.edu`) |
+| Admission Services | Heba Abdel Aziz (`heba.abdelaziz@org.edu`), Nermeen Sami (`nermeen.sami@org.edu`) |
+| Admission Office | Waleed Tantawy (`waleed.tantawy@org.edu`), Rana El Kholy (`rana.elkholy@org.edu`) |
+| Facility Management | Mostafa Ragab (`mostafa.ragab@org.edu`), Samiha Adel (`samiha.adel@org.edu`) |
+| Security | Abdallah Ramzy (`abdallah.ramzy@org.edu`), Yasser Galal (`yasser.galal@org.edu`) |
+| Agriculture | Nashwa Ahmed (`nashwa.ahmed@org.edu`), Adel Ismail (`adel.ismail@org.edu`) |
+| Recruitment | Mohamed Abdel Wahab (`mohamed.abdelwahab@org.edu`), Hala Mahmoud (`hala.mahmoud@org.edu`) |
+| Compensation & Benefits | Essam Hamdy (`essam.hamdy@org.edu`), Iman El Batouty (`iman.elbatouty@org.edu`) |
+| Personnel | Sherif Naguib (`sherif.naguib@org.edu`), Amany Lotfy (`amany.lotfy@org.edu`) |
+
+### System Admin
+
+| User | Email |
+|------|-------|
+| System Administrator | `admin@org.edu` |
 
 ---
 
-## Demo User Accounts
+## Committee Hierarchy (22 committees)
 
-| User | Email | Role | Level |
-|------|-------|------|-------|
-| Dr. Hassan El-Sayed | `h.elsayed@org.edu` | Chairman | L0 |
-| Nadia Kamel | `n.kamel@org.edu` | Chief of Staff (CO Rank 1) | L0 |
-| Prof. Amira Shalaby | `a.shalaby@org.edu` | GS — Academic Affairs | L0 |
-| Dr. Mariam Fawzy | `m.fawzy@org.edu` | GS — Technology & Innovation | L0 |
-| Dr. Farid Zaki | `f.zaki@org.edu` | Director, Academic Programs | L1 |
-| Dr. Yasmin Farouk | `y.farouk@org.edu` | Director, IT Infrastructure | L1 |
-| Hesham Farag | `h.farag@org.edu` | Director, Finance & Accounting | L1 |
-| Dr. Amal Fathi | `a.fathi@org.edu` | Director, Student Affairs | L1 |
-| Dr. Lamia Refaat | `l.refaat@org.edu` | Curriculum Development (L2 member) | L2 |
-| Dr. Sonia Guirguis | `s.guirguis@org.edu` | Examination & Assessment (L2 member) | L2 |
-| Gamal Reda | `g.reda@org.edu` | Internal Audit Director | L1 |
-| System Administrator | `admin@org.edu` | SystemAdmin | — |
+```
+Top Level Committee (L0) — 7 heads
+├── Academic Quality & Accreditation (L1) — Head: Ghadir Nassar
+│   ├── Curriculum (L2) — Head: Hanan Mostafa
+│   ├── Probation & Mentoring (L2) — Head: Tarek Abdel Fattah
+│   └── Teaching and Evaluation Standard (L2) — Head: Noha El Sayed
+├── Student Activities (L1) — Head: Sherine Salamony
+│   ├── Music (L2) — Head: Ohoud Khadr
+│   ├── Theater (L2) — Head: Layla Hassan
+│   ├── Sports (L2) — Head: Yehia Razzaz
+│   └── AWG (L2) — Head: Yehia Razzaz
+├── Admission (L1) — Head: Sherine Khalil
+│   ├── Marketing & Outreach (L2) — Co-heads: Ahmed Mansour + Samia El Ashiry
+│   ├── Admission Services (L2) — Head: Ramy Shawky
+│   └── Admission Office (L2) — Head: Sherine Khalil
+├── Campus Administration (L1) — Head: Mohamed Ibrahim
+│   ├── Facility Management (L2) — Co-heads: Amr Baibars + Gen. Ibrahim Khalil
+│   ├── Security (L2) — Head: Hossam Badawy
+│   └── Agriculture (L2) — Head: Mona Farid
+└── HR (L1) — Head: Radwa Selim
+    ├── Recruitment (L2) — Head: Dalia El Mainouny
+    ├── Compensation & Benefits (L2) — Head: Ayman Rahmou
+    └── Personnel (L2) — Head: Salma Ibrahim
+```
 
 ---
 
 ## What's Pre-Seeded
 
-The database starts with a fully populated organizational structure:
-
 | Entity | Count | Description |
 |--------|-------|-------------|
-| Users | ~158 | Chairman, Chairman's Office (4), 5 GS, 19 Directors, ~100 L2/L3 staff, 3 admins |
-| Committees | ~185 | Full hierarchy: 1 Top Level, 5 L0, 19 L1, ~65 L2, ~100 L3 |
-| Memberships | ~500+ | Heads + Members for each committee |
-| Shadow Assignments | 5 | GS-level shadow assignments |
-| Report Templates | 5 | Default templates (Quarterly, Monthly, etc.) |
-| Knowledge Categories | Default | Category hierarchy for knowledge base |
+| Users | 57 | 1 Chairman, 4 Chairman Office, 7 TLC heads, 7 named L2 heads, 7 generated L2 heads, 30 L2 members, 1 admin |
+| Committees | 22 | 1 Top Level (L0), 5 L1, 16 L2 |
+| Memberships | 80+ | Heads + Members for each committee |
 
 **Empty tables** (ready for live data entry): Reports, Directives, Meetings, Notifications, Audit Log, Confidentiality Markings, Access Grants, Knowledge Articles.
+
+---
+
+## Report Lifecycle — Collective Approval
+
+Reports follow a collective approval workflow where **all committee members** (except the author) must approve before a report advances:
+
+```
+Draft → Submitted → Approved → Summarized
+              ↕
+       FeedbackRequested
+```
+
+- **Draft** — Author is writing the report
+- **Submitted** — Report sent for committee review; all members can approve individually
+- **FeedbackRequested** — Any member can request feedback, resetting all approvals; author revises and resubmits
+- **Approved** — All required members have approved (or head finalized after 3 days)
+- **Summarized** — Report has been included in a summary report by the committee head
+
+**Head Override:** If 3 days have passed since submission and not all members have approved, the committee head can finalize (force-approve) the report.
 
 ---
 
@@ -63,75 +157,101 @@ The database starts with a fully populated organizational structure:
 
 **Login as: System Administrator** (`admin@org.edu`)
 
-1. **Organization > Committee Tree** — The new top-down visual tree:
-   - Committees displayed as cards in horizontal layers by level (L0 → L1 → L2 → L3)
-   - Each card shows the committee name, sector badge, head name, and member count
-   - Click the **person icon button** on any card to toggle the staff member list
-   - Each member name is a clickable link to their user details page
-   - Use the **View**, **Edit**, and **Delete** icon buttons for CRUD operations
-2. **Organization > Org Tree** — The nested collapsible tree view:
+1. **Organization > Committee Tree** — Visual tree of the hierarchy:
+   - 22 committees displayed as cards in horizontal layers (L0 → L1 → L2)
+   - Each card shows the committee name, head name, and member count
+   - Click the **person icon** on any card to toggle the member list
+   - Use **View**, **Edit**, and **Delete** buttons for CRUD operations
+2. **Organization > Org Tree** — Nested collapsible tree view:
    - Expand/Collapse All button
    - Chairman and Chairman's Office section at the top
-   - Stats cards: committees, users, memberships, shadow assignments
-3. **Organization > Committees** — Table/list view:
-   - Filter by Hierarchy Level (L0–L4) and Sector
+   - Stats cards: committees, users, memberships
+3. **Organization > Committees** — Filterable table/list view:
+   - Filter by Hierarchy Level (L0–L2) and Sector
    - See head names, member counts, parent committees
-4. **Click a committee** (e.g., "Academic Programs Directorate") — Full details:
+4. **Click a committee** (e.g., "Curriculum") — Full details:
    - Head and member lists with roles
    - Sub-committees listing
    - Add/remove member functionality
 
 **Key Talking Points:**
 - Three views of the same data: visual tree, nested tree, filterable table
-- 5-sector hierarchy: Academic Affairs, Administration, Technology, Finance, Student Experience
-- ~185 committees with ~500+ membership assignments
+- 22 committees across 3 hierarchy levels
+- L1 members are the heads of corresponding L2 sub-committees
 
 ---
 
 ### Act 2: Creating a Report (L2 Member Perspective)
 
-**Login as: Dr. Lamia Refaat** (`l.refaat@org.edu`)
+**Login as: Amira Soliman** (`amira.soliman@org.edu`) — Curriculum committee member
 
 1. **Dashboard** — Personal dashboard showing assigned committees
 2. **Reports > New Report** — Create a new report:
-   - Select a **template** (e.g., "Quarterly Departmental Report")
-   - Choose the **committee** (Curriculum Development)
+   - Choose the **committee** (Curriculum)
    - Fill in the **title** and use the **Quill rich text editor** for the body
    - Add optional sections: Suggested Action, Needed Resources, Needed Support, Special Remarks
    - Save as **Draft** or **Submit** directly
 3. **Reports > All Reports** — See the newly created report in the list
-4. **Click the report** — View it with status history showing Draft/Submitted
+4. **Click the report** — View it with status badge showing Draft or Submitted
 
 **Key Talking Points:**
-- Template-driven reports with configurable required fields
 - Rich text editing with Quill editor
 - Reports flow bottom-up through the hierarchy
+- Author can save as draft and submit later
 
 ---
 
-### Act 3: Report Review & Summarization (L1 Director Perspective)
+### Act 3: Collective Approval (Committee Head Perspective)
 
-**Login as: Dr. Farid Zaki** (`f.zaki@org.edu`)
+**Login as: Hanan Mostafa** (`hanan.mostafa@org.edu`) — Head of Curriculum
 
-1. **Reports > All Reports** — See submitted reports from L2 members in the Academic Programs directorate
-2. **Review a report** — Open a submitted report and change status:
-   - Submitted → UnderReview → Approved (or FeedbackRequested for revision)
-3. **Reports > Create Summary** — Demonstrate the summarization workflow:
-   - Select multiple approved source reports
-   - System creates a summary report linked to sources via ReportSourceLink
-   - Summary aggregates key findings from subordinate reports
-4. **Show the chain** — Click into a summary to see linked source reports
+1. **Reports > All Reports** — See the submitted report from Amira Soliman
+2. **Open the report** — The **Collective Approval Panel** shows:
+   - Progress bar (e.g., "0 / 2 approved")
+   - List of pending approvers (Hanan Mostafa, Bassem Youssef)
+   - **Approve** button with optional comments
+3. **Approve the report** — Progress updates to "1 / 2 approved"
+4. **Login as: Bassem Youssef** (`bassem.youssef@org.edu`) — Approve as second member
+   - Status automatically transitions to **Approved** when all members approve
+
+**Alternative flow — Request Feedback:**
+1. Instead of approving, click **Request Feedback** with a comment
+2. Status changes to **FeedbackRequested**, all prior approvals reset
+3. **Login as: Amira Soliman** — See the feedback, click **Revise & Resubmit**
+4. Edit the report and resubmit — status returns to **Submitted**, approval restarts
+
+**Head Override (after 3 days):**
+- If some members haven't approved after 3 days, the committee head sees a **Finalize** button
+- Head can force-approve the report to move it forward
 
 **Key Talking Points:**
-- Summarization: L1 directors aggregate L2/L3 reports into directorate summaries
-- Reports can be sent back for revision with specific feedback
-- Source links create a traceable chain from detail to summary
+- Every committee member (except author) must approve — true collective review
+- Any member can request feedback, which resets all approvals
+- Head override after 3-day deadline prevents bottlenecks
+- Progress bar gives real-time visibility into approval status
 
 ---
 
-### Act 4: Issuing Directives & Running Meetings
+### Act 4: Report Summarization (L1 Head Perspective)
 
-**Login as: Dr. Hassan El-Sayed** (`h.elsayed@org.edu`) or any GS/Director
+**Login as: Ghadir Nassar** (`ghadir.nassar@org.edu`) — Head of AQA
+
+1. **Reports > Create Summary** — Only available to committee heads
+   - Select multiple **Approved** source reports from sub-committees
+   - System creates a summary report linked to sources via ReportSourceLink
+   - Source reports transition to **Summarized** status
+2. **Show the chain** — Click into a summary to see linked source reports
+
+**Key Talking Points:**
+- Summarization: L1 heads aggregate L2 reports into sector summaries
+- Source links create a traceable chain from detail to summary
+- Only Approved reports can be included in summaries
+
+---
+
+### Act 5: Issuing Directives & Running Meetings
+
+**Login as: AM** (`am@org.edu`) — Chairman, or any committee head
 
 1. **Directives > Issue Directive** — Create a directive:
    - Select type (Instruction, Approval, CorrectiveAction, Feedback, InformationNotice)
@@ -141,7 +261,7 @@ The database starts with a fully populated organizational structure:
    - Optionally link to a parent directive (for forwarding/chain)
 2. **Directives > All Directives** — View the directive with its status (Issued)
 3. **Login as the target** — Acknowledge, progress through statuses
-4. **Directives > Track Overdue** — Show overdue tracking view (empty until deadlines pass)
+4. **Directives > Track Overdue** — Show overdue tracking view
 
 5. **Meetings > Schedule Meeting** — Create a meeting:
    - Set committee, moderator, date/time, location
@@ -159,9 +279,9 @@ The database starts with a fully populated organizational structure:
 
 ---
 
-### Act 5: Analytics, Search & Knowledge Base
+### Act 6: Analytics, Search, Confidentiality & Administration
 
-**Login as: Dr. Hassan El-Sayed** (`h.elsayed@org.edu`)
+**Login as: AM** (`am@org.edu`)
 
 1. **Analytics** — Dashboard with Chart.js visualizations:
    - Organization overview cards with 30-day trend comparison
@@ -172,23 +292,12 @@ The database starts with a fully populated organizational structure:
    > Note: Charts populate as reports, directives, and meetings are created
 2. **Search** — Unified search across all content types
 3. **Knowledge > Browse** — Knowledge base with categories, search, and tags
-4. **Administration > Knowledge Base** — Bulk index approved reports and closed directives into articles
-
-**Key Talking Points:**
-- Data-driven analytics dashboard for executive oversight
-- Unified search spans reports, directives, meetings, and action items
-- Knowledge base auto-indexes approved organizational content
-
----
-
-### Act 6: Confidentiality & Administration
 
 **Login as: System Administrator** (`admin@org.edu`)
 
-1. **Administration > Users** — View all ~158 users with roles and status
-2. **Administration > Report Templates** — View/edit 5 default templates
-3. **Administration > Database Backups** — Backup management
-4. **Administration > Audit Log** — Browse audit trail (populates as users take actions)
+4. **Administration > Users** — View all 57 users with roles and status
+5. **Administration > Database Backups** — Backup management
+6. **Administration > Audit Log** — Browse audit trail (populates as users take actions)
 
 **Confidentiality Demo** (requires a report to exist):
 1. Create or find a report, then navigate to **Confidentiality > Mark**
@@ -197,10 +306,11 @@ The database starts with a fully populated organizational structure:
 4. Login as different users to verify access control
 
 **Key Talking Points:**
+- Data-driven analytics dashboard for executive oversight
+- Unified search spans reports, directives, meetings, and action items
 - Full audit trail for compliance and accountability
 - Confidentiality markings restrict access based on hierarchy level
 - Chairman's Office access is rank-based (Rank 1 sees all)
-- Explicit access grants allow sharing with specific users
 
 ---
 
@@ -208,93 +318,14 @@ The database starts with a fully populated organizational structure:
 
 1. **Start with the Committee Tree** — The visual tree view immediately shows the organizational scope and hierarchy.
 
-2. **Create data live** — Walk through report creation, directive issuance, and meeting scheduling to demonstrate actual workflows rather than just viewing static data.
+2. **Create data live** — Walk through report creation, approval, and summarization to demonstrate the collective approval workflow.
 
-3. **Switch between user levels** — Show the same data from L2, L1, and L0 perspectives to demonstrate the hierarchical reporting chain. Keep browser tabs open for each persona.
+3. **Switch between user levels** — Show the same report from author, member, and head perspectives to demonstrate collective approval. Keep browser tabs open for each persona.
 
-4. **Follow a complete workflow** — Create a report at L2, review it at L1, summarize it, then issue a directive based on it.
+4. **Follow a complete workflow** — Create a report at L2, get it collectively approved, summarize it at L1, then issue a directive based on it.
 
 5. **Show analytics after creating data** — The Analytics dashboard is most impressive after the audience has seen what data feeds into it.
 
 6. **Confidentiality is a differentiator** — The access control model (hierarchy-based + explicit grants + Chairman's Office rank) is sophisticated.
 
----
-
-## Appendix: Full Demo Data Walkthrough
-
-To enable the full pre-seeded demo data (30 reports, 15 directives, 8 meetings, etc.), uncomment `DemoDataSeeder.SeedAsync(context)` in `Program.cs`, delete `db/reporting.db`, and restart.
-
-The pre-seeded data simulates a complete **Q4 2025 quarterly reporting cycle** including:
-
-| Data | Count | Highlights |
-|------|-------|------------|
-| Reports | 30 | L3 process → L2 function → L1 sector → L0 institutional summaries |
-| Report Status Histories | ~100+ | Full lifecycle trails for each report |
-| Report Source Links | ~10 | Summary-to-source linking |
-| Directives | 15 | 4-level chain (D1→D2→D3), corrective actions, urgent, overdue |
-| Directive Status Histories | ~40+ | Full status trails |
-| Meetings | 8 | Finalized, MinutesReview, MinutesEntry, Scheduled, Cancelled |
-| Agenda Items | ~20 | With presenters and discussion notes |
-| Attendees | ~28 | RSVP and confirmation statuses |
-| Decisions | ~9 | Approval, Direction, Resolution, Deferral types |
-| Action Items | ~8 | Various statuses including completed and overdue |
-| Confidentiality Markings | 2 | On report + directive |
-| Access Grants | 3 | Explicit sharing |
-| Notifications | ~25 | Across 10 users, mixed read/unread |
-| Audit Log Entries | ~30 | Logins, status changes, searches |
-
-### Key Demo Data Chains
-
-**Directive Chain (D1 → D2 → D3):**
-```
-Chairman → Top Level: "Prioritize CS Faculty Recruitment" (Closed)
-  └→ GS Academic → Academic Programs: "CS Faculty — Action" (Closed)
-      └→ Dir Academic Programs → Curriculum Dev: "Prepare Job Specs" (Implemented)
-```
-
-**Report Summarization Chain:**
-```
-L3 Process Reports:
-  ├── Course Design Review (Approved)
-  ├── Faculty Recruitment (Approved)
-  ├── Exam Logistics (Approved)
-  └── E-Learning Utilization (Approved)
-      ↓ summarized into
-L2 Function Summary:
-  └── Academic Programs Q4 Summary (Approved)
-      ↓ summarized into
-L1 Sector Summary:
-  └── Academic Affairs Sector Q4 Executive Summary (Approved)
-      ↓ summarized into
-L0 Institutional Report:
-  └── Q4 2025 Institutional Performance Report (Approved)
-```
-
-### Seeded Reports by Status
-| Status | Count | Examples |
-|--------|-------|---------|
-| Approved | 18 | Course Design Review, Faculty Recruitment, Sector Summaries |
-| Submitted | 4 | Financial Statements, Career Fair, KPI Dashboard |
-| UnderReview | 2 | Budget Framework, Admin Sector Summary |
-| FeedbackRequested | 1 | Network Upgrade (original) |
-| Draft | 2 | Internal Controls, Student Clubs |
-| Archived | 1 | Q3 Institutional Report |
-
-### Seeded Directives by Status
-| Status | Count | Examples |
-|--------|-------|---------|
-| Closed | 4 | CS Faculty chain (D1, D2), Exam System (D8), Budget Notice (D10) |
-| InProgress | 4 | Procurement Controls (D4), Ransomware IT (D6), Network Phase 3 (D11) |
-| Implemented | 1 | CS Job Specs (D3) |
-| Acknowledged | 2 | Ransomware (D5), HR Performance Review (D15) |
-| Delivered | 2 | Energy Feedback (D7), Solar Study (D12) |
-| Issued | 2 | Clinical Psychologist (D9), Research Collaboration (D13) |
-
-### Seeded Meetings by Status
-| Status | Count | Examples |
-|--------|-------|---------|
-| Finalized | 3 | Q4 Quarterly Review, Academic Programs Review, QA Audit Review |
-| MinutesReview | 1 | Emergency Security Meeting |
-| MinutesEntry | 1 | Finance Monthly Close |
-| Scheduled | 2 | Student Affairs Planning, Budget Workshop |
-| Cancelled | 1 | Cybersecurity Standup |
+7. **Demonstrate the head override** — The 3-day finalize deadline shows the system balances thoroughness with practicality.
