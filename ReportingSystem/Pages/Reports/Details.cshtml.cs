@@ -98,11 +98,24 @@ public class DetailsModel : PageModel
         if (success && report != null)
         {
             var oldStatus = report.Status == ReportStatus.FeedbackRequested ? "FeedbackRequested" : "Draft";
-            await _auditService.LogStatusChangeAsync("Report", id, null, oldStatus, "Submitted", userId, User.Identity?.Name);
-            await _notificationService.NotifyReportSubmittedAsync(id, report.Title, report.AuthorId, report.CommitteeId);
+            var skipped = report.SkipApprovals;
+            var newStatus = skipped ? "Approved" : "Submitted";
+            await _auditService.LogStatusChangeAsync("Report", id, null, oldStatus, newStatus, userId, User.Identity?.Name);
+
+            if (skipped)
+            {
+                await _notificationService.NotifyReportStatusChangedAsync(id, report.Title, report.AuthorId, "Approved (Approvals Skipped)");
+            }
+            else
+            {
+                await _notificationService.NotifyReportSubmittedAsync(id, report.Title, report.AuthorId, report.CommitteeId);
+            }
         }
+        var msg = report?.SkipApprovals == true
+            ? "Report submitted and approved immediately."
+            : "Report submitted for collective approval.";
         TempData[success ? "SuccessMessage" : "ErrorMessage"] =
-            success ? "Report submitted for collective approval." : "Unable to submit report.";
+            success ? msg : "Unable to submit report.";
         return RedirectToPage(new { id });
     }
 

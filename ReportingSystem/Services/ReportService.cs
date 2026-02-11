@@ -211,6 +211,7 @@ public class ReportService
     /// <summary>
     /// Submit a report for collective approval. Valid from Draft or FeedbackRequested.
     /// When resubmitting after feedback, all prior approvals are reset.
+    /// If SkipApprovals is true, transitions directly to Approved.
     /// </summary>
     public async Task<bool> SubmitReportAsync(int reportId, int userId)
     {
@@ -228,6 +229,21 @@ public class ReportService
                 .Where(a => a.ReportId == reportId)
                 .ToListAsync();
             _context.ReportApprovals.RemoveRange(existingApprovals);
+        }
+
+        // SkipApprovals: go directly to Approved
+        if (report.SkipApprovals)
+        {
+            report.Status = ReportStatus.Approved;
+            report.SubmittedAt = DateTime.UtcNow;
+            report.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            await AddStatusHistoryAsync(reportId, oldStatus, ReportStatus.Approved, userId,
+                "Report approved immediately (approval cycle skipped)");
+
+            _logger.LogInformation("Report {Id} auto-approved (SkipApprovals) by user {UserId}", reportId, userId);
+            return true;
         }
 
         report.Status = ReportStatus.Submitted;

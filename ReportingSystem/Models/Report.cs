@@ -58,6 +58,12 @@ public class Report
 
     public bool IsConfidential { get; set; } = false;
 
+    /// <summary>
+    /// When true, submitting bypasses the collective approval cycle
+    /// and transitions directly to Approved status.
+    /// </summary>
+    public bool SkipApprovals { get; set; } = false;
+
     public DateTime? SubmittedAt { get; set; }
 
     /// <summary>

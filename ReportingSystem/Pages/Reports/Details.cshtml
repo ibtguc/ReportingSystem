@@ -66,6 +66,10 @@
         }
         <span class="badge @statusClass fs-6">@Model.Report.Status</span>
         <span class="badge @typeClass fs-6">@Model.Report.ReportType</span>
+        @if (Model.Report.SkipApprovals)
+        {
+            <span class="badge bg-info fs-6"><i class="bi bi-skip-forward-fill"></i> Approvals Skipped</span>
+        }
         @if (Model.Report.SubmittedAt.HasValue)
         {
             <span class="text-muted ms-2 small">Submitted: @Model.Report.SubmittedAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
@@ -272,10 +276,10 @@
                 </div>
             }
 
-            <!-- Collective Approval Panel -->
-            @if (Model.Report.Status == ReportingSystem.Models.ReportStatus.Submitted ||
+            <!-- Collective Approval Panel (hidden when approvals skipped) -->
+            @if (!Model.Report.SkipApprovals && (Model.Report.Status == ReportingSystem.Models.ReportStatus.Submitted ||
                  Model.Report.Status == ReportingSystem.Models.ReportStatus.Approved ||
-                 Model.Report.Status == ReportingSystem.Models.ReportStatus.Summarized)
+                 Model.Report.Status == ReportingSystem.Models.ReportStatus.Summarized))
             {
                 <div class="card shadow-sm mb-3 border-start border-4 border-success">
                     <div class="card-header bg-light">
@@ -362,10 +366,20 @@
                     @if (Model.CanSubmit)
                     {
                         <form method="post" asp-page-handler="Submit" asp-route-id="@Model.Report.Id">
-                            <button type="submit" class="btn btn-primary w-100"
-                                    onclick="return confirm('Submit this report for collective approval?');">
-                                <i class="bi bi-send"></i> Submit for Approval
-                            </button>
+                            @if (Model.Report.SkipApprovals)
+                            {
+                                <button type="submit" class="btn btn-success w-100"
+                                        onclick="return confirm('Submit and approve this report immediately?');">
+                                    <i class="bi bi-skip-forward-fill"></i> Submit &amp; Approve
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-primary w-100"
+                                        onclick="return confirm('Submit this report for collective approval?');">
+                                    <i class="bi bi-send"></i> Submit for Approval
+                                </button>
+                            }
                         </form>
                         @if (Model.SubmitRecipients.Any())
                         {

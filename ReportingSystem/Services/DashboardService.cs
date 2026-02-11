@@ -129,21 +129,23 @@ public class DashboardService
             .Where(c => headCommitteeIds.Contains(c.Id))
             .ToListAsync();
 
-        // Reports awaiting collective approval in my committees
+        // Reports awaiting collective approval in my committees (exclude SkipApprovals)
         data.PendingReports = await _context.Reports
             .Include(r => r.Author).Include(r => r.Committee).Include(r => r.Approvals)
             .Where(r => headCommitteeIds.Contains(r.CommitteeId)
-                && r.Status == ReportStatus.Submitted)
+                && r.Status == ReportStatus.Submitted
+                && !r.SkipApprovals)
             .OrderByDescending(r => r.CreatedAt)
             .Take(15)
             .ToListAsync();
 
-        // Reports past 3-day deadline that head can finalize
+        // Reports past 3-day deadline that head can finalize (exclude SkipApprovals)
         var threeDaysAgo = now.AddDays(-3);
         data.FinalizableReports = await _context.Reports
             .Include(r => r.Author).Include(r => r.Committee).Include(r => r.Approvals)
             .Where(r => headCommitteeIds.Contains(r.CommitteeId)
                 && r.Status == ReportStatus.Submitted
+                && !r.SkipApprovals
                 && r.SubmittedAt.HasValue && r.SubmittedAt.Value <= threeDaysAgo)
             .OrderBy(r => r.SubmittedAt)
             .Take(10)
@@ -214,6 +216,7 @@ public class DashboardService
             .Include(r => r.Author).Include(r => r.Committee).Include(r => r.Approvals)
             .Where(r => myCommitteeIds.Contains(r.CommitteeId)
                 && r.Status == ReportStatus.Submitted
+                && !r.SkipApprovals
                 && r.AuthorId != userId
                 && !r.Approvals.Any(a => a.UserId == userId))
             .OrderByDescending(r => r.CreatedAt)

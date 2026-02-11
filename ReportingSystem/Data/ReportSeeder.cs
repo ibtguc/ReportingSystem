@@ -96,7 +96,7 @@ public static class ReportSeeder
                  User author, Committee committee, int daysAgoCreated,
                  string body, string? action = null, string? resources = null,
                  string? support = null, string? remarks = null,
-                 bool confidential = false, int version = 1)
+                 bool confidential = false, int version = 1, bool skipApprovals = false)
         {
             var r = new Report
             {
@@ -111,6 +111,7 @@ public static class ReportSeeder
                 NeededSupport = support,
                 SpecialRemarks = remarks,
                 IsConfidential = confidential,
+                SkipApprovals = skipApprovals,
                 Version = version,
                 CreatedAt = D(daysAgoCreated),
                 SubmittedAt = status >= ReportStatus.Submitted ? D(daysAgoCreated - 1) : null,
@@ -205,11 +206,9 @@ public static class ReportSeeder
             ohoudKhadr, music, 30,
             "<h3>Annual Concert Planning</h3><p>The 12th Annual Music Concert is confirmed for March 15, 2026. Venue: Main Auditorium (capacity 800). Budget approved: EGP 85,000.</p><h4>Program Highlights</h4><ul><li>Student orchestra: 45 performers (Beethoven Symphony No. 5, selections from Umm Kulthum)</li><li>Guest artist: Dr. Amira El-Sayed (Oud master class & performance)</li><li>Student solo competition: 12 finalists selected from 47 auditions</li></ul><p>Ticket sales opened — 320 of 800 seats reserved within first week. Corporate sponsorship secured: EGP 25,000 from CIB Foundation.</p>",
             "Confirm sound system rental and additional rehearsal schedule",
-            "Sound system rental: EGP 15,000, additional rehearsal hours: 30 hours");
-        SH(r6, ReportStatus.Draft, ReportStatus.Submitted, ohoudKhadr, 29);
-        Approve(r6, UByEmail("nadia.fawzy@org.edu")!, 28, "Great lineup. Budget looks reasonable.");
-        Approve(r6, UByEmail("wael.abdelmeguid@org.edu")!, 27);
-        SH(r6, ReportStatus.Submitted, ReportStatus.Approved, ohoudKhadr, 26, "All members approved.");
+            "Sound system rental: EGP 15,000, additional rehearsal hours: 30 hours",
+            skipApprovals: true);
+        SH(r6, ReportStatus.Draft, ReportStatus.Approved, ohoudKhadr, 29, "Report approved immediately (approval cycle skipped)");
 
         // ── Theater ──
         var r7 = R("Spring Theater Season — Production Schedule",
@@ -288,12 +287,9 @@ public static class ReportSeeder
             amrBaibars, facility, 33,
             "<h3>HVAC Upgrade Progress</h3><p>Phase 1 of campus-wide HVAC modernization is 85% complete. Buildings A, B, and C upgraded to energy-efficient VRF systems.</p><h4>Progress by Building</h4><table><tr><th>Building</th><th>Status</th><th>Completion</th></tr><tr><td>Building A</td><td>Complete</td><td>100%</td></tr><tr><td>Building B</td><td>Complete</td><td>100%</td></tr><tr><td>Building C</td><td>Commissioning</td><td>90%</td></tr><tr><td>Building D</td><td>Installation</td><td>55%</td></tr><tr><td>Building E</td><td>Not started</td><td>0%</td></tr></table><p>Energy savings from completed buildings: 28% reduction in electricity consumption. Projected annual savings: EGP 450,000.</p>",
             "Approve Phase 2 budget for Buildings D and E completion",
-            "Phase 2 budget: EGP 1.2M (Buildings D & E)");
-        SH(r13, ReportStatus.Draft, ReportStatus.Submitted, amrBaibars, 32);
-        Approve(r13, ibrahimKhalil, 31, "Good progress. Energy savings justify Phase 2 investment.");
-        Approve(r13, mostafaRagab, 30);
-        Approve(r13, UByEmail("samiha.adel@org.edu")!, 29);
-        SH(r13, ReportStatus.Submitted, ReportStatus.Approved, amrBaibars, 28, "All members approved.");
+            "Phase 2 budget: EGP 1.2M (Buildings D & E)",
+            skipApprovals: true);
+        SH(r13, ReportStatus.Draft, ReportStatus.Approved, amrBaibars, 32, "Report approved immediately (approval cycle skipped)");
 
         // ── Security ──
         var r14 = R("Campus Security Assessment — Q4 2025",
@@ -301,11 +297,9 @@ public static class ReportSeeder
             hossamBadawy, security, 30,
             "<h3>Security Assessment</h3><p>Comprehensive Q4 security review covering access control, incident response, and surveillance systems across campus.</p><h4>Key Metrics</h4><ul><li>Security incidents reported: 23 (down 15% from Q3)</li><li>Average response time: 3.2 minutes (target: 5 minutes)</li><li>CCTV coverage: 92% of campus areas (up from 85%)</li><li>Access card violations: 45 (unauthorized entry attempts)</li></ul><h4>Incident Breakdown</h4><p>Theft: 3, Vandalism: 2, Unauthorized access: 8, Medical emergencies: 6, Safety hazards: 4.</p>",
             "Install additional CCTV cameras in parking areas B and C",
-            "12 HD cameras with night vision (EGP 96,000), installation labor (EGP 24,000)");
-        SH(r14, ReportStatus.Draft, ReportStatus.Submitted, hossamBadawy, 29);
-        Approve(r14, abdallahRamzy, 28, "Solid assessment. Parking cameras are critical.");
-        Approve(r14, UByEmail("yasser.galal@org.edu")!, 27);
-        SH(r14, ReportStatus.Submitted, ReportStatus.Approved, hossamBadawy, 26, "All members approved.");
+            "12 HD cameras with night vision (EGP 96,000), installation labor (EGP 24,000)",
+            skipApprovals: true);
+        SH(r14, ReportStatus.Draft, ReportStatus.Approved, hossamBadawy, 29, "Report approved immediately (approval cycle skipped)");
 
         var r15 = R("Emergency Evacuation Drill Results — December 2025",
             ReportType.Detailed, ReportStatus.Draft,
@@ -331,11 +325,9 @@ public static class ReportSeeder
             daliaElMainouny, recruitment, 28,
             "<h3>Hiring Progress</h3><p>Spring 2026 recruitment cycle: 32 positions advertised, 24 filled (75%). Remaining 8 positions: 3 faculty (CS, Engineering), 3 administrative, 2 technical.</p><h4>Pipeline</h4><ul><li>Total applications received: 487</li><li>Shortlisted candidates: 96</li><li>Interviews conducted: 72</li><li>Offers extended: 28</li><li>Offers accepted: 24 (86% acceptance rate)</li></ul><p>Average time-to-hire: 38 days (target: 45). Key challenge: competing with private sector for IT specialists.</p>",
             "Approve signing bonuses for critical IT positions",
-            "Signing bonus pool: EGP 150,000 (3 positions × EGP 50,000)");
-        SH(r17, ReportStatus.Draft, ReportStatus.Submitted, daliaElMainouny, 27);
-        Approve(r17, mohamedAbdelWahab, 26, "Well-documented pipeline. Signing bonuses are justified.");
-        Approve(r17, UByEmail("hala.mahmoud@org.edu")!, 25);
-        SH(r17, ReportStatus.Submitted, ReportStatus.Approved, daliaElMainouny, 24, "All members approved.");
+            "Signing bonus pool: EGP 150,000 (3 positions × EGP 50,000)",
+            skipApprovals: true);
+        SH(r17, ReportStatus.Draft, ReportStatus.Approved, daliaElMainouny, 27, "Report approved immediately (approval cycle skipped)");
 
         var r18 = R("Job Fair Outcomes — January 2026",
             ReportType.Detailed, ReportStatus.Submitted,
@@ -372,9 +364,8 @@ public static class ReportSeeder
             salmaIbrahim, personnel, 25,
             "<h3>Investigation Report</h3><p>Investigation into procurement irregularities in the Administrative Services department (Case #HR-2025-042). Findings indicate procedural non-compliance by 2 staff members — no evidence of fraud or financial loss.</p><p>Root cause: inadequate training on updated procurement guidelines (revised Q2 2025). Both staff members had not attended mandatory compliance training.</p><p>Recommended actions: mandatory compliance retraining, updated procurement approval workflows, supervisor oversight enhancement.</p>",
             "Implement enhanced procurement approval workflows and mandatory compliance training",
-            confidential: true);
-        SH(r21, ReportStatus.Draft, ReportStatus.Submitted, salmaIbrahim, 24);
-        SH(r21, ReportStatus.Submitted, ReportStatus.Approved, salmaIbrahim, 20, "Head finalized after review period.");
+            confidential: true, skipApprovals: true);
+        SH(r21, ReportStatus.Draft, ReportStatus.Approved, salmaIbrahim, 24, "Report approved immediately (approval cycle skipped)");
 
         // ════════════════════════════════════════════════════════════
         //  L1 SUMMARY REPORTS

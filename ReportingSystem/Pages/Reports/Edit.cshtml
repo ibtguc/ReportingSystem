@@ -32,7 +32,7 @@
                             </div>
                         </div>
 
-                        <!-- Type & Confidential -->
+                        <!-- Type, Confidential & Skip Approvals -->
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label asp-for="Report.ReportType" class="form-label fw-semibold">Report Type</label>
@@ -46,6 +46,15 @@
                                     <label asp-for="Report.IsConfidential" class="form-check-label">
                                         <i class="bi bi-lock-fill"></i> Mark as Confidential
                                     </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check mt-4 pt-2">
+                                    <input asp-for="Report.SkipApprovals" class="form-check-input" type="checkbox" />
+                                    <label asp-for="Report.SkipApprovals" class="form-check-label">
+                                        <i class="bi bi-skip-forward-fill"></i> Skip Approvals
+                                    </label>
+                                    <div class="form-text small">Submit goes directly to Approved</div>
                                 </div>
                             </div>
                         </div>

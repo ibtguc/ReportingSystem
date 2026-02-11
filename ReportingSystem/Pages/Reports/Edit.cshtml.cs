@@ -86,6 +86,7 @@ public class EditModel : PageModel
         existing.NeededSupport = Report.NeededSupport;
         existing.SpecialRemarks = Report.SpecialRemarks;
         existing.IsConfidential = Report.IsConfidential;
+        existing.SkipApprovals = Report.SkipApprovals;
 
         await _reportService.UpdateReportAsync(existing, userId);
 
