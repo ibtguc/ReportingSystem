@@ -473,7 +473,7 @@ public class ReportService
             .Include(r => r.Committee)
             .Where(r => committeeIds.Contains(r.CommitteeId)
                      && r.Status == ReportStatus.Approved
-                     && r.ReportType == ReportType.Detailed)
+                     && (r.ReportType == ReportType.Detailed || r.ReportType == ReportType.Summary))
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
     }
