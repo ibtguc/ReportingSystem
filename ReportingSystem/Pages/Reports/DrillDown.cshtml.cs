@@ -26,6 +26,10 @@ public class DrillDownModel : PageModel
         var report = await _reportService.GetReportByIdAsync(id);
         if (report == null) return NotFound();
 
+        var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+        if (!await _reportService.CanUserViewReportAsync(userId, report))
+            return NotFound();
+
         Report = report;
         Tree = await _reportService.GetDrillDownTreeAsync(id);
         SummarizationDepth = await _reportService.GetSummarizationDepthAsync(id);

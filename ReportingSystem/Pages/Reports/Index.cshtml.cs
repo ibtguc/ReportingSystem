@@ -40,12 +40,13 @@ public class IndexModel : PageModel
     {
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        var committees = await _reportService.GetUserCommitteesAsync(userId);
+        var committees = await _reportService.GetVisibleCommitteesAsync(userId);
         CommitteeOptions = committees.Select(c => new SelectListItem(c.Name, c.Id.ToString())).ToList();
 
         int? authorFilter = ShowMine ? userId : null;
 
         Reports = await _reportService.GetReportsAsync(
+            userId: userId,
             committeeId: CommitteeId,
             authorId: authorFilter,
             status: Status,

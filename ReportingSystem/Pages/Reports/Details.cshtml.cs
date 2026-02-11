@@ -51,10 +51,14 @@ public class DetailsModel : PageModel
         var report = await _reportService.GetReportByIdAsync(id);
         if (report == null) return NotFound();
 
+        // Visibility check — can the user see this report at all?
+        var userId = GetUserId();
+        if (!await _reportService.CanUserViewReportAsync(userId, report))
+            return NotFound();
+
         // Confidentiality access check
         if (report.IsConfidential)
         {
-            var userId = GetUserId();
             if (!await _confidentialityService.CanUserAccessConfidentialItemAsync(
                 Models.ConfidentialItemType.Report, id, userId))
             {

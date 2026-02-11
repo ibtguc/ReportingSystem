@@ -18,16 +18,39 @@ public class ReportService
     // ── Queries ──
 
     public async Task<List<Report>> GetReportsAsync(
+        int userId,
         int? committeeId = null,
         int? authorId = null,
         ReportStatus? status = null,
         ReportType? reportType = null)
     {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return new();
+
         var query = _context.Reports
             .Include(r => r.Author)
             .Include(r => r.Committee)
             .Include(r => r.Attachments)
             .AsQueryable();
+
+        // Visibility: Chairman, ChairmanOffice, SystemAdmin see all reports
+        var isGlobal = user.SystemRole == SystemRole.Chairman
+            || user.SystemRole == SystemRole.ChairmanOffice
+            || user.SystemRole == SystemRole.SystemAdmin;
+
+        if (!isGlobal)
+        {
+            var visibleCommitteeIds = await GetVisibleCommitteeIdsAsync(userId);
+            query = query.Where(r =>
+                r.AuthorId == userId  // always see own reports
+                || (visibleCommitteeIds.Contains(r.CommitteeId) && r.Status != ReportStatus.Draft));
+        }
+        else
+        {
+            // Global users still only see other people's drafts if they authored them
+            query = query.Where(r =>
+                r.AuthorId == userId || r.Status != ReportStatus.Draft);
+        }
 
         if (committeeId.HasValue)
             query = query.Where(r => r.CommitteeId == committeeId.Value);
@@ -44,6 +67,87 @@ public class ReportService
         return await query
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync();
+    }
+
+    /// <summary>
+    /// Gets all committee IDs a user can see reports from:
+    /// - committees they are a member of
+    /// - descendant committees of committees they head
+    /// </summary>
+    public async Task<List<int>> GetVisibleCommitteeIdsAsync(int userId)
+    {
+        var memberships = await _context.CommitteeMemberships
+            .Where(m => m.UserId == userId && m.EffectiveTo == null)
+            .Select(m => new { m.CommitteeId, m.Role })
+            .ToListAsync();
+
+        var visibleIds = new HashSet<int>();
+
+        foreach (var m in memberships)
+        {
+            visibleIds.Add(m.CommitteeId);
+            if (m.Role == CommitteeRole.Head)
+            {
+                var descendants = await GetDescendantCommitteeIdsAsync(m.CommitteeId);
+                foreach (var d in descendants) visibleIds.Add(d);
+            }
+        }
+
+        return visibleIds.ToList();
+    }
+
+    /// <summary>
+    /// Gets all committees a user can see in filter dropdowns:
+    /// their own committees + descendants of committees they head.
+    /// Chairman/CO/Admin get all committees.
+    /// </summary>
+    public async Task<List<Committee>> GetVisibleCommitteesAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return new();
+
+        var isGlobal = user.SystemRole == SystemRole.Chairman
+            || user.SystemRole == SystemRole.ChairmanOffice
+            || user.SystemRole == SystemRole.SystemAdmin;
+
+        if (isGlobal)
+        {
+            return await _context.Committees
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.HierarchyLevel).ThenBy(c => c.Name)
+                .ToListAsync();
+        }
+
+        var ids = await GetVisibleCommitteeIdsAsync(userId);
+        return await _context.Committees
+            .Where(c => ids.Contains(c.Id) && c.IsActive)
+            .OrderBy(c => c.HierarchyLevel).ThenBy(c => c.Name)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Checks if a user can view a specific report.
+    /// </summary>
+    public async Task<bool> CanUserViewReportAsync(int userId, Report report)
+    {
+        // Author always sees own reports
+        if (report.AuthorId == userId) return true;
+
+        // Drafts are private to the author
+        if (report.Status == ReportStatus.Draft) return false;
+
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return false;
+
+        // Global roles see everything (non-draft)
+        if (user.SystemRole == SystemRole.Chairman
+            || user.SystemRole == SystemRole.ChairmanOffice
+            || user.SystemRole == SystemRole.SystemAdmin)
+            return true;
+
+        // Committee member or head of ancestor committee
+        var visibleIds = await GetVisibleCommitteeIdsAsync(userId);
+        return visibleIds.Contains(report.CommitteeId);
     }
 
     public async Task<Report?> GetReportByIdAsync(int id)

@@ -14,11 +14,13 @@ public class IndexModel : PageModel
 {
     private readonly ApplicationDbContext _context;
     private readonly ConfidentialityService _confidentialityService;
+    private readonly ReportService _reportService;
 
-    public IndexModel(ApplicationDbContext context, ConfidentialityService confidentialityService)
+    public IndexModel(ApplicationDbContext context, ConfidentialityService confidentialityService, ReportService reportService)
     {
         _context = context;
         _confidentialityService = confidentialityService;
+        _reportService = reportService;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -70,10 +72,18 @@ public class IndexModel : PageModel
 
     private async Task LoadArchivedReportsAsync(int userId)
     {
+        // Apply visibility filtering — only show reports from visible committees
+        var visibleCommitteeIds = await _reportService.GetVisibleCommitteeIdsAsync(userId);
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        var isGlobal = role is "Chairman" or "ChairmanOffice" or "Admin";
+
         var query = _context.Reports
             .Include(r => r.Author)
             .Include(r => r.Committee)
             .Where(r => r.Status == ReportStatus.Summarized);
+
+        if (!isGlobal)
+            query = query.Where(r => visibleCommitteeIds.Contains(r.CommitteeId));
 
         if (CommitteeId.HasValue)
             query = query.Where(r => r.CommitteeId == CommitteeId.Value);

@@ -12,16 +12,30 @@ public static class ApiEndpoints
         var api = app.MapGroup("/api").RequireAuthorization();
 
         // ── Reports ──
-        api.MapGet("/reports", async (ApplicationDbContext db, int? committeeId, string? status, int page, int pageSize) =>
+        api.MapGet("/reports", async (ApplicationDbContext db, ReportService reportService, HttpContext httpContext, int? committeeId, string? status, int page, int pageSize) =>
         {
+            var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Results.Forbid();
+
+            var role = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+            var isGlobal = role is "Chairman" or "ChairmanOffice" or "Admin";
+
             page = page < 1 ? 1 : page;
             pageSize = pageSize < 1 ? 20 : Math.Min(pageSize, 100);
 
             var query = db.Reports
                 .Include(r => r.Author)
                 .Include(r => r.Committee)
-                .Where(r => !r.IsConfidential)
+                .Where(r => !r.IsConfidential && r.Status != ReportStatus.Draft)
                 .AsQueryable();
+
+            // Visibility filtering
+            if (!isGlobal)
+            {
+                var visibleCommitteeIds = await reportService.GetVisibleCommitteeIdsAsync(userId);
+                query = query.Where(r => r.AuthorId == userId || visibleCommitteeIds.Contains(r.CommitteeId));
+            }
 
             if (committeeId.HasValue)
                 query = query.Where(r => r.CommitteeId == committeeId.Value);
@@ -43,12 +57,19 @@ public static class ApiEndpoints
             return Results.Ok(new { total, page, pageSize, items });
         });
 
-        api.MapGet("/reports/{id:int}", async (ApplicationDbContext db, int id) =>
+        api.MapGet("/reports/{id:int}", async (ApplicationDbContext db, ReportService reportService, HttpContext httpContext, int id) =>
         {
+            var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Results.Forbid();
+
             var report = await db.Reports
                 .Include(r => r.Author).Include(r => r.Committee)
                 .FirstOrDefaultAsync(r => r.Id == id && !r.IsConfidential);
             if (report == null) return Results.NotFound();
+
+            if (!await reportService.CanUserViewReportAsync(userId, report))
+                return Results.NotFound();
 
             return Results.Ok(new
             {
