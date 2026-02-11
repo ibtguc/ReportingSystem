@@ -125,6 +125,9 @@ using (var scope = app.Services.CreateScope())
         // Seed admin user only
         await UserSeeder.SeedAdminUsersAsync(context);
 
+        // Seed reports across all committees
+        await ReportSeeder.SeedAsync(context);
+
         // Organization, templates, knowledge base, and demo data seeding commented out
         // await SeedData.InitializeAsync(context);
         // await OrganizationSeeder.SeedAsync(context);
