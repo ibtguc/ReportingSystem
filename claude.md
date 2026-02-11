@@ -160,13 +160,20 @@ Each L1 committee's members are the heads of its L2 sub-committees:
 
 ### Status Flow
 ```
-Draft → Submitted → FeedbackRequested ⇄ Submitted → Approved → Summarized
+With approvals:  Draft → Submitted → FeedbackRequested ⇄ Submitted → Approved → Summarized
+Skip approvals:  Draft → Approved → Summarized  (SkipApprovals=true)
 ```
 
 ### ReportStatus Enum (5 values)
 `Draft`, `Submitted`, `FeedbackRequested`, `Approved`, `Summarized`
 
-### Collective Approval Rules
+### SkipApprovals Flag
+- `Report.SkipApprovals` (bool, default false) — when true, `SubmitReportAsync` transitions directly to `Approved`
+- No member approvals needed, no head finalization, no feedback cycle
+- UI: checkbox on Create/Edit forms, "Approvals Skipped" badge on Details, "Submit & Approve" button
+- Dashboard queries exclude SkipApprovals reports from pending/finalizable/awaiting lists
+
+### Collective Approval Rules (when SkipApprovals=false)
 1. Author submits report → status becomes `Submitted`
 2. All non-author committee members can approve (records `ReportApproval`)
 3. Any committee head can request feedback → status becomes `FeedbackRequested`
@@ -348,6 +355,7 @@ CRITICAL CONTEXT:
 
 REPORT LIFECYCLE (Collective Approval — NOT the old linear workflow):
 - Status flow: Draft → Submitted → FeedbackRequested ⇄ Submitted → Approved → Summarized
+- SkipApprovals flag: when true, submit goes directly Draft → Approved (bypasses approval cycle)
 - ReportStatus enum has ONLY 5 values: Draft, Submitted, FeedbackRequested, Approved, Summarized
 - NO UnderReview, NO Revised, NO Archived statuses (those were removed)
 - ReportApproval model tracks per-member approvals
