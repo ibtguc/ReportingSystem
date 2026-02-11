@@ -19,7 +19,7 @@ public class DashboardModel : PageModel
     }
 
     public (int committees, int users, int memberships, int shadows) OrgStats { get; set; }
-    public (int total, int draft, int submitted, int approved) ReportStats { get; set; }
+    public (int total, int draft, int submitted, int feedbackRequested, int approved, int summarized) ReportStats { get; set; }
     public (int total, int issued, int acknowledged, int inProgress, int implemented, int overdue) DirectiveStats { get; set; }
     public (int total, int scheduled, int inProgress, int minutesReview, int finalized, int overdueActions) MeetingStats { get; set; }
 

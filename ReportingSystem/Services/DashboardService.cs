@@ -129,13 +129,24 @@ public class DashboardService
             .Where(c => headCommitteeIds.Contains(c.Id))
             .ToListAsync();
 
-        // Pending reports awaiting review in my committees
+        // Reports awaiting collective approval in my committees
         data.PendingReports = await _context.Reports
-            .Include(r => r.Author).Include(r => r.Committee)
+            .Include(r => r.Author).Include(r => r.Committee).Include(r => r.Approvals)
             .Where(r => headCommitteeIds.Contains(r.CommitteeId)
                 && r.Status == ReportStatus.Submitted)
             .OrderByDescending(r => r.CreatedAt)
             .Take(15)
+            .ToListAsync();
+
+        // Reports past 3-day deadline that head can finalize
+        var threeDaysAgo = now.AddDays(-3);
+        data.FinalizableReports = await _context.Reports
+            .Include(r => r.Author).Include(r => r.Committee).Include(r => r.Approvals)
+            .Where(r => headCommitteeIds.Contains(r.CommitteeId)
+                && r.Status == ReportStatus.Submitted
+                && r.SubmittedAt.HasValue && r.SubmittedAt.Value <= threeDaysAgo)
+            .OrderBy(r => r.SubmittedAt)
+            .Take(10)
             .ToListAsync();
 
         // Open directives targeting my committees
@@ -193,11 +204,23 @@ public class DashboardService
             .Take(5)
             .ToListAsync();
 
-        // Directives I need to act on
+        // Reports awaiting my approval (submitted in my committees, not authored by me, not yet approved by me)
         var myCommitteeIds = await _context.CommitteeMemberships
             .Where(m => m.UserId == userId && m.EffectiveTo == null)
             .Select(m => m.CommitteeId)
             .ToListAsync();
+
+        data.ReportsAwaitingMyApproval = await _context.Reports
+            .Include(r => r.Author).Include(r => r.Committee).Include(r => r.Approvals)
+            .Where(r => myCommitteeIds.Contains(r.CommitteeId)
+                && r.Status == ReportStatus.Submitted
+                && r.AuthorId != userId
+                && !r.Approvals.Any(a => a.UserId == userId))
+            .OrderByDescending(r => r.CreatedAt)
+            .Take(10)
+            .ToListAsync();
+
+        // Directives I need to act on
 
         data.PendingDirectives = await _context.Directives
             .Include(d => d.Issuer).Include(d => d.TargetCommittee)
@@ -271,6 +294,7 @@ public class CommitteeHeadDashboardData
 {
     public List<Committee> ManagedCommittees { get; set; } = new();
     public List<Report> PendingReports { get; set; } = new();
+    public List<Report> FinalizableReports { get; set; } = new();
     public List<Directive> OpenDirectives { get; set; } = new();
     public List<Meeting> UpcomingMeetings { get; set; } = new();
     public List<ActionItem> OverdueActionItems { get; set; } = new();
@@ -280,6 +304,7 @@ public class PersonalDashboardData
 {
     public List<Report> DraftReports { get; set; } = new();
     public List<Report> FeedbackRequested { get; set; } = new();
+    public List<Report> ReportsAwaitingMyApproval { get; set; } = new();
     public List<Directive> PendingDirectives { get; set; } = new();
     public List<Meeting> PendingMeetings { get; set; } = new();
     public List<ActionItem> MyActionItems { get; set; } = new();

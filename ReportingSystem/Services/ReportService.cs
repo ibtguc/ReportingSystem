@@ -387,13 +387,15 @@ public class ReportService
 
     // ── Stats ──
 
-    public async Task<(int total, int draft, int submitted, int approved)> GetReportStatsAsync()
+    public async Task<(int total, int draft, int submitted, int feedbackRequested, int approved, int summarized)> GetReportStatsAsync()
     {
         var total = await _context.Reports.CountAsync();
         var draft = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Draft);
         var submitted = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Submitted);
+        var feedbackRequested = await _context.Reports.CountAsync(r => r.Status == ReportStatus.FeedbackRequested);
         var approved = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Approved);
-        return (total, draft, submitted, approved);
+        var summarized = await _context.Reports.CountAsync(r => r.Status == ReportStatus.Summarized);
+        return (total, draft, submitted, feedbackRequested, approved, summarized);
     }
 
     public async Task<List<Committee>> GetUserCommitteesAsync(int userId)

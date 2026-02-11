@@ -127,7 +127,7 @@
                     <div class="card text-center">
                         <div class="card-body py-2">
                             <div class="fs-4 fw-bold text-primary">@Model.OfficeData.ReportsAwaitingReview</div>
-                            <small class="text-muted">Reports Awaiting Review</small>
+                            <small class="text-muted">Reports Awaiting Approval</small>
                         </div>
                     </div>
                 </div>
@@ -213,22 +213,39 @@
             </h5>
         </div>
         <div class="card-body">
+            @if (Model.HeadData.FinalizableReports.Any())
+            {
+                <div class="alert alert-warning d-flex align-items-center mb-3">
+                    <i class="bi bi-clock-history fs-4 me-2"></i>
+                    <div>
+                        <strong>@Model.HeadData.FinalizableReports.Count report(s) past 3-day deadline</strong> — you can finalize these now.
+                        @foreach (var r in Model.HeadData.FinalizableReports)
+                        {
+                            <a href="/Reports/Details/@r.Id" class="badge bg-warning text-dark text-decoration-none ms-1">@r.Title</a>
+                        }
+                    </div>
+                </div>
+            }
             <div class="row g-3">
                 <div class="col-md-3">
-                    <h6><i class="bi bi-file-earmark-text"></i> Pending Reports</h6>
+                    <h6><i class="bi bi-check2-square"></i> Awaiting Approval</h6>
                     @if (Model.HeadData.PendingReports.Any())
                     {
                         <div class="list-group list-group-flush">
                             @foreach (var r in Model.HeadData.PendingReports.Take(5))
                             {
+                                var approvedCount = r.Approvals?.Count ?? 0;
                                 <a href="/Reports/Details/@r.Id" class="list-group-item list-group-item-action py-2">
-                                    <small class="fw-bold">@r.Title</small>
-                                    <br /><small class="text-muted">@r.Author?.Name — @r.Status</small>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="fw-bold">@r.Title</small>
+                                        <span class="badge bg-info">@approvedCount approved</span>
+                                    </div>
+                                    <small class="text-muted">@r.Author?.Name — @r.Committee?.Name</small>
                                 </a>
                             }
                         </div>
                     }
-                    else { <p class="text-muted small">No pending reports.</p> }
+                    else { <p class="text-muted small">No reports awaiting approval.</p> }
                 </div>
                 <div class="col-md-3">
                     <h6><i class="bi bi-megaphone"></i> Open Directives</h6>
@@ -289,6 +306,19 @@
         <h5 class="mb-0"><i class="bi bi-person-fill"></i> My Tasks & Activity</h5>
     </div>
     <div class="card-body">
+        @if (Model.PersonalData.ReportsAwaitingMyApproval.Any())
+        {
+            <div class="alert alert-info d-flex align-items-center mb-3">
+                <i class="bi bi-check2-square fs-4 me-2"></i>
+                <div>
+                    <strong>@Model.PersonalData.ReportsAwaitingMyApproval.Count report(s) awaiting your approval</strong>
+                    @foreach (var r in Model.PersonalData.ReportsAwaitingMyApproval)
+                    {
+                        <a href="/Reports/Details/@r.Id" class="badge bg-info text-decoration-none ms-1">@r.Title</a>
+                    }
+                </div>
+            </div>
+        }
         <div class="row g-3">
             <!-- My Pending Items -->
             <div class="col-md-4">
