@@ -85,6 +85,7 @@
                                             <tr>
                                                 <th style="width:40px;"></th>
                                                 <th>Report</th>
+                                                <th>Type</th>
                                                 <th>Committee</th>
                                                 <th>Author</th>
                                                 <th>Status</th>
@@ -95,6 +96,13 @@
                                         <tbody>
                                             @foreach (var report in Model.AvailableReports)
                                             {
+                                                var typeBadge = report.ReportType switch
+                                                {
+                                                    ReportType.Detailed => "bg-primary",
+                                                    ReportType.Summary => "bg-warning text-dark",
+                                                    ReportType.ExecutiveSummary => "bg-danger",
+                                                    _ => "bg-secondary"
+                                                };
                                                 <tr>
                                                     <td>
                                                         <input type="checkbox" name="SelectedSourceIds" value="@report.Id"
@@ -106,6 +114,7 @@
                                                             @report.Title
                                                         </a>
                                                     </td>
+                                                    <td><span class="badge @typeBadge">@report.ReportType</span></td>
                                                     <td class="small">@report.Committee.Name</td>
                                                     <td class="small">@report.Author.Name</td>
                                                     <td><span class="badge bg-success">@report.Status</span></td>
