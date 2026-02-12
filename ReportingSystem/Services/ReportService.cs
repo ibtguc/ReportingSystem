@@ -22,7 +22,8 @@ public class ReportService
         int? committeeId = null,
         int? authorId = null,
         ReportStatus? status = null,
-        ReportType? reportType = null)
+        ReportType? reportType = null,
+        List<int>? committeeIds = null)
     {
         var user = await _context.Users.FindAsync(userId);
         if (user == null) return new();
@@ -52,7 +53,10 @@ public class ReportService
                 r.AuthorId == userId || r.Status != ReportStatus.Draft);
         }
 
-        if (committeeId.HasValue)
+        // committeeIds (includes descendants) takes precedence over single committeeId
+        if (committeeIds != null && committeeIds.Count > 0)
+            query = query.Where(r => committeeIds.Contains(r.CommitteeId));
+        else if (committeeId.HasValue)
             query = query.Where(r => r.CommitteeId == committeeId.Value);
 
         if (authorId.HasValue)
