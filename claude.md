@@ -4,7 +4,7 @@
 
 ASP.NET Core 8.0 Razor Pages web application for hierarchical organizational reporting with bi-directional communication flows, structured meeting management, confidentiality controls, and full audit trail.
 
-**Current Status**: All 11 Phases COMPLETE + Custom user/committee hierarchy seeded + Report visibility rules implemented
+**Current Status**: All 11 Phases COMPLETE + Custom user/committee hierarchy seeded + Report visibility rules implemented + Seeded reports (28) with status histories and source links
 
 ## Tech Stack
 
@@ -32,14 +32,15 @@ dotnet run --project ReportingSystem/ReportingSystem.csproj
 ```
 ReportingSystem/
 ├── Data/
-│   ├── ApplicationDbContext.cs      # EF Core DbContext (~460 lines), 24 DbSets
+│   ├── ApplicationDbContext.cs      # EF Core DbContext, 24 DbSets
 │   ├── SeedData.cs                  # Placeholder (unused)
-│   ├── UserSeeder.cs                # Seeds 57 users, 22 committees, 80+ memberships
+│   ├── UserSeeder.cs                # ACTIVE — Seeds 57 users, 22 committees, 80+ memberships
+│   ├── ReportSeeder.cs              # ACTIVE — Seeds 28 reports, status histories, approvals, source links
 │   ├── OrganizationSeeder.cs        # Old seeder for ~155 users (commented out in Program.cs)
 │   └── DemoDataSeeder.cs            # Old seeder for 30 reports, 15 directives (commented out, references old schema)
 ├── Filters/
 │   └── AutomaticBackupFilter.cs     # Pre-POST/PUT/DELETE backup trigger
-├── Models/
+├── Models/ (23 files, 25 classes)
 │   ├── User.cs                      # User + MagicLink + SystemRole enum
 │   ├── Committee.cs                 # Committee + HierarchyLevel enum
 │   ├── CommitteeMembership.cs       # Membership + CommitteeRole enum
@@ -63,10 +64,10 @@ ReportingSystem/
 │   ├── DatabaseBackup.cs            # Backup records
 │   ├── KnowledgeCategory.cs         # Hierarchical categories
 │   └── KnowledgeArticle.cs          # Articles with source linking, tags, view count
-├── Pages/
+├── Pages/ (59 .cshtml files across 21 folders)
 │   ├── Admin/                       # Dashboard, Users CRUD, Organization tree, Committees CRUD, Templates CRUD, Knowledge admin, Backup, AuditLog
 │   ├── Auth/                        # Login, Verify, Logout
-│   ├── Reports/                     # Index, Create, Details, Edit, CreateSummary, DrillDown
+│   ├── Reports/                     # Index (hierarchical committee filter), Create, Details, Edit, CreateSummary, DrillDown
 │   ├── Directives/                  # Index, Create, Details, Track
 │   ├── Meetings/                    # Index, Create, Details, Minutes, ActionItems
 │   ├── Confidentiality/             # Mark, AccessGrants
@@ -78,25 +79,25 @@ ReportingSystem/
 │   ├── Analytics/                   # Index (Chart.js dashboard)
 │   ├── Shared/_Layout.cshtml        # Nav: Dashboard, Organization, Reports, Directives, Meetings, Knowledge, Analytics, Search, Administration
 │   └── Index.cshtml                 # Landing → redirects to Dashboard or Login
-├── Services/
-│   ├── ReportService.cs             # Reports, visibility, approval workflow, summarization, drill-down (~600 lines)
-│   ├── DirectiveService.cs          # Directives, status transitions, propagation, overdue (~340 lines)
-│   ├── MeetingService.cs            # Meetings, agenda, attendees, RSVP, minutes, decisions, action items (~420 lines)
-│   ├── DashboardService.cs          # Role-specific dashboards (Chairman/Office/Head/Personal) (~310 lines)
-│   ├── ConfidentialityService.cs    # Confidentiality marking, access control, impact preview (~350 lines)
-│   ├── SearchService.cs             # Unified full-text search across all content types (~280 lines)
-│   ├── AnalyticsService.cs          # Overview, trends, compliance, committee metrics (~250 lines)
-│   ├── KnowledgeBaseService.cs      # Article CRUD, bulk indexing, category management (~300 lines)
-│   ├── AuditService.cs              # Append-only audit logging, query/export (~200 lines)
-│   ├── OrganizationService.cs       # Committee/membership/shadow CRUD (~235 lines)
-│   ├── NotificationService.cs       # In-app notifications CRUD + event helpers (~155 lines)
-│   ├── ReportTemplateService.cs     # Template CRUD, committee-scoped lookup (~200 lines)
-│   ├── MagicLinkService.cs          # Token gen/verify/cleanup (~216 lines)
-│   ├── EmailService.cs              # Microsoft Graph email sending (~292 lines)
-│   ├── DatabaseBackupService.cs     # Backup create/restore/delete/WAL (~571 lines)
-│   └── DailyBackupHostedService.cs  # Background 12h backup scheduler (~96 lines)
-├── ApiEndpoints.cs                  # REST API extension method: /api/* endpoints (~220 lines)
-├── Program.cs                       # App configuration & DI (~165 lines)
+├── Services/ (16 files)
+│   ├── ReportService.cs             # Reports, visibility, approval workflow, summarization, drill-down
+│   ├── DirectiveService.cs          # Directives, status transitions, propagation, overdue
+│   ├── MeetingService.cs            # Meetings, agenda, attendees, RSVP, minutes, decisions, action items
+│   ├── DashboardService.cs          # Role-specific dashboards (Chairman/Office/Head/Personal)
+│   ├── ConfidentialityService.cs    # Confidentiality marking, access control, impact preview
+│   ├── SearchService.cs             # Unified full-text search across all content types
+│   ├── AnalyticsService.cs          # Overview, trends, compliance, committee metrics
+│   ├── KnowledgeBaseService.cs      # Article CRUD, bulk indexing, category management
+│   ├── AuditService.cs              # Append-only audit logging, query/export
+│   ├── OrganizationService.cs       # Committee/membership/shadow CRUD
+│   ├── NotificationService.cs       # In-app notifications CRUD + event helpers
+│   ├── ReportTemplateService.cs     # Template CRUD, committee-scoped lookup
+│   ├── MagicLinkService.cs          # Token gen/verify/cleanup
+│   ├── EmailService.cs              # Microsoft Graph email sending
+│   ├── DatabaseBackupService.cs     # Backup create/restore/delete/WAL
+│   └── DailyBackupHostedService.cs  # Background 12h backup scheduler
+├── ApiEndpoints.cs                  # REST API extension method: /api/* endpoints
+├── Program.cs                       # App configuration & DI
 └── wwwroot/                         # Static files (Bootstrap, jQuery, uploads/)
 ```
 
@@ -156,6 +157,56 @@ Each L1 committee's members are the heads of its L2 sub-committees:
 
 ---
 
+## Seeded Reports (ReportSeeder.cs — 28 total)
+
+### By Committee Level
+| Level | Committee | Reports | Types | Statuses |
+|-------|-----------|---------|-------|----------|
+| L0 | Top Level Committee | r27, r28 | 2 ExecSummary | Submitted, Summarized |
+| L1 | AQA | r22 | 1 Summary | Approved |
+| L1 | Student Activities | r23 | 1 Summary | Approved |
+| L1 | Admission | r24 | 1 Summary | Submitted |
+| L1 | Campus Administration | r25 | 1 Summary | Approved |
+| L1 | HR | r26 | 1 Summary | Submitted |
+| L2 | Curriculum | r1, r2 | 2 Detailed | Approved, Submitted |
+| L2 | Probation | r3 | 1 Detailed | Approved |
+| L2 | Teaching | r4, r5 | 2 Detailed | Approved, Draft |
+| L2 | Music | r6 | 1 Detailed | Approved (SkipApprovals) |
+| L2 | Theater | r7 | 1 Detailed | Submitted |
+| L2 | Sports | r8 | 1 Detailed | Approved |
+| L2 | AWG | r9 | 1 Detailed | FeedbackRequested |
+| L2 | Marketing & Outreach | r10 | 1 Detailed | Approved |
+| L2 | Admission Services | r11 | 1 Detailed | Approved |
+| L2 | Admission Office | r12 | 1 Detailed | Submitted |
+| L2 | Facility Management | r13 | 1 Detailed | Approved (SkipApprovals) |
+| L2 | Security | r14, r15 | 2 Detailed | Approved (SkipApprovals), Draft |
+| L2 | Agriculture | r16 | 1 Detailed | Submitted |
+| L2 | Recruitment | r17, r18 | 2 Detailed | Approved (SkipApprovals), Submitted |
+| L2 | Compensation | r19 | 1 Detailed | FeedbackRequested |
+| L2 | Personnel | r20, r21 | 2 Detailed | Approved, Approved (SkipApprovals+Confidential) |
+
+### Totals
+- **By type**: Detailed: 21, Summary: 5, ExecutiveSummary: 2
+- **By status**: Draft: 3, Submitted: 6, FeedbackRequested: 2, Approved: 15, Summarized: 1
+- **SkipApprovals**: 5 (r6, r13, r14, r17, r21)
+- **Confidential**: 1 (r21)
+
+### ReportSourceLinks (Summary→Sources)
+- r22 (AQA Summary) → r1, r3, r4
+- r23 (Student Activities) → r6, r8
+- r24 (Admission) → r10, r11
+- r25 (Campus Admin) → r13, r14
+- r26 (HR) → r17, r20
+- r27 (Institutional Perf) → r22, r23, r25
+
+### ReportSeeder Helper Methods
+- `R(title, type, status, author, committee, daysAgo, body, ..., skipApprovals)` — creates report
+- `SH(report, from, to, by, daysAgo, comment)` — adds status history entry
+- `Approve(report, by, daysAgo, comment)` — adds ReportApproval record
+- `UByEmail(email)` / `Comm(namePart)` / `D(daysAgo)` — lookup helpers
+
+---
+
 ## Report Lifecycle — Collective Approval
 
 ### Status Flow
@@ -196,10 +247,28 @@ public class ReportApproval { int Id, int ReportId, int UserId, DateTime Approve
 - Implemented in: `GetReportsAsync(userId, ...)`, `CanUserViewReportAsync(userId, report)`, `GetVisibleCommitteeIdsAsync(userId)`, `GetVisibleCommitteesAsync(userId)`
 - Applied at: Reports/Index, Reports/Details, Reports/DrillDown, Archives/Index, /api/reports, /api/reports/{id}
 
+### Reports/Index — Hierarchical Committee Filter
+- Committee dropdown shows nested hierarchy (indented with `└` for children)
+- Selecting a parent committee **includes all sub-committee reports** in results
+- `GetReportsAsync` accepts optional `committeeIds` list to filter by multiple committees
+- "Includes sub-committees" hint shown below dropdown when a committee is selected
+- Built via `BuildHierarchicalOptions()` and `IsDescendantOf()` helper methods in `Index.cshtml.cs`
+
 ### Summarization
 - Summaries can include both Detailed reports AND other Summary reports as sources
 - `CreateSummary` page restricted to committee heads only
 - `GetSummarizableReportsAsync` returns Approved reports of type Detailed or Summary
+
+---
+
+## Admin/Organization Page
+
+- **Committee Hierarchy Tree**: Expanded by default (all nodes visible on page load)
+- Toggle button "Expand/Collapse All" collapses/expands the full tree
+- Each node shows: hierarchy level badge, committee name, sector tag, head(s), member count, sub count
+- Highlight feature: `?Highlight=<committeeId>` scrolls to and pulses a specific committee node
+- Stats cards: Active Committees, Active Users, Active Memberships, Shadow Assignments
+- Chairman & Office section shown at top with CO rank table
 
 ---
 
@@ -228,7 +297,7 @@ public class ReportApproval { int Id, int ReportId, int UserId, DateTime Approve
 
 | Service | Key Methods |
 |---------|------------|
-| `ReportService` | **GetReportsAsync(userId, ...)**, **GetVisibleCommitteeIdsAsync**, **GetVisibleCommitteesAsync**, **CanUserViewReportAsync**, GetReportByIdAsync, CreateReportAsync, UpdateReportAsync, SubmitReportAsync, **ApproveByMemberAsync**, **FinalizeByHeadAsync**, **RequestFeedbackAsync**, **GetPendingApproversAsync**, **CanHeadFinalizeAsync**, CreateSummaryAsync, GetSummarizableReportsAsync, GetDrillDownTreeAsync, GetSummarizationDepthAsync, CanUserReviewReportAsync, IsUserHeadOfCommitteeAsync, GetReportStatsAsync, GetDescendantCommitteeIdsAsync |
+| `ReportService` | **GetReportsAsync(userId, committeeId?, authorId?, status?, reportType?, committeeIds?)**, **GetVisibleCommitteeIdsAsync**, **GetVisibleCommitteesAsync**, **CanUserViewReportAsync**, GetReportByIdAsync, CreateReportAsync, UpdateReportAsync, SubmitReportAsync, **ApproveByMemberAsync**, **FinalizeByHeadAsync**, **RequestFeedbackAsync**, **GetPendingApproversAsync**, **CanHeadFinalizeAsync**, CreateSummaryAsync, GetSummarizableReportsAsync, GetDrillDownTreeAsync, GetSummarizationDepthAsync, CanUserReviewReportAsync, IsUserHeadOfCommitteeAsync, GetReportStatsAsync, GetDescendantCommitteeIdsAsync |
 | `DirectiveService` | GetDirectivesAsync, CreateDirectiveAsync, ForwardDirectiveAsync, MarkDeliveredAsync, AcknowledgeAsync, StartProgressAsync, MarkImplementedAsync, VerifyAsync, CloseAsync, GetPropagationTreeAsync, GetOverdueDirectivesAsync, CanUserIssueDirectivesAsync |
 | `MeetingService` | GetMeetingsAsync, CreateMeetingAsync, StartMeetingAsync, BeginMinutesEntryAsync, SubmitMinutesAsync, TryFinalizeMinutesAsync, AddAttendeeAsync, UpdateRsvpAsync, UpdateConfirmationAsync, AddAgendaItemAsync, AddDecisionAsync, CreateActionItemAsync, GetMeetingStatsAsync |
 | `DashboardService` | GetChairmanDashboardAsync, GetOfficeDashboardAsync, **GetCommitteeHeadDashboardAsync**(userId) — includes FinalizableReports + PendingReports, **GetPersonalDashboardAsync**(userId) — includes ReportsAwaitingMyApproval |
@@ -237,7 +306,7 @@ public class ReportApproval { int Id, int ReportId, int UserId, DateTime Approve
 | `SearchService` | SearchAsync(SearchQuery, userId) → SearchResults { Items, TotalCount } |
 | `AnalyticsService` | GetOrganizationAnalyticsAsync, GetMonthlyTrendsAsync, GetCommitteeMetricsAsync, GetComplianceMetricsAsync |
 | `KnowledgeBaseService` | GetArticlesAsync, BulkIndexContentAsync, GetTopLevelCategoriesAsync |
-| `OrganizationService` | GetAllCommitteesAsync, GetHierarchyTreeAsync, GetOrganizationStatsAsync |
+| `OrganizationService` | GetAllCommitteesAsync, GetHierarchyTreeAsync, GetOrganizationStatsAsync, GetAvailableUsersAsync |
 | `NotificationService` | CreateNotificationAsync, NotifyReportSubmittedAsync, NotifyReportStatusChangedAsync, NotifyDirectiveIssuedAsync, NotifyMeetingInvitationAsync |
 | `ReportTemplateService` | GetTemplatesAsync, GetTemplatesForCommitteeAsync, SeedDefaultTemplatesAsync |
 
@@ -245,7 +314,13 @@ public class ReportApproval { int Id, int ReportId, int UserId, DateTime Approve
 
 ## Program.cs — Active Seeding
 
-Only `UserSeeder.SeedAdminUsersAsync(context)` is active. Everything else is commented out:
+Two seeders are active:
+```csharp
+await UserSeeder.SeedAdminUsersAsync(context);   // 57 users, 22 committees, 80+ memberships
+await ReportSeeder.SeedAsync(context);            // 28 reports, status histories, approvals, source links
+```
+
+Commented out (inactive):
 ```csharp
 // await SeedData.InitializeAsync(context);           // old placeholder
 // await OrganizationSeeder.SeedAsync(context);       // old 155-user seeder
@@ -302,7 +377,7 @@ Only `UserSeeder.SeedAdminUsersAsync(context)` is active. Everything else is com
 - **DTOs after service classes**: DrillDownNode in ReportService.cs, DashboardData classes in DashboardService.cs, SearchResults in SearchService.cs
 - **Rich text editing**: Quill v2.0.2 via CDN
 - **Chart.js**: Version 4.4.1 via CDN for Analytics
-- **Seeder helpers**: `U()` for users, `H()` for head memberships, `M()` for member memberships, `C()` for committees
+- **Seeder helpers**: `U()` for users, `H()` for head memberships, `M()` for member memberships, `C()` for committees; `R()` for reports, `SH()` for status history, `Approve()` for approvals
 
 ## Common Gotchas (have caused build errors)
 
@@ -318,6 +393,7 @@ Only `UserSeeder.SeedAdminUsersAsync(context)` is active. Everything else is com
 - **New page folders** need `AuthorizeFolder` in Program.cs conventions
 - **Services** registered as `AddScoped<>` in Program.cs
 - **Must delete** `ReportingSystem/db/reporting.db` after schema changes
+- **GetReportsAsync** now takes optional `committeeIds` list for multi-committee filtering (used by Reports/Index for sub-committee inclusion)
 
 ## NuGet Offline Restore (Sandboxed Environment)
 
@@ -341,7 +417,7 @@ Use this prompt when starting a new Claude Code session to resume work on this p
 ```
 You are continuing development of the ORS (Organizational Reporting System) — an ASP.NET Core 8.0 Razor Pages web app for hierarchical organizational reporting.
 
-ALL 11 PHASES ARE COMPLETE. The system is fully functional.
+ALL 11 PHASES ARE COMPLETE. The system is fully functional with seeded data.
 
 CRITICAL CONTEXT:
 - Branch: claude/ors-development-continued-1LlZI
@@ -352,6 +428,11 @@ CRITICAL CONTEXT:
 - Int auto-increment PKs (NOT GUIDs)
 - All DB ops are async/await
 - [BindProperty] for form binding, TempData for flash messages
+
+ACTIVE SEEDERS (both run on startup):
+- UserSeeder.SeedAdminUsersAsync — 57 users, 22 committees, 80+ memberships
+- ReportSeeder.SeedAsync — 28 reports with status histories, approvals, and source links
+- DemoDataSeeder exists but is COMMENTED OUT (references old users — NOT compatible)
 
 REPORT LIFECYCLE (Collective Approval — NOT the old linear workflow):
 - Status flow: Draft → Submitted → FeedbackRequested ⇄ Submitted → Approved → Summarized
@@ -370,12 +451,29 @@ REPORT VISIBILITY (implemented in ReportService):
 - Committee heads also see descendant committee reports
 - Applied at: Reports/Index, Details, DrillDown, Archives/Index, API endpoints
 
-CURRENT USERS & COMMITTEES (UserSeeder.cs — only active seeder):
+REPORTS PAGE FILTER:
+- Committee dropdown shows hierarchical nesting (indented with └)
+- Selecting a committee includes all sub-committee reports (via committeeIds list parameter)
+- GetReportsAsync accepts optional committeeIds list for multi-committee filtering
+
+ADMIN/ORGANIZATION:
+- Committee hierarchy tree expanded by default
+- Toggle button collapses/expands all
+- Highlight feature: ?Highlight=<id> scrolls to and pulses a committee node
+
+CURRENT USERS & COMMITTEES (UserSeeder.cs — active seeder):
 - 57 users: 1 admin, 1 Chairman (AM), 4 ChairmanOffice, 7 L0 heads, 14 L2 heads, 30 L2 members
 - 22 committees: 1 L0 (Top Level), 5 L1 (AQA, Student Activities, Admission, Campus Admin, HR), 16 L2
 - L1 members = L2 heads pattern (L2 heads are members of their parent L1 committee)
 - Notable: Yehia Razzaz heads both Sports and AWG; Marketing & Outreach and Facility Management have co-heads
 - DemoDataSeeder.cs exists but references OLD users/committees — NOT compatible with current UserSeeder
+
+SEEDED REPORTS (ReportSeeder.cs — 28 total):
+- 21 L2 Detailed, 5 L1 Summary, 2 L0 ExecutiveSummary
+- By status: Draft(3), Submitted(6), FeedbackRequested(2), Approved(15), Summarized(1)
+- SkipApprovals: 5 reports (r6, r13, r14, r17, r21)
+- Confidential: 1 (r21)
+- Source links: L1 summaries link to their L2 detailed reports, L0 exec summary links to L1 summaries
 
 COMMON GOTCHAS:
 - User.Name (NOT FullName)
@@ -387,6 +485,8 @@ COMMON GOTCHAS:
 - ApiEndpoints.cs in namespace ReportingSystem; — Program.cs needs using ReportingSystem;
 - DTOs defined after service classes in same file
 - New page folders need AuthorizeFolder in Program.cs
+- GetReportsAsync has optional committeeIds parameter for multi-committee filtering
+- Must delete ReportingSystem/db/reporting.db after schema changes
 
 ENVIRONMENT SETUP (sandboxed — NuGet proxy auth may fail):
   If dotnet restore fails with NU1301/proxy 401:
