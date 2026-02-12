@@ -1,10 +1,16 @@
 @page
 @model ReportingSystem.Pages.Admin.Users.IndexModel
+@using System.Security.Claims
 @{
     ViewData["Title"] = "Users";
+    var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    var currentRole = User.FindFirst(ClaimTypes.Role)?.Value;
+    var isAdmin = currentRole == nameof(SystemRole.SystemAdmin);
+    var isNotImpersonating = User.FindFirst("OriginalUserId") == null;
+    var showImpersonate = Model.IsDevelopment && isAdmin && isNotImpersonating;
 }
 
-<div class="container mt-4">
+<div class="container-fluid mt-4">
     <div class="row mb-3">
         <div class="col">
             <h2><i class="bi bi-people-fill"></i> Users</h2>
@@ -42,8 +48,8 @@
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Role</th>
+                                <th>Committees</th>
                                 <th>Status</th>
-                                <th>Created</th>
                                 <th>Last Login</th>
                                 <th>Actions</th>
                             </tr>
@@ -51,13 +57,31 @@
                         <tbody>
                             @foreach (var user in Model.Users)
                             {
+                                var committees = Model.UserCommittees.GetValueOrDefault(user.Id);
                                 <tr>
                                     <td><a asp-page="Details" asp-route-id="@user.Id" class="text-decoration-none"><strong>@user.Name</strong></a></td>
                                     <td>
-                                        <a href="mailto:@user.Email">@user.Email</a>
+                                        <small><a href="mailto:@user.Email">@user.Email</a></small>
                                     </td>
                                     <td>
                                         <span class="badge bg-primary">@user.SystemRole</span>
+                                    </td>
+                                    <td>
+                                        @if (committees != null && committees.Any())
+                                        {
+                                            @foreach (var cm in committees)
+                                            {
+                                                var roleBadge = cm.Role == CommitteeRole.Head ? "bg-warning text-dark" : "bg-light text-dark border";
+                                                <div class="mb-1">
+                                                    <small>@cm.HierarchyPath</small>
+                                                    <span class="badge @roleBadge" style="font-size:.65em;">@cm.Role</span>
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">-</small>
+                                        }
                                     </td>
                                     <td>
                                         @if (user.IsActive)
@@ -68,9 +92,6 @@
                                         {
                                             <span class="badge bg-secondary">Inactive</span>
                                         }
-                                    </td>
-                                    <td>
-                                        <small>@user.CreatedAt.ToString("yyyy-MM-dd")</small>
                                     </td>
                                     <td>
                                         @if (user.LastLoginAt.HasValue)
@@ -93,6 +114,14 @@
                                             <a asp-page="Delete" asp-route-id="@user.Id" class="btn btn-outline-danger" title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </a>
+                                            @if (showImpersonate && currentUserId != user.Id.ToString())
+                                            {
+                                                <form asp-page="Impersonate" asp-route-id="@user.Id" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-outline-dark btn-sm" title="Impersonate (dev only)">
+                                                        <i class="bi bi-incognito"></i>
+                                                    </button>
+                                                </form>
+                                            }
                                         </div>
                                     </td>
                                 </tr>

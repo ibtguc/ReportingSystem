@@ -9,14 +9,18 @@ namespace ReportingSystem.Pages.Admin.Users;
 public class DetailsModel : PageModel
 {
     private readonly ApplicationDbContext _context;
+    private readonly IWebHostEnvironment _env;
 
-    public DetailsModel(ApplicationDbContext context)
+    public DetailsModel(ApplicationDbContext context, IWebHostEnvironment env)
     {
         _context = context;
+        _env = env;
     }
 
     public new User User { get; set; } = new();
     public List<MagicLink> RecentMagicLinks { get; set; } = new();
+    public List<CommitteeMembershipInfo> CommitteeMemberships { get; set; } = new();
+    public bool IsDevelopment => _env.IsDevelopment();
 
     /// <summary>
     /// Tracks which page the user came from so the back button returns correctly.
@@ -91,6 +95,51 @@ public class DetailsModel : PageModel
             .Take(10)
             .ToList();
 
+        // Load committee memberships with hierarchy path
+        var memberships = await _context.CommitteeMemberships
+            .Include(m => m.Committee)
+            .Where(m => m.UserId == id && m.EffectiveTo == null)
+            .ToListAsync();
+
+        var allCommittees = await _context.Committees.ToListAsync();
+        var lookup = allCommittees.ToDictionary(c => c.Id);
+
+        CommitteeMemberships = memberships.Select(m => new CommitteeMembershipInfo
+        {
+            CommitteeId = m.CommitteeId,
+            CommitteeName = m.Committee.Name,
+            Role = m.Role,
+            HierarchyPath = BuildHierarchyPath(m.Committee, lookup)
+        }).OrderBy(m => m.HierarchyPath).ToList();
+
         return Page();
     }
+
+    private static string BuildHierarchyPath(Committee committee, Dictionary<int, Committee> lookup)
+    {
+        var parts = new List<string>();
+        var current = committee;
+        while (current != null)
+        {
+            parts.Insert(0, current.Name);
+            if (current.ParentCommitteeId.HasValue && lookup.TryGetValue(current.ParentCommitteeId.Value, out var parent)
+                && parent.HierarchyLevel >= HierarchyLevel.Directors)
+            {
+                current = parent;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return string.Join(" > ", parts);
+    }
+}
+
+public class CommitteeMembershipInfo
+{
+    public int CommitteeId { get; set; }
+    public string CommitteeName { get; set; } = "";
+    public CommitteeRole Role { get; set; }
+    public string HierarchyPath { get; set; } = "";
 }
