@@ -32,9 +32,25 @@
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-3">
                 <label class="form-label mb-0 small">Committee</label>
-                <select asp-for="CommitteeId" class="form-select form-select-sm" asp-items="Model.CommitteeOptions">
+                <select name="CommitteeId" id="CommitteeId" class="form-select form-select-sm">
                     <option value="">All Committees</option>
+                    @foreach (var opt in Model.CommitteeOptions)
+                    {
+                        var isSelected = opt.Value == Model.CommitteeId?.ToString();
+                        if (isSelected)
+                        {
+                            <option value="@opt.Value" selected="selected">@Html.Raw(opt.Text)</option>
+                        }
+                        else
+                        {
+                            <option value="@opt.Value">@Html.Raw(opt.Text)</option>
+                        }
+                    }
                 </select>
+                @if (Model.CommitteeId.HasValue)
+                {
+                    <div class="form-text small text-info"><i class="bi bi-diagram-3"></i> Includes sub-committees</div>
+                }
             </div>
             <div class="col-md-2">
                 <label class="form-label mb-0 small">Status</label>
@@ -50,16 +66,10 @@
                     <option value="">All Types</option>
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <div class="form-check mt-3">
                     <input asp-for="ShowMine" class="form-check-input" type="checkbox" />
                     <label asp-for="ShowMine" class="form-check-label small">My Reports</label>
-                </div>
-            </div>
-            <div class="col-md-1">
-                <div class="form-check mt-3">
-                    <input asp-for="IncludeArchived" class="form-check-input" type="checkbox" />
-                    <label asp-for="IncludeArchived" class="form-check-label small">Archived</label>
                 </div>
             </div>
             <div class="col-md-2 text-end">
@@ -133,12 +143,9 @@
                                 {
                                     ReportingSystem.Models.ReportStatus.Draft => "bg-secondary",
                                     ReportingSystem.Models.ReportStatus.Submitted => "bg-primary",
-                                    ReportingSystem.Models.ReportStatus.UnderReview => "bg-warning text-dark",
                                     ReportingSystem.Models.ReportStatus.FeedbackRequested => "bg-danger",
-                                    ReportingSystem.Models.ReportStatus.Revised => "bg-info",
-                                    ReportingSystem.Models.ReportStatus.Summarized => "bg-purple",
                                     ReportingSystem.Models.ReportStatus.Approved => "bg-success",
-                                    ReportingSystem.Models.ReportStatus.Archived => "bg-dark",
+                                    ReportingSystem.Models.ReportStatus.Summarized => "bg-purple",
                                     _ => "bg-secondary"
                                 };
                             }

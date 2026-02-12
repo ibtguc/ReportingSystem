@@ -2,18 +2,61 @@
 @model ReportingSystem.Pages.Reports.CreateModel
 @{
     ViewData["Title"] = "Create Report";
+    var tmpl = Model.SelectedTemplate;
+    var showAction = tmpl == null || tmpl.IncludeSuggestedAction;
+    var showResources = tmpl == null || tmpl.IncludeNeededResources;
+    var showSupport = tmpl == null || tmpl.IncludeNeededSupport;
+    var showRemarks = tmpl == null || tmpl.IncludeSpecialRemarks;
+    var anyOptional = showAction || showResources || showSupport || showRemarks;
 }
 
 <div class="container mt-4">
     <div class="row">
         <div class="col-lg-10 offset-lg-1">
+            <!-- Template Selection -->
+            @if (Model.AvailableTemplates.Any())
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-file-earmark-ruled"></i> Start from a Template</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-auto">
+                                <a asp-page="Create" class="btn btn-sm @(tmpl == null ? "btn-primary" : "btn-outline-secondary")">
+                                    <i class="bi bi-file-earmark"></i> Blank Report
+                                </a>
+                            </div>
+                            @foreach (var t in Model.AvailableTemplates)
+                            {
+                                <div class="col-auto">
+                                    <a asp-page="Create" asp-route-templateId="@t.Id"
+                                       class="btn btn-sm @(tmpl?.Id == t.Id ? "btn-primary" : "btn-outline-primary")"
+                                       title="@t.Description">
+                                        @if (t.IsDefault) { <i class="bi bi-star-fill"></i> }
+                                        @t.Name
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="bi bi-file-earmark-plus"></i> Create New Report</h4>
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-earmark-plus"></i> Create New Report
+                        @if (tmpl != null)
+                        {
+                            <small class="ms-2 opacity-75">using "@tmpl.Name" template</small>
+                        }
+                    </h4>
                 </div>
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data">
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                        <input type="hidden" asp-for="Report.TemplateId" />
 
                         <!-- Title & Committee -->
                         <div class="row">
@@ -31,7 +74,7 @@
                             </div>
                         </div>
 
-                        <!-- Type & Confidential -->
+                        <!-- Type, Confidential & Skip Approvals -->
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label asp-for="Report.ReportType" class="form-label fw-semibold">Report Type</label>
@@ -47,51 +90,118 @@
                                     </label>
                                 </div>
                             </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check mt-4 pt-2">
+                                    <input asp-for="Report.SkipApprovals" class="form-check-input" type="checkbox" />
+                                    <label asp-for="Report.SkipApprovals" class="form-check-label">
+                                        <i class="bi bi-skip-forward-fill"></i> Skip Approvals
+                                    </label>
+                                    <div class="form-text small">Submit goes directly to Approved</div>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Body Content -->
+                        <!-- Body Content with Rich Text Editor -->
                         <div class="mb-3">
                             <label asp-for="Report.BodyContent" class="form-label fw-semibold">Report Body *</label>
-                            <textarea asp-for="Report.BodyContent" class="form-control" rows="12"
-                                      placeholder="Write your report content here..."></textarea>
+                            <div id="editor-toolbar">
+                                <span class="ql-formats">
+                                    <select class="ql-header">
+                                        <option value="1"></option>
+                                        <option value="2"></option>
+                                        <option value="3"></option>
+                                        <option selected></option>
+                                    </select>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-bold"></button>
+                                    <button class="ql-italic"></button>
+                                    <button class="ql-underline"></button>
+                                    <button class="ql-strike"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-list" value="ordered"></button>
+                                    <button class="ql-list" value="bullet"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-blockquote"></button>
+                                    <button class="ql-link"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-clean"></button>
+                                </span>
+                            </div>
+                            <div id="editor-container" style="min-height: 250px;"></div>
+                            <textarea asp-for="Report.BodyContent" id="bodyContentField" class="d-none"></textarea>
                             <span asp-validation-for="Report.BodyContent" class="text-danger"></span>
                         </div>
 
-                        <!-- Optional Sections -->
-                        <div class="accordion mb-3" id="optionalSections">
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                            data-bs-target="#additionalFields">
-                                        <i class="bi bi-plus-circle me-2"></i> Additional Sections (Optional)
-                                    </button>
-                                </h2>
-                                <div id="additionalFields" class="accordion-collapse collapse">
-                                    <div class="accordion-body">
-                                        <div class="mb-3">
-                                            <label asp-for="Report.SuggestedAction" class="form-label">Suggested Action</label>
-                                            <textarea asp-for="Report.SuggestedAction" class="form-control" rows="3"
-                                                      placeholder="What action do you recommend?"></textarea>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label asp-for="Report.NeededResources" class="form-label">Needed Resources</label>
-                                            <textarea asp-for="Report.NeededResources" class="form-control" rows="3"
-                                                      placeholder="What resources are needed?"></textarea>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label asp-for="Report.NeededSupport" class="form-label">Needed Support</label>
-                                            <textarea asp-for="Report.NeededSupport" class="form-control" rows="3"
-                                                      placeholder="What support is needed from other levels?"></textarea>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label asp-for="Report.SpecialRemarks" class="form-label">Special Remarks</label>
-                                            <textarea asp-for="Report.SpecialRemarks" class="form-control" rows="3"
-                                                      placeholder="Any special notes or remarks"></textarea>
+                        <!-- Optional Sections (template-aware) -->
+                        @if (anyOptional)
+                        {
+                            <div class="accordion mb-3" id="optionalSections">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button @(tmpl != null ? "" : "collapsed")" type="button" data-bs-toggle="collapse"
+                                                data-bs-target="#additionalFields">
+                                            <i class="bi bi-plus-circle me-2"></i> Additional Sections
+                                            @if (tmpl != null)
+                                            {
+                                                <span class="badge bg-primary ms-2">Template sections</span>
+                                            }
+                                        </button>
+                                    </h2>
+                                    <div id="additionalFields" class="accordion-collapse collapse @(tmpl != null ? "show" : "")">
+                                        <div class="accordion-body">
+                                            @if (showAction)
+                                            {
+                                                <div class="mb-3">
+                                                    <label asp-for="Report.SuggestedAction" class="form-label">
+                                                        Suggested Action @(tmpl?.RequireSuggestedAction == true ? "*" : "")
+                                                    </label>
+                                                    <textarea asp-for="Report.SuggestedAction" class="form-control" rows="3"
+                                                              placeholder="What action do you recommend?"></textarea>
+                                                    <span asp-validation-for="Report.SuggestedAction" class="text-danger"></span>
+                                                </div>
+                                            }
+                                            @if (showResources)
+                                            {
+                                                <div class="mb-3">
+                                                    <label asp-for="Report.NeededResources" class="form-label">
+                                                        Needed Resources @(tmpl?.RequireNeededResources == true ? "*" : "")
+                                                    </label>
+                                                    <textarea asp-for="Report.NeededResources" class="form-control" rows="3"
+                                                              placeholder="What resources are needed?"></textarea>
+                                                    <span asp-validation-for="Report.NeededResources" class="text-danger"></span>
+                                                </div>
+                                            }
+                                            @if (showSupport)
+                                            {
+                                                <div class="mb-3">
+                                                    <label asp-for="Report.NeededSupport" class="form-label">
+                                                        Needed Support @(tmpl?.RequireNeededSupport == true ? "*" : "")
+                                                    </label>
+                                                    <textarea asp-for="Report.NeededSupport" class="form-control" rows="3"
+                                                              placeholder="What support is needed from other levels?"></textarea>
+                                                    <span asp-validation-for="Report.NeededSupport" class="text-danger"></span>
+                                                </div>
+                                            }
+                                            @if (showRemarks)
+                                            {
+                                                <div class="mb-3">
+                                                    <label asp-for="Report.SpecialRemarks" class="form-label">
+                                                        Special Remarks @(tmpl?.RequireSpecialRemarks == true ? "*" : "")
+                                                    </label>
+                                                    <textarea asp-for="Report.SpecialRemarks" class="form-control" rows="3"
+                                                              placeholder="Any special notes or remarks"></textarea>
+                                                    <span asp-validation-for="Report.SpecialRemarks" class="text-danger"></span>
+                                                </div>
+                                            }
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        }
 
                         <!-- Attachments -->
                         <div class="mb-3">
@@ -120,6 +230,41 @@
     </div>
 </div>
 
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+    <style>
+        .ql-editor { min-height: 200px; font-size: 1rem; }
+        .ql-toolbar.ql-snow { border-radius: 0.375rem 0.375rem 0 0; }
+        .ql-container.ql-snow { border-radius: 0 0 0.375rem 0.375rem; }
+    </style>
+}
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var quill = new Quill('#editor-container', {
+                theme: 'snow',
+                modules: {
+                    toolbar: '#editor-toolbar'
+                },
+                placeholder: 'Write your report content here...'
+            });
+
+            // Load existing content (from template pre-fill)
+            var existingContent = document.getElementById('bodyContentField').value;
+            if (existingContent) {
+                quill.root.innerHTML = existingContent;
+            }
+
+            // Sync editor content to hidden textarea before form submit
+            var form = document.querySelector('form');
+            form.addEventListener('submit', function () {
+                var html = quill.root.innerHTML;
+                if (html === '<p><br></p>') html = '';
+                document.getElementById('bodyContentField').value = html;
+            });
+        });
+    </script>
 }

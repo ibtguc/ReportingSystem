@@ -1,0 +1,69 @@
+@page "{id:int}"
+@model ReportingSystem.Pages.Admin.Templates.DeleteModel
+@{
+    ViewData["Title"] = "Delete Template";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-trash"></i> Delete Template</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Are you sure you want to delete this template?
+                        @if (Model.UsageCount > 0)
+                        {
+                            <strong>This template is used by @Model.UsageCount report@(Model.UsageCount != 1 ? "s" : "") and will be deactivated instead of deleted.</strong>
+                        }
+                    </div>
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Name</dt>
+                        <dd class="col-sm-8">@Model.Template.Name</dd>
+
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">@(Model.Template.Description ?? "—")</dd>
+
+                        <dt class="col-sm-4">Report Type</dt>
+                        <dd class="col-sm-8">@(Model.Template.ReportType?.ToString() ?? "Any")</dd>
+
+                        <dt class="col-sm-4">Scope</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Template.Committee != null)
+                            {
+                                @Model.Template.Committee.Name
+                            }
+                            else if (Model.Template.HierarchyLevel.HasValue)
+                            {
+                                @:Level: @Model.Template.HierarchyLevel
+                            }
+                            else
+                            {
+                                @:Universal
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Used By</dt>
+                        <dd class="col-sm-8">@Model.UsageCount report@(Model.UsageCount != 1 ? "s" : "")</dd>
+
+                        <dt class="col-sm-4">Created</dt>
+                        <dd class="col-sm-8">@Model.Template.CreatedAt.ToString("d MMM yyyy") by @if (Model.Template.CreatedBy != null) { <a asp-page="/Admin/Users/Details" asp-route-id="@Model.Template.CreatedById" class="text-decoration-none">@Model.Template.CreatedBy.Name</a> }</dd>
+                    </dl>
+
+                    <form method="post" class="d-flex justify-content-between mt-4">
+                        <a asp-page="Details" asp-route-id="@Model.Template.Id" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> @(Model.UsageCount > 0 ? "Deactivate" : "Delete") Template
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

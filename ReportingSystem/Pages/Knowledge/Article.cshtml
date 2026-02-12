@@ -1,0 +1,143 @@
+@page "{id:int}"
+@model ReportingSystem.Pages.Knowledge.ArticleModel
+@{
+    ViewData["Title"] = Model.Article.Title;
+}
+
+<div class="row mt-3">
+    <div class="col-lg-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-page="/Knowledge/Index">Knowledge Base</a></li>
+                @if (Model.Article.Category != null)
+                {
+                    <li class="breadcrumb-item">
+                        <a asp-page="/Knowledge/Index" asp-route-categoryId="@Model.Article.CategoryId">
+                            @Model.Article.Category.Name
+                        </a>
+                    </li>
+                }
+                <li class="breadcrumb-item active" aria-current="page">Article</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h3 class="mb-1">@Model.Article.Title</h3>
+                        @if (!string.IsNullOrEmpty(Model.Article.Summary))
+                        {
+                            <p class="text-muted mb-0">@Model.Article.Summary</p>
+                        }
+                    </div>
+                    <span class="badge bg-@GetSourceBadgeColor(Model.Article.SourceType) fs-6">
+                        @Model.Article.SourceType
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                @Html.Raw(Model.Article.Content)
+            </div>
+            <div class="card-footer text-muted">
+                <div class="row">
+                    <div class="col-md-6">
+                        <i class="bi bi-person"></i> @if (Model.Article.CreatedBy != null) { <a asp-page="/Admin/Users/Details" asp-route-id="@Model.Article.CreatedById" class="text-decoration-none">@Model.Article.CreatedBy.Name</a> } else { <text>System</text> }
+                        &middot;
+                        <i class="bi bi-calendar"></i> @Model.Article.CreatedAt.ToString("dd MMM yyyy HH:mm")
+                        @if (Model.Article.UpdatedAt.HasValue)
+                        {
+                            <span>&middot; Updated @Model.Article.UpdatedAt.Value.ToString("dd MMM yyyy")</span>
+                        }
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <i class="bi bi-eye"></i> @Model.Article.ViewCount views
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <a asp-page="/Knowledge/Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Knowledge Base
+            </a>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Metadata Sidebar -->
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-info-circle"></i> Article Details</div>
+            <div class="card-body">
+                <dl class="mb-0">
+                    <dt>Category</dt>
+                    <dd>
+                        @if (Model.Article.Category != null)
+                        {
+                            <i class="bi @Model.Article.Category.Icon"></i>
+                            <a asp-page="/Knowledge/Index" asp-route-categoryId="@Model.Article.CategoryId">
+                                @Model.Article.Category.Name
+                            </a>
+                        }
+                    </dd>
+                    <dt>Source</dt>
+                    <dd>@Model.Article.SourceType</dd>
+                    @if (Model.Article.Committee != null)
+                    {
+                        <dt>Committee</dt>
+                        <dd>@Model.Article.Committee.Name</dd>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Article.Tags))
+                    {
+                        <dt>Tags</dt>
+                        <dd>
+                            @foreach (var tag in Model.Article.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                            {
+                                <span class="badge bg-light text-dark me-1">@tag</span>
+                            }
+                        </dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        @if (Model.Article.SourceItemId.HasValue)
+        {
+            <div class="card">
+                <div class="card-header"><i class="bi bi-link-45deg"></i> Source Item</div>
+                <div class="card-body">
+                    @switch (Model.Article.SourceType)
+                    {
+                        case KnowledgeSourceType.Report:
+                            <a asp-page="/Reports/Details" asp-route-id="@Model.Article.SourceItemId" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-file-earmark-text"></i> View Original Report
+                            </a>
+                            break;
+                        case KnowledgeSourceType.Directive:
+                            <a asp-page="/Directives/Details" asp-route-id="@Model.Article.SourceItemId" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-megaphone"></i> View Original Directive
+                            </a>
+                            break;
+                        case KnowledgeSourceType.MeetingDecision:
+                            <p class="text-muted small mb-0">From Meeting Decision #@Model.Article.SourceItemId</p>
+                            break;
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    string GetSourceBadgeColor(KnowledgeSourceType sourceType)
+    {
+        return sourceType switch
+        {
+            KnowledgeSourceType.Report => "success",
+            KnowledgeSourceType.Directive => "warning",
+            KnowledgeSourceType.MeetingDecision => "info",
+            KnowledgeSourceType.Manual => "primary",
+            _ => "secondary"
+        };
+    }
+}

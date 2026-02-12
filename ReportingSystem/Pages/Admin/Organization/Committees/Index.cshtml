@@ -93,7 +93,7 @@
                                         <strong>@c.Name</strong>
                                         @if (heads.Any())
                                         {
-                                            <br /><small class="text-muted">Head(s): @string.Join(", ", heads.Select(h => h.User.Name))</small>
+                                            <br /><small class="text-muted">Head(s): @foreach (var h in heads) { if (h != heads.First()) { <text>, </text> } <a asp-page="/Admin/Users/Details" asp-route-id="@h.UserId" asp-route-returnTo="committees" class="text-decoration-none">@h.User.Name</a> }</small>
                                         }
                                     </td>
                                     <td>

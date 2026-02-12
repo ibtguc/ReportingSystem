@@ -1,0 +1,221 @@
+@page
+@model ReportingSystem.Pages.Directives.IndexModel
+@{
+    ViewData["Title"] = "Directives";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2><i class="bi bi-megaphone"></i> Directives</h2>
+    @if (Model.CanIssue)
+    {
+        <a asp-page="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Issue Directive
+        </a>
+    }
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Status Pipeline -->
+<div class="row mb-3">
+    <div class="col">
+        <div class="d-flex gap-2 flex-wrap">
+            <a asp-page="Index" asp-route-Status="Issued" class="card text-decoration-none flex-fill" style="min-width: 120px;">
+                <div class="card-body text-center py-2">
+                    <div class="fw-bold text-primary">@Model.IssuedCount</div>
+                    <small class="text-muted">Issued</small>
+                </div>
+            </a>
+            <div class="d-flex align-items-center text-muted"><i class="bi bi-arrow-right"></i></div>
+            <a asp-page="Index" asp-route-Status="InProgress" class="card text-decoration-none flex-fill" style="min-width: 120px;">
+                <div class="card-body text-center py-2">
+                    <div class="fw-bold text-info">@(Model.AcknowledgedCount + Model.InProgressCount)</div>
+                    <small class="text-muted">In Progress</small>
+                </div>
+            </a>
+            <div class="d-flex align-items-center text-muted"><i class="bi bi-arrow-right"></i></div>
+            <a asp-page="Index" asp-route-Status="Implemented" class="card text-decoration-none flex-fill" style="min-width: 120px;">
+                <div class="card-body text-center py-2">
+                    <div class="fw-bold text-success">@Model.ImplementedCount</div>
+                    <small class="text-muted">Implemented</small>
+                </div>
+            </a>
+            <div class="d-flex align-items-center text-muted"><i class="bi bi-arrow-right"></i></div>
+            <a asp-page="Track" class="card text-decoration-none flex-fill border-danger" style="min-width: 120px;">
+                <div class="card-body text-center py-2">
+                    <div class="fw-bold text-danger">@Model.OverdueCount</div>
+                    <small class="text-muted">Overdue</small>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label mb-0 small">Status</label>
+                <select asp-for="Status" class="form-select form-select-sm"
+                        asp-items="Html.GetEnumSelectList<ReportingSystem.Models.DirectiveStatus>()">
+                    <option value="">All Statuses</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label mb-0 small">Priority</label>
+                <select asp-for="Priority" class="form-select form-select-sm"
+                        asp-items="Html.GetEnumSelectList<ReportingSystem.Models.DirectivePriority>()">
+                    <option value="">All Priorities</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check mt-3">
+                    <input asp-for="ShowMine" class="form-check-input" type="checkbox" />
+                    <label asp-for="ShowMine" class="form-check-label small">My Directives</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check mt-3">
+                    <input asp-for="IncludeClosed" class="form-check-input" type="checkbox" />
+                    <label asp-for="IncludeClosed" class="form-check-label small">Closed</label>
+                </div>
+            </div>
+            <div class="col-md-3 text-end">
+                <button type="submit" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <a asp-page="Index" class="btn btn-sm btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Directive List -->
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Title</th>
+                    <th>Target</th>
+                    <th>Issuer</th>
+                    <th>Type</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Deadline</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Directives.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox"></i> No directives found matching your filters.
+                        </td>
+                    </tr>
+                }
+                @foreach (var directive in Model.Directives)
+                {
+                    var isOverdue = directive.Deadline.HasValue && directive.Deadline.Value < DateTime.UtcNow
+                        && directive.Status != ReportingSystem.Models.DirectiveStatus.Closed
+                        && directive.Status != ReportingSystem.Models.DirectiveStatus.Verified;
+                    <tr class="@(isOverdue ? "table-danger" : "")">
+                        <td>
+                            <a asp-page="Details" asp-route-id="@directive.Id" class="text-decoration-none fw-semibold">
+                                @directive.Title
+                            </a>
+                            @if (directive.ParentDirectiveId.HasValue)
+                            {
+                                <span class="badge bg-secondary ms-1" title="Forwarded"><i class="bi bi-arrow-return-right"></i></span>
+                            }
+                        </td>
+                        <td class="small">@directive.TargetCommittee.Name</td>
+                        <td class="small">@directive.Issuer.Name</td>
+                        <td>
+                            @{
+                                var typeBadge = directive.DirectiveType switch
+                                {
+                                    ReportingSystem.Models.DirectiveType.Instruction => "bg-primary",
+                                    ReportingSystem.Models.DirectiveType.Approval => "bg-success",
+                                    ReportingSystem.Models.DirectiveType.CorrectiveAction => "bg-danger",
+                                    ReportingSystem.Models.DirectiveType.Feedback => "bg-warning text-dark",
+                                    ReportingSystem.Models.DirectiveType.InformationNotice => "bg-info",
+                                    _ => "bg-secondary"
+                                };
+                            }
+                            <span class="badge @typeBadge">@directive.DirectiveType</span>
+                        </td>
+                        <td>
+                            @{
+                                var priorityBadge = directive.Priority switch
+                                {
+                                    ReportingSystem.Models.DirectivePriority.Urgent => "bg-danger",
+                                    ReportingSystem.Models.DirectivePriority.High => "bg-warning text-dark",
+                                    ReportingSystem.Models.DirectivePriority.Normal => "bg-secondary",
+                                    _ => "bg-secondary"
+                                };
+                            }
+                            <span class="badge @priorityBadge">@directive.Priority</span>
+                        </td>
+                        <td>
+                            @{
+                                var statusBadge = directive.Status switch
+                                {
+                                    ReportingSystem.Models.DirectiveStatus.Issued => "bg-primary",
+                                    ReportingSystem.Models.DirectiveStatus.Delivered => "bg-info",
+                                    ReportingSystem.Models.DirectiveStatus.Acknowledged => "bg-warning text-dark",
+                                    ReportingSystem.Models.DirectiveStatus.InProgress => "bg-info",
+                                    ReportingSystem.Models.DirectiveStatus.Implemented => "bg-success",
+                                    ReportingSystem.Models.DirectiveStatus.Verified => "bg-success",
+                                    ReportingSystem.Models.DirectiveStatus.Closed => "bg-dark",
+                                    _ => "bg-secondary"
+                                };
+                            }
+                            <span class="badge @statusBadge">@directive.Status</span>
+                        </td>
+                        <td class="small">
+                            @if (directive.Deadline.HasValue)
+                            {
+                                <span class="@(isOverdue ? "text-danger fw-bold" : "")">
+                                    @directive.Deadline.Value.ToString("yyyy-MM-dd")
+                                </span>
+                                @if (isOverdue)
+                                {
+                                    <i class="bi bi-exclamation-triangle text-danger" title="Overdue"></i>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">--</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <a asp-page="Details" asp-route-id="@directive.Id" class="btn btn-sm btn-outline-primary" title="View">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="mt-2 text-muted small">
+    Showing @Model.Directives.Count directive(s)
+</div>

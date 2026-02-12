@@ -11,11 +11,13 @@ namespace ReportingSystem.Pages.Reports;
 public class CreateModel : PageModel
 {
     private readonly ReportService _reportService;
+    private readonly ReportTemplateService _templateService;
     private readonly IWebHostEnvironment _env;
 
-    public CreateModel(ReportService reportService, IWebHostEnvironment env)
+    public CreateModel(ReportService reportService, ReportTemplateService templateService, IWebHostEnvironment env)
     {
         _reportService = reportService;
+        _templateService = templateService;
         _env = env;
     }
 
@@ -25,7 +27,12 @@ public class CreateModel : PageModel
     [BindProperty]
     public List<IFormFile>? Attachments { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public int? TemplateId { get; set; }
+
     public List<SelectListItem> CommitteeOptions { get; set; } = new();
+    public List<ReportTemplate> AvailableTemplates { get; set; } = new();
+    public ReportTemplate? SelectedTemplate { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -37,6 +44,24 @@ public class CreateModel : PageModel
             return RedirectToPage("Index");
         }
         CommitteeOptions = committees.Select(c => new SelectListItem(c.Name, c.Id.ToString())).ToList();
+
+        // Load all active templates for the template picker
+        AvailableTemplates = await _templateService.GetTemplatesAsync();
+
+        // If a template was selected, pre-fill the form
+        if (TemplateId.HasValue)
+        {
+            SelectedTemplate = await _templateService.GetTemplateByIdAsync(TemplateId.Value);
+            if (SelectedTemplate != null)
+            {
+                Report.TemplateId = SelectedTemplate.Id;
+                if (!string.IsNullOrEmpty(SelectedTemplate.BodyTemplate))
+                    Report.BodyContent = SelectedTemplate.BodyTemplate;
+                if (SelectedTemplate.ReportType.HasValue)
+                    Report.ReportType = SelectedTemplate.ReportType.Value;
+            }
+        }
+
         return Page();
     }
 
@@ -45,6 +70,11 @@ public class CreateModel : PageModel
         var userId = GetUserId();
         var committees = await _reportService.GetUserCommitteesAsync(userId);
         CommitteeOptions = committees.Select(c => new SelectListItem(c.Name, c.Id.ToString())).ToList();
+        AvailableTemplates = await _templateService.GetTemplatesAsync();
+
+        // Load selected template for validation
+        if (Report.TemplateId.HasValue)
+            SelectedTemplate = await _templateService.GetTemplateByIdAsync(Report.TemplateId.Value);
 
         // Verify user is member of selected committee
         if (!await _reportService.IsUserMemberOfCommitteeAsync(userId, Report.CommitteeId))
@@ -56,6 +86,20 @@ public class CreateModel : PageModel
         // Remove navigation property validations
         ModelState.Remove("Report.Author");
         ModelState.Remove("Report.Committee");
+        ModelState.Remove("Report.Template");
+
+        // Template-specific required field validation
+        if (SelectedTemplate != null)
+        {
+            if (SelectedTemplate.RequireSuggestedAction && string.IsNullOrWhiteSpace(Report.SuggestedAction))
+                ModelState.AddModelError("Report.SuggestedAction", "Suggested Action is required by this template.");
+            if (SelectedTemplate.RequireNeededResources && string.IsNullOrWhiteSpace(Report.NeededResources))
+                ModelState.AddModelError("Report.NeededResources", "Needed Resources is required by this template.");
+            if (SelectedTemplate.RequireNeededSupport && string.IsNullOrWhiteSpace(Report.NeededSupport))
+                ModelState.AddModelError("Report.NeededSupport", "Needed Support is required by this template.");
+            if (SelectedTemplate.RequireSpecialRemarks && string.IsNullOrWhiteSpace(Report.SpecialRemarks))
+                ModelState.AddModelError("Report.SpecialRemarks", "Special Remarks is required by this template.");
+        }
 
         if (!ModelState.IsValid)
             return Page();

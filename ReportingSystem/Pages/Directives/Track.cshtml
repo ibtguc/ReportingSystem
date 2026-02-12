@@ -1,0 +1,162 @@
+@page
+@model ReportingSystem.Pages.Directives.TrackModel
+@{
+    ViewData["Title"] = "Track Directives";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2><i class="bi bi-exclamation-triangle"></i> Directive Tracking</h2>
+    <a asp-page="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Directives
+    </a>
+</div>
+
+<!-- Overdue Directives -->
+<div class="card shadow-sm mb-4 border-danger">
+    <div class="card-header bg-danger text-white d-flex justify-content-between">
+        <h5 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> Overdue Directives</h5>
+        <span class="badge bg-white text-danger fs-6">@Model.OverdueDirectives.Count</span>
+    </div>
+    @if (Model.OverdueDirectives.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Title</th>
+                        <th>Target</th>
+                        <th>Issuer</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Deadline</th>
+                        <th>Days Overdue</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.OverdueDirectives)
+                    {
+                        var daysOverdue = (DateTime.UtcNow - d.Deadline!.Value).Days;
+                        var priorityBadge = d.Priority switch
+                        {
+                            ReportingSystem.Models.DirectivePriority.Urgent => "bg-danger",
+                            ReportingSystem.Models.DirectivePriority.High => "bg-warning text-dark",
+                            _ => "bg-secondary"
+                        };
+                        var statusBadge = d.Status switch
+                        {
+                            ReportingSystem.Models.DirectiveStatus.Issued => "bg-primary",
+                            ReportingSystem.Models.DirectiveStatus.Delivered => "bg-info",
+                            ReportingSystem.Models.DirectiveStatus.Acknowledged => "bg-warning text-dark",
+                            ReportingSystem.Models.DirectiveStatus.InProgress => "bg-info",
+                            ReportingSystem.Models.DirectiveStatus.Implemented => "bg-success",
+                            _ => "bg-secondary"
+                        };
+                        <tr>
+                            <td>
+                                <a asp-page="Details" asp-route-id="@d.Id" class="text-decoration-none fw-semibold">
+                                    @d.Title
+                                </a>
+                            </td>
+                            <td class="small">@d.TargetCommittee.Name</td>
+                            <td class="small">@d.Issuer.Name</td>
+                            <td><span class="badge @priorityBadge">@d.Priority</span></td>
+                            <td><span class="badge @statusBadge">@d.Status</span></td>
+                            <td class="small text-danger fw-bold">@d.Deadline.Value.ToString("yyyy-MM-dd")</td>
+                            <td><span class="badge bg-danger">@daysOverdue day(s)</span></td>
+                            <td class="text-center">
+                                <a asp-page="Details" asp-route-id="@d.Id" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="card-body text-center text-muted py-4">
+            <i class="bi bi-check-circle fs-3 text-success"></i>
+            <p class="mb-0 mt-2">No overdue directives.</p>
+        </div>
+    }
+</div>
+
+<!-- Approaching Deadline -->
+<div class="card shadow-sm mb-4 border-warning">
+    <div class="card-header bg-warning text-dark d-flex justify-content-between">
+        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Approaching Deadline (within 7 days)</h5>
+        <span class="badge bg-dark text-warning fs-6">@Model.ApproachingDeadlineDirectives.Count</span>
+    </div>
+    @if (Model.ApproachingDeadlineDirectives.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Title</th>
+                        <th>Target</th>
+                        <th>Issuer</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Deadline</th>
+                        <th>Days Left</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.ApproachingDeadlineDirectives)
+                    {
+                        var daysLeft = (d.Deadline!.Value - DateTime.UtcNow).Days;
+                        var priorityBadge = d.Priority switch
+                        {
+                            ReportingSystem.Models.DirectivePriority.Urgent => "bg-danger",
+                            ReportingSystem.Models.DirectivePriority.High => "bg-warning text-dark",
+                            _ => "bg-secondary"
+                        };
+                        var statusBadge = d.Status switch
+                        {
+                            ReportingSystem.Models.DirectiveStatus.Issued => "bg-primary",
+                            ReportingSystem.Models.DirectiveStatus.Delivered => "bg-info",
+                            ReportingSystem.Models.DirectiveStatus.Acknowledged => "bg-warning text-dark",
+                            ReportingSystem.Models.DirectiveStatus.InProgress => "bg-info",
+                            ReportingSystem.Models.DirectiveStatus.Implemented => "bg-success",
+                            _ => "bg-secondary"
+                        };
+                        <tr>
+                            <td>
+                                <a asp-page="Details" asp-route-id="@d.Id" class="text-decoration-none fw-semibold">
+                                    @d.Title
+                                </a>
+                            </td>
+                            <td class="small">@d.TargetCommittee.Name</td>
+                            <td class="small">@d.Issuer.Name</td>
+                            <td><span class="badge @priorityBadge">@d.Priority</span></td>
+                            <td><span class="badge @statusBadge">@d.Status</span></td>
+                            <td class="small">@d.Deadline.Value.ToString("yyyy-MM-dd")</td>
+                            <td>
+                                <span class="badge @(daysLeft <= 1 ? "bg-danger" : daysLeft <= 3 ? "bg-warning text-dark" : "bg-info")">
+                                    @daysLeft day(s)
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <a asp-page="Details" asp-route-id="@d.Id" class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="card-body text-center text-muted py-4">
+            <i class="bi bi-calendar-check fs-3 text-success"></i>
+            <p class="mb-0 mt-2">No directives approaching deadline.</p>
+        </div>
+    }
+</div>

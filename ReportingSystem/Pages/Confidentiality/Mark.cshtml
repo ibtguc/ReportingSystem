@@ -1,0 +1,179 @@
+@page
+@model ReportingSystem.Pages.Confidentiality.MarkModel
+@{
+    ViewData["Title"] = Model.IsCurrentlyConfidential ? "Remove Confidentiality" : "Mark as Confidential";
+}
+
+<div class="container mt-4" style="max-width: 800px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="bi bi-shield-lock"></i>
+                @(Model.IsCurrentlyConfidential ? "Remove Confidentiality Marking" : "Mark as Confidential")
+            </h2>
+            <p class="text-muted mb-0">@Model.ItemType: @Model.ItemTitle</p>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.IsCurrentlyConfidential && Model.ActiveMarking != null)
+    {
+        <!-- Currently Confidential — Show Details & Unmark Option -->
+        <div class="card border-warning mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-shield-fill-check"></i> This item is currently marked confidential</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Marked By</dt>
+                    <dd class="col-sm-8"><a asp-page="/Admin/Users/Details" asp-route-id="@Model.ActiveMarking.MarkedById" asp-route-returnTo="confidentiality" class="text-decoration-none">@Model.ActiveMarking.MarkedBy.Name</a></dd>
+
+                    <dt class="col-sm-4">Marked At</dt>
+                    <dd class="col-sm-8">@Model.ActiveMarking.MarkedAt.ToString("MMM dd, yyyy HH:mm")</dd>
+
+                    <dt class="col-sm-4">Committee Level</dt>
+                    <dd class="col-sm-8">@Model.ActiveMarking.MarkerCommitteeLevel (@Model.ActiveMarking.MarkerCommittee.Name)</dd>
+
+                    @if (Model.ActiveMarking.MinChairmanOfficeRank.HasValue)
+                    {
+                        <dt class="col-sm-4">Min CO Rank</dt>
+                        <dd class="col-sm-8">Rank @Model.ActiveMarking.MinChairmanOfficeRank (1=Senior, 4=Junior)</dd>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.ActiveMarking.Reason))
+                    {
+                        <dt class="col-sm-4">Reason</dt>
+                        <dd class="col-sm-8">@Model.ActiveMarking.Reason</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        <div class="card border-danger">
+            <div class="card-body">
+                <h5 class="text-danger"><i class="bi bi-shield-x"></i> Remove Confidentiality</h5>
+                <p class="text-muted">
+                    Removing the confidentiality marking will restore normal access to this item.
+                    This action is only available to the original marker or a SystemAdmin.
+                </p>
+                <form method="post" asp-page-handler="Unmark">
+                    <input type="hidden" asp-for="ItemType" />
+                    <input type="hidden" asp-for="ItemId" />
+                    <button type="submit" class="btn btn-outline-danger"
+                            onclick="return confirm('Remove confidentiality marking? All users with normal access will be able to view this item.');">
+                        <i class="bi bi-shield-x"></i> Remove Confidentiality Marking
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Not Confidential — Show Mark Form with Impact Preview -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-shield-lock-fill"></i> Mark as Confidential</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Access Rules:</strong>
+                    <ul class="mb-0 mt-1">
+                        <li>Only users at <strong>higher hierarchy levels</strong> than the item's committee can access</li>
+                        <li>The <strong>Chairman</strong> always retains access</li>
+                        <li><strong>Shadow members</strong> lose access to confidential items</li>
+                        <li>Members of the <strong>same committee</strong> retain access</li>
+                        <li>Explicit access grants can override these rules</li>
+                    </ul>
+                </div>
+
+                <form method="post" asp-page-handler="Mark">
+                    <input type="hidden" asp-for="ItemType" />
+                    <input type="hidden" asp-for="ItemId" />
+
+                    <div class="mb-3">
+                        <label asp-for="Reason" class="form-label">Reason for marking confidential</label>
+                        <textarea asp-for="Reason" class="form-control" rows="2"
+                                  placeholder="Optional: explain why this item should be confidential..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="MinChairmanOfficeRank" class="form-label">
+                            Chairman's Office: Minimum Rank for Access
+                        </label>
+                        <select asp-for="MinChairmanOfficeRank" class="form-select">
+                            <option value="">Not applicable (standard hierarchy rules)</option>
+                            <option value="1">Rank 1 — Chief of Staff only</option>
+                            <option value="2">Rank 2 and above</option>
+                            <option value="3">Rank 3 and above</option>
+                            <option value="4">All CO members (Rank 4 and above)</option>
+                        </select>
+                        <small class="text-muted">Restrict access within Chairman's Office by rank (1=senior, 4=junior)</small>
+                    </div>
+
+                    @if (Model.ImpactPreview != null)
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white py-2">
+                                        <i class="bi bi-check-circle"></i> Will Retain Access (@Model.ImpactPreview.RetainAccess.Count)
+                                    </div>
+                                    <ul class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                                        @foreach (var user in Model.ImpactPreview.RetainAccess.Take(20))
+                                        {
+                                            <li class="list-group-item py-1 small">
+                                                @user.Name
+                                                <span class="badge bg-secondary">@user.SystemRole</span>
+                                            </li>
+                                        }
+                                        @if (Model.ImpactPreview.RetainAccess.Count > 20)
+                                        {
+                                            <li class="list-group-item py-1 small text-muted">
+                                                ... and @(Model.ImpactPreview.RetainAccess.Count - 20) more
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-danger">
+                                    <div class="card-header bg-danger text-white py-2">
+                                        <i class="bi bi-x-circle"></i> Will Lose Access (@Model.ImpactPreview.LoseAccess.Count)
+                                    </div>
+                                    <ul class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                                        @foreach (var user in Model.ImpactPreview.LoseAccess.Take(20))
+                                        {
+                                            <li class="list-group-item py-1 small">
+                                                @user.Name
+                                                <span class="badge bg-secondary">@user.SystemRole</span>
+                                            </li>
+                                        }
+                                        @if (Model.ImpactPreview.LoseAccess.Count > 20)
+                                        {
+                                            <li class="list-group-item py-1 small text-muted">
+                                                ... and @(Model.ImpactPreview.LoseAccess.Count - 20) more
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <button type="submit" class="btn btn-warning"
+                            onclick="return confirm('Mark this item as confidential? Users without proper access level will no longer be able to view it.');">
+                        <i class="bi bi-shield-lock-fill"></i> Mark as Confidential
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+</div>

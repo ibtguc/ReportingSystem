@@ -32,7 +32,7 @@
                 <div>
                     <h4 class="mb-1">@Model.Report.Title</h4>
                     <span class="text-muted me-3"><i class="bi bi-people"></i> @Model.Report.Committee.Name</span>
-                    <span class="text-muted me-3"><i class="bi bi-person"></i> @Model.Report.Author.Name</span>
+                    <span class="text-muted me-3"><i class="bi bi-person"></i> <a asp-page="/Admin/Users/Details" asp-route-id="@Model.Report.AuthorId" asp-route-returnTo="report" class="text-decoration-none">@Model.Report.Author.Name</a></span>
                 </div>
                 <div class="text-end">
                     @{
@@ -84,7 +84,7 @@
                                     @summary.ReportType
                                 </span>
                             </div>
-                            <small class="text-muted">by @summary.Author.Name — @summary.CreatedAt.ToString("yyyy-MM-dd")</small>
+                            <small class="text-muted">by <a asp-page="/Admin/Users/Details" asp-route-id="@summary.AuthorId" asp-route-returnTo="report" class="text-decoration-none">@summary.Author.Name</a> — @summary.CreatedAt.ToString("yyyy-MM-dd")</small>
                         </a>
                     }
                 </div>

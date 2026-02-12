@@ -1,0 +1,140 @@
+@page
+@model ReportingSystem.Pages.Archives.IndexModel
+@{
+    ViewData["Title"] = "Archives";
+}
+
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2><i class="bi bi-archive"></i> Archives</h2>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card text-center border-info">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-info">@Model.ArchivedReports</div>
+                <small class="text-muted">Summarized Reports</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center border-warning">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-warning">@Model.ClosedDirectives</div>
+                <small class="text-muted">Closed Directives</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center border-success">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-success">@Model.FinalizedMeetings</div>
+                <small class="text-muted">Finalized Meetings</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">Content Type</label>
+                <select name="ContentType" class="form-select form-select-sm">
+                    <option value="">All Types</option>
+                    <option value="Report" selected="@(Model.ContentType == "Report")">Reports</option>
+                    <option value="Directive" selected="@(Model.ContentType == "Directive")">Directives</option>
+                    <option value="Meeting" selected="@(Model.ContentType == "Meeting")">Meetings</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Committee</label>
+                <select name="CommitteeId" class="form-select form-select-sm">
+                    <option value="">All Committees</option>
+                    @foreach (var c in Model.Committees)
+                    {
+                        <option value="@c.Value" selected="@(c.Value == Model.CommitteeId?.ToString())">@c.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">From Date</label>
+                <input type="date" name="FromDate" value="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                       class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">To Date</label>
+                <input type="date" name="ToDate" value="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                       class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-3 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                <a asp-page="Index" class="btn btn-outline-secondary btn-sm">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Archive Items -->
+@if (!Model.ArchivedItems.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-archive display-4 text-muted"></i>
+        <p class="text-muted mt-2">No archived items found.</p>
+    </div>
+}
+else
+{
+    <div class="mb-3">
+        <span class="text-muted">Showing <strong>@Model.ArchivedItems.Count</strong> archived item(s)</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Type</th>
+                    <th>Title</th>
+                    <th>Committee</th>
+                    <th>Author/Moderator</th>
+                    <th>Created</th>
+                    <th>Archived</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.ArchivedItems)
+                {
+                    <tr>
+                        <td>
+                            @switch (item.ItemType)
+                            {
+                                case "Report":
+                                    <span class="badge bg-info"><i class="bi bi-file-earmark-text"></i> @item.SubType</span>
+                                    break;
+                                case "Directive":
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-megaphone"></i> @item.SubType</span>
+                                    break;
+                                case "Meeting":
+                                    <span class="badge bg-success"><i class="bi bi-calendar-event"></i> @item.SubType</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            <a href="@item.Url">@item.Title</a>
+                        </td>
+                        <td><small>@item.Committee</small></td>
+                        <td><small>@item.Author</small></td>
+                        <td><small>@item.CreatedDate.ToString("dd MMM yyyy")</small></td>
+                        <td><small>@item.ArchivedDate.ToString("dd MMM yyyy")</small></td>
+                        <td>
+                            <a href="@item.Url" class="btn btn-sm btn-outline-primary">View</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

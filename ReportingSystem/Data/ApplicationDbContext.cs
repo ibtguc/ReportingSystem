@@ -21,12 +21,36 @@ public class ApplicationDbContext : DbContext
 
     // Reporting
     public DbSet<Report> Reports { get; set; }
+    public DbSet<ReportTemplate> ReportTemplates { get; set; }
     public DbSet<Attachment> Attachments { get; set; }
     public DbSet<ReportStatusHistory> ReportStatusHistories { get; set; }
     public DbSet<ReportSourceLink> ReportSourceLinks { get; set; }
+    public DbSet<ReportApproval> ReportApprovals { get; set; }
+
+    // Directives
+    public DbSet<Directive> Directives { get; set; }
+    public DbSet<DirectiveStatusHistory> DirectiveStatusHistories { get; set; }
+
+    // Meetings
+    public DbSet<Meeting> Meetings { get; set; }
+    public DbSet<MeetingAgendaItem> MeetingAgendaItems { get; set; }
+    public DbSet<MeetingAttendee> MeetingAttendees { get; set; }
+    public DbSet<MeetingDecision> MeetingDecisions { get; set; }
+    public DbSet<ActionItem> ActionItems { get; set; }
+
+    // Confidentiality
+    public DbSet<ConfidentialityMarking> ConfidentialityMarkings { get; set; }
+    public DbSet<AccessGrant> AccessGrants { get; set; }
+
+    // Audit
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     // Notifications
     public DbSet<Notification> Notifications { get; set; }
+
+    // Knowledge Base
+    public DbSet<KnowledgeCategory> KnowledgeCategories { get; set; }
+    public DbSet<KnowledgeArticle> KnowledgeArticles { get; set; }
 
     // Backup
     public DbSet<DatabaseBackup> DatabaseBackups { get; set; }
@@ -107,6 +131,24 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // Configure ReportTemplate
+        modelBuilder.Entity<ReportTemplate>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.CommitteeId);
+            entity.HasIndex(e => e.HierarchyLevel);
+            entity.HasIndex(e => e.ReportType);
+            entity.HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Committee)
+                .WithMany()
+                .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         // Configure Report
         modelBuilder.Entity<Report>(entity =>
         {
@@ -123,6 +165,10 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Committee)
                 .WithMany()
                 .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Template)
+                .WithMany()
+                .HasForeignKey(e => e.TemplateId)
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.OriginalReport)
                 .WithMany(r => r.Revisions)
@@ -177,6 +223,218 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // Configure ReportApproval
+        modelBuilder.Entity<ReportApproval>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ReportId, e.UserId }).IsUnique();
+            entity.HasIndex(e => e.ReportId);
+            entity.HasOne(e => e.Report)
+                .WithMany(r => r.Approvals)
+                .HasForeignKey(e => e.ReportId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Directive
+        modelBuilder.Entity<Directive>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.TargetCommitteeId, e.Status });
+            entity.HasIndex(e => new { e.IssuerId, e.Status });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Priority);
+            entity.HasIndex(e => e.Deadline);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.IsConfidential);
+            entity.HasOne(e => e.Issuer)
+                .WithMany()
+                .HasForeignKey(e => e.IssuerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.TargetCommittee)
+                .WithMany()
+                .HasForeignKey(e => e.TargetCommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.TargetUser)
+                .WithMany()
+                .HasForeignKey(e => e.TargetUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.RelatedReport)
+                .WithMany()
+                .HasForeignKey(e => e.RelatedReportId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.ParentDirective)
+                .WithMany(d => d.ChildDirectives)
+                .HasForeignKey(e => e.ParentDirectiveId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure DirectiveStatusHistory
+        modelBuilder.Entity<DirectiveStatusHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.DirectiveId);
+            entity.HasIndex(e => e.ChangedAt);
+            entity.HasOne(e => e.Directive)
+                .WithMany(d => d.StatusHistory)
+                .HasForeignKey(e => e.DirectiveId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ChangedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ChangedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Meeting
+        modelBuilder.Entity<Meeting>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.CommitteeId, e.Status });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.ScheduledAt);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.IsConfidential);
+            entity.HasOne(e => e.Committee)
+                .WithMany()
+                .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Moderator)
+                .WithMany()
+                .HasForeignKey(e => e.ModeratorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure MeetingAgendaItem
+        modelBuilder.Entity<MeetingAgendaItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.MeetingId);
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.AgendaItems)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Presenter)
+                .WithMany()
+                .HasForeignKey(e => e.PresenterId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.LinkedReport)
+                .WithMany()
+                .HasForeignKey(e => e.LinkedReportId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure MeetingAttendee
+        modelBuilder.Entity<MeetingAttendee>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.MeetingId, e.UserId }).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.Attendees)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure MeetingDecision
+        modelBuilder.Entity<MeetingDecision>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.MeetingId);
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.Decisions)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.AgendaItem)
+                .WithMany()
+                .HasForeignKey(e => e.AgendaItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ActionItem
+        modelBuilder.Entity<ActionItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.AssignedToId, e.Status });
+            entity.HasIndex(e => e.MeetingId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Deadline);
+            entity.HasOne(e => e.Meeting)
+                .WithMany(m => m.ActionItems)
+                .HasForeignKey(e => e.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.MeetingDecision)
+                .WithMany(d => d.ActionItems)
+                .HasForeignKey(e => e.MeetingDecisionId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.AssignedTo)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedToId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.AssignedBy)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure ConfidentialityMarking
+        modelBuilder.Entity<ConfidentialityMarking>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ItemType, e.ItemId, e.IsActive });
+            entity.HasIndex(e => e.MarkedById);
+            entity.HasIndex(e => e.MarkedAt);
+            entity.HasOne(e => e.MarkedBy)
+                .WithMany()
+                .HasForeignKey(e => e.MarkedById)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.MarkerCommittee)
+                .WithMany()
+                .HasForeignKey(e => e.MarkerCommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.UnmarkedBy)
+                .WithMany()
+                .HasForeignKey(e => e.UnmarkedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure AccessGrant
+        modelBuilder.Entity<AccessGrant>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ItemType, e.ItemId, e.GrantedToUserId, e.IsActive });
+            entity.HasIndex(e => e.GrantedToUserId);
+            entity.HasOne(e => e.GrantedTo)
+                .WithMany()
+                .HasForeignKey(e => e.GrantedToUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.GrantedBy)
+                .WithMany()
+                .HasForeignKey(e => e.GrantedById)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.RevokedBy)
+                .WithMany()
+                .HasForeignKey(e => e.RevokedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure AuditLog (append-only)
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.ActionType);
+            entity.HasIndex(e => new { e.ItemType, e.ItemId });
+            entity.HasIndex(e => e.CommitteeId);
+        });
+
         // Configure Notification
         modelBuilder.Entity<Notification>(entity =>
         {
@@ -184,6 +442,42 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.IsRead });
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => e.Type);
+        });
+
+        // Configure KnowledgeCategory
+        modelBuilder.Entity<KnowledgeCategory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.ParentCategoryId);
+            entity.HasOne(e => e.ParentCategory)
+                .WithMany(e => e.SubCategories)
+                .HasForeignKey(e => e.ParentCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure KnowledgeArticle
+        modelBuilder.Entity<KnowledgeArticle>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.CategoryId);
+            entity.HasIndex(e => e.IsPublished);
+            entity.HasIndex(e => e.SourceType);
+            entity.HasIndex(e => new { e.SourceType, e.SourceItemId });
+            entity.HasIndex(e => e.CommitteeId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasOne(e => e.Category)
+                .WithMany(c => c.Articles)
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Committee)
+                .WithMany()
+                .HasForeignKey(e => e.CommitteeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Configure DatabaseBackup

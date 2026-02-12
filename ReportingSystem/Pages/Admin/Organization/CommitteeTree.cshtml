@@ -1,0 +1,294 @@
+@page
+@model ReportingSystem.Pages.Admin.Organization.CommitteeTreeModel
+@{
+    ViewData["Title"] = "Committee Tree";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-diagram-3"></i> Committee Tree</h2>
+            <p class="text-muted">Top-down hierarchical view — each level is a horizontal layer</p>
+        </div>
+        <div class="col-auto">
+            <a asp-page="Committees/Create" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle"></i> Add Committee
+            </a>
+            <a asp-page="Index" class="btn btn-outline-secondary btn-sm ms-1">
+                <i class="bi bi-diagram-3-fill"></i> Org Tree
+            </a>
+            <a asp-page="Committees/Index" class="btn btn-outline-secondary btn-sm ms-1">
+                <i class="bi bi-table"></i> Table View
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!Model.Levels.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No committees defined yet.
+            <a asp-page="Committees/Create">Create the first committee</a>.
+        </div>
+    }
+    else
+    {
+        <!-- Tree visualization -->
+        <div class="tree-container">
+            @foreach (var treeLevel in Model.Levels)
+            {
+                var levelBadge = treeLevel.Level switch {
+                    HierarchyLevel.TopLevel => ("bg-danger", "L0 — Top Level"),
+                    HierarchyLevel.Directors => ("bg-warning text-dark", "L1 — Directors"),
+                    HierarchyLevel.Functions => ("bg-info", "L2 — Functions"),
+                    HierarchyLevel.Processes => ("bg-success", "L3 — Processes"),
+                    _ => ("bg-secondary", "L4 — Tasks")
+                };
+                var borderColor = treeLevel.Level switch {
+                    HierarchyLevel.TopLevel => "border-danger",
+                    HierarchyLevel.Directors => "border-warning",
+                    HierarchyLevel.Functions => "border-info",
+                    HierarchyLevel.Processes => "border-success",
+                    _ => "border-secondary"
+                };
+
+                <div class="tree-level mb-4">
+                    <!-- Level header -->
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge @levelBadge.Item1 me-2">@levelBadge.Item2</span>
+                        <small class="text-muted">@treeLevel.Committees.Count committee@(treeLevel.Committees.Count != 1 ? "s" : "")</small>
+                    </div>
+
+                    <!-- Connector line from above -->
+                    @if (treeLevel.Level != HierarchyLevel.TopLevel)
+                    {
+                        <div class="tree-connector-down"></div>
+                    }
+
+                    <!-- Horizontal row of cards -->
+                    <div class="tree-row">
+                        @foreach (var committee in treeLevel.Committees)
+                        {
+                            var activeMembers = committee.Memberships
+                                .Where(m => m.EffectiveTo == null)
+                                .OrderByDescending(m => m.Role)
+                                .ThenBy(m => m.User.Name)
+                                .ToList();
+                            var heads = activeMembers.Where(m => m.Role == CommitteeRole.Head).ToList();
+                            var members = activeMembers.Where(m => m.Role == CommitteeRole.Member).ToList();
+                            var childCount = Model.GetChildren(committee.Id).Count;
+
+                            <div class="tree-node">
+                                <!-- Connector line to parent -->
+                                @if (committee.ParentCommitteeId != null)
+                                {
+                                    <div class="tree-connector-up"></div>
+                                }
+
+                                <div class="card shadow-sm border-top-3 @borderColor" id="card-@committee.Id">
+                                    <div class="card-body p-2">
+                                        <!-- Committee name -->
+                                        <div class="fw-semibold small text-truncate mb-1" title="@committee.Name">
+                                            @committee.Name
+                                        </div>
+
+                                        <!-- Sector badge if present -->
+                                        @if (!string.IsNullOrEmpty(committee.Sector))
+                                        {
+                                            <div class="mb-1">
+                                                <span class="badge bg-light text-dark border" style="font-size: 0.65rem;">@committee.Sector</span>
+                                            </div>
+                                        }
+
+                                        <!-- Head name(s) -->
+                                        @if (heads.Any())
+                                        {
+                                            <div class="text-muted mb-1" style="font-size: 0.7rem;">
+                                                <i class="bi bi-person-fill"></i>
+                                                @foreach (var h in heads) { if (h != heads.First()) { <text>, </text> } <a asp-page="/Admin/Users/Details" asp-route-id="@h.UserId" asp-route-returnTo="tree" class="text-decoration-none">@h.User.Name</a> }
+                                            </div>
+                                        }
+
+                                        <!-- Member count & children count -->
+                                        <div class="d-flex gap-2 mb-2" style="font-size: 0.7rem;">
+                                            <span class="text-muted"><i class="bi bi-people"></i> @activeMembers.Count</span>
+                                            @if (childCount > 0)
+                                            {
+                                                <span class="text-muted"><i class="bi bi-diagram-2"></i> @childCount</span>
+                                            }
+                                        </div>
+
+                                        <!-- Action buttons -->
+                                        <div class="btn-group btn-group-sm w-100">
+                                            <a asp-page="Committees/Details" asp-route-id="@committee.Id" asp-route-returnTo="tree"
+                                               class="btn btn-outline-info py-0" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-page="Committees/Edit" asp-route-id="@committee.Id"
+                                               class="btn btn-outline-primary py-0" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a asp-page="Committees/Delete" asp-route-id="@committee.Id"
+                                               class="btn btn-outline-danger py-0" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-secondary py-0"
+                                                    title="Toggle Members"
+                                                    onclick="toggleMembers(@committee.Id)">
+                                                <i class="bi bi-person-lines-fill"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- Collapsible members list -->
+                                        <div class="members-panel d-none mt-2 pt-2 border-top" id="members-@committee.Id">
+                                            @if (!activeMembers.Any())
+                                            {
+                                                <div class="text-muted" style="font-size: 0.7rem;">No members</div>
+                                            }
+                                            else
+                                            {
+                                                <div style="max-height: 150px; overflow-y: auto;">
+                                                    @foreach (var m in activeMembers)
+                                                    {
+                                                        <div class="d-flex align-items-center py-1" style="font-size: 0.75rem;">
+                                                            @if (m.Role == CommitteeRole.Head)
+                                                            {
+                                                                <i class="bi bi-star-fill text-warning me-1" title="Head"></i>
+                                                            }
+                                                            else
+                                                            {
+                                                                <i class="bi bi-person me-1 text-muted"></i>
+                                                            }
+                                                            <a asp-page="/Admin/Users/Details" asp-route-id="@m.UserId" asp-route-returnTo="tree"
+                                                               class="text-decoration-none text-truncate"
+                                                               title="@m.User.Name — @m.User.Email">
+                                                                @m.User.Name
+                                                            </a>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Connector line to children -->
+                                @if (childCount > 0)
+                                {
+                                    <div class="tree-connector-down-from-node"></div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Styles {
+<style>
+    .tree-container {
+        overflow-x: auto;
+        padding-bottom: 1rem;
+    }
+
+    .tree-level {
+        position: relative;
+    }
+
+    .tree-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.75rem;
+        position: relative;
+    }
+
+    .tree-node {
+        position: relative;
+        flex: 0 0 auto;
+        width: 200px;
+    }
+
+    .tree-node .card {
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .tree-node .card:hover {
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-2px);
+    }
+
+    .border-top-3 {
+        border-top-width: 3px !important;
+        border-top-style: solid !important;
+    }
+
+    /* Connector lines */
+    .tree-connector-down {
+        width: 2px;
+        height: 12px;
+        background: #dee2e6;
+        margin: 0 auto 4px auto;
+    }
+
+    .tree-connector-up {
+        width: 2px;
+        height: 10px;
+        background: #dee2e6;
+        margin: 0 auto 2px auto;
+    }
+
+    .tree-connector-down-from-node {
+        width: 2px;
+        height: 10px;
+        background: #dee2e6;
+        margin: 2px auto 0 auto;
+    }
+
+    /* Members panel */
+    .members-panel a {
+        color: #0d6efd;
+    }
+
+    .members-panel a:hover {
+        text-decoration: underline !important;
+        color: #0a58ca;
+    }
+
+    /* Responsive: allow horizontal scroll for wide trees */
+    @@media (max-width: 992px) {
+        .tree-row {
+            justify-content: flex-start;
+        }
+        .tree-node {
+            width: 180px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .tree-node {
+            width: 160px;
+        }
+    }
+</style>
+}
+
+@section Scripts {
+<script>
+    function toggleMembers(committeeId) {
+        var panel = document.getElementById('members-' + committeeId);
+        if (panel) {
+            panel.classList.toggle('d-none');
+        }
+    }
+</script>
+}

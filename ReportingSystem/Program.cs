@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using ReportingSystem;
 using ReportingSystem.Data;
 using ReportingSystem.Services;
 using ReportingSystem.Filters;
@@ -12,6 +13,15 @@ builder.Services.AddRazorPages(options =>
     // Require authentication for all Admin and Reports pages
     options.Conventions.AuthorizeFolder("/Admin");
     options.Conventions.AuthorizeFolder("/Reports");
+    options.Conventions.AuthorizeFolder("/Directives");
+    options.Conventions.AuthorizeFolder("/Meetings");
+    options.Conventions.AuthorizeFolder("/Confidentiality");
+    options.Conventions.AuthorizeFolder("/Search");
+    options.Conventions.AuthorizeFolder("/Archives");
+    options.Conventions.AuthorizeFolder("/Dashboard");
+    options.Conventions.AuthorizeFolder("/Notifications");
+    options.Conventions.AuthorizeFolder("/Knowledge");
+    options.Conventions.AuthorizeFolder("/Analytics");
 
     // Allow anonymous access to Auth pages (login, verify, logout)
     options.Conventions.AllowAnonymousToFolder("/Auth");
@@ -32,6 +42,15 @@ builder.Services.AddScoped<MagicLinkService>();
 builder.Services.AddScoped<DatabaseBackupService>();
 builder.Services.AddScoped<OrganizationService>();
 builder.Services.AddScoped<ReportService>();
+builder.Services.AddScoped<DirectiveService>();
+builder.Services.AddScoped<MeetingService>();
+builder.Services.AddScoped<ConfidentialityService>();
+builder.Services.AddScoped<AuditService>();
+builder.Services.AddScoped<SearchService>();
+builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<ReportTemplateService>();
+builder.Services.AddScoped<KnowledgeBaseService>();
+builder.Services.AddScoped<AnalyticsService>();
 
 // Register background service for daily automatic backups
 builder.Services.AddHostedService<DailyBackupHostedService>();
@@ -103,11 +122,21 @@ using (var scope = app.Services.CreateScope())
         await context.Database.EnsureCreatedAsync();
         logger.LogInformation("Database is ready.");
 
-        // Seed the database with initial data
-        logger.LogInformation("Seeding database with initial data...");
-        await SeedData.InitializeAsync(context);
-        await OrganizationSeeder.SeedAsync(context);
+        // Seed admin user only
         await UserSeeder.SeedAdminUsersAsync(context);
+
+        // Seed reports across all committees
+        await ReportSeeder.SeedAsync(context);
+
+        // Organization, templates, knowledge base, and demo data seeding commented out
+        // await SeedData.InitializeAsync(context);
+        // await OrganizationSeeder.SeedAsync(context);
+        // var templateService = services.GetRequiredService<ReportTemplateService>();
+        // await templateService.SeedDefaultTemplatesAsync();
+        // var knowledgeService = services.GetRequiredService<KnowledgeBaseService>();
+        // await knowledgeService.SeedDefaultCategoriesAsync();
+        // await DemoDataSeeder.SeedAsync(context);
+
         logger.LogInformation("Database seeding completed.");
     }
     catch (Exception ex)
@@ -133,5 +162,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
+app.MapApiEndpoints();
 
 app.Run();

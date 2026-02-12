@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using ReportingSystem.Models;
 using ReportingSystem.Services;
 
 namespace ReportingSystem.Pages.Auth;
@@ -10,13 +11,16 @@ namespace ReportingSystem.Pages.Auth;
 public class VerifyModel : PageModel
 {
     private readonly MagicLinkService _magicLinkService;
+    private readonly AuditService _auditService;
     private readonly ILogger<VerifyModel> _logger;
 
     public VerifyModel(
         MagicLinkService magicLinkService,
+        AuditService auditService,
         ILogger<VerifyModel> logger)
     {
         _magicLinkService = magicLinkService;
+        _auditService = auditService;
         _logger = logger;
     }
 
@@ -69,7 +73,17 @@ public class VerifyModel : PageModel
 
         _logger.LogInformation("User {Email} successfully logged in", user.Email);
 
+        // Audit log
+        await _auditService.LogAsync(
+            AuditActionType.Login,
+            "User",
+            user.Id,
+            user.Name,
+            user.Id,
+            user.Name,
+            ipAddress: ipAddress);
+
         // Redirect to dashboard
-        return RedirectToPage("/Admin/Dashboard");
+        return RedirectToPage("/Dashboard/Index");
     }
 }

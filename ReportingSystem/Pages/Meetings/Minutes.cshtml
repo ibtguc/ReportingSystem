@@ -1,0 +1,81 @@
+@page "{id:int}"
+@model ReportingSystem.Pages.Meetings.MinutesModel
+@{
+    ViewData["Title"] = "Meeting Minutes — " + Model.Meeting.Title;
+}
+
+<div class="container mt-4" style="max-width: 900px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-journal-text"></i> Meeting Minutes</h2>
+            <p class="text-muted mb-0">@Model.Meeting.Title — @Model.Meeting.ScheduledAt.ToString("MMM dd, yyyy HH:mm")</p>
+        </div>
+        <a asp-page="Details" asp-route-id="@Model.Meeting.Id" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Meeting
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form method="post">
+        <!-- Per-Agenda-Item Discussion Notes -->
+        @if (Model.AgendaItemNotesList.Any())
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-ol"></i> Agenda Item Discussion Notes</h5>
+                </div>
+                <div class="card-body">
+                    @for (var i = 0; i < Model.AgendaItemNotesList.Count; i++)
+                    {
+                        <input type="hidden" asp-for="AgendaItemNotesList[i].AgendaItemId" />
+                        <input type="hidden" asp-for="AgendaItemNotesList[i].TopicTitle" />
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">@(i + 1). @Model.AgendaItemNotesList[i].TopicTitle</label>
+                            <textarea asp-for="AgendaItemNotesList[i].Notes" class="form-control" rows="3"
+                                      placeholder="Discussion notes, key points, outcomes..."></textarea>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Overall Minutes Content -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> General Minutes / Summary</h5>
+            </div>
+            <div class="card-body">
+                <textarea asp-for="MinutesContent" class="form-control" rows="10"
+                          placeholder="Enter overall meeting minutes, summary notes, key takeaways..."></textarea>
+                <small class="text-muted mt-1 d-block">
+                    This is the overall meeting summary. Per-agenda-item notes are captured above.
+                </small>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-between">
+            <button type="submit" asp-page-handler="Save" asp-route-id="@Model.Meeting.Id" class="btn btn-outline-primary">
+                <i class="bi bi-save"></i> Save Draft
+            </button>
+            <button type="submit" asp-page-handler="Submit" asp-route-id="@Model.Meeting.Id" class="btn btn-success"
+                    onclick="return confirm('Submit minutes for attendee confirmation? Attendees will be notified to review.');">
+                <i class="bi bi-send"></i> Submit for Confirmation
+            </button>
+        </div>
+    </form>
+</div>

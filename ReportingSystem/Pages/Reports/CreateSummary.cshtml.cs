@@ -35,14 +35,23 @@ public class CreateSummaryModel : PageModel
     public async Task<IActionResult> OnGetAsync(int? committeeId)
     {
         var userId = GetUserId();
+
+        // Only heads can create summaries
         var committees = await _reportService.GetUserCommitteesAsync(userId);
-        if (!committees.Any())
+        var headCommittees = new List<Committee>();
+        foreach (var c in committees)
         {
-            TempData["ErrorMessage"] = "You are not a member of any committee.";
+            if (await _reportService.IsUserHeadOfCommitteeAsync(userId, c.Id))
+                headCommittees.Add(c);
+        }
+
+        if (!headCommittees.Any())
+        {
+            TempData["ErrorMessage"] = "Only committee heads can create summary reports.";
             return RedirectToPage("Index");
         }
 
-        CommitteeOptions = committees.Select(c => new SelectListItem(c.Name, c.Id.ToString())).ToList();
+        CommitteeOptions = headCommittees.Select(c => new SelectListItem(c.Name, c.Id.ToString())).ToList();
 
         if (committeeId.HasValue)
         {

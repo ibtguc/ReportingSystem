@@ -17,7 +17,7 @@ public class IndexModel : PageModel
         // Redirect authenticated users to Dashboard
         if (User.Identity?.IsAuthenticated == true)
         {
-            return RedirectToPage("/Admin/Dashboard");
+            return RedirectToPage("/Dashboard/Index");
         }
 
         // Redirect anonymous users to login

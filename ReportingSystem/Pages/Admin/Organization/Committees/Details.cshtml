@@ -32,8 +32,8 @@
                 <a asp-page="Edit" asp-route-id="@Model.Committee.Id" class="btn btn-sm btn-light">
                     <i class="bi bi-pencil"></i> Edit
                 </a>
-                <a asp-page="../Index" class="btn btn-sm btn-outline-light ms-1">
-                    <i class="bi bi-diagram-3"></i> Org Tree
+                <a href="@Model.BackUrl" class="btn btn-sm btn-outline-light ms-1">
+                    <i class="bi @Model.BackIcon"></i> @Model.BackLabel
                 </a>
             </div>
         </div>
@@ -46,7 +46,7 @@
                 <dd class="col-sm-9">
                     @if (Model.Committee.ParentCommittee != null)
                     {
-                        <a asp-page="Details" asp-route-id="@Model.Committee.ParentCommittee.Id">
+                        <a asp-page="Details" asp-route-id="@Model.Committee.ParentCommittee.Id" asp-route-returnTo="@Model.ReturnTo">
                             @Model.Committee.ParentCommittee.Name
                         </a>
                     }
@@ -95,18 +95,20 @@
                                     {
                                         <tr>
                                             <td>
-                                                <strong>@head.User.Name</strong>
+                                                <a asp-page="/Admin/Users/Details" asp-route-id="@head.UserId" asp-route-returnTo="committee" asp-route-committeeId="@Model.Committee.Id" class="text-decoration-none">
+                                                    <strong>@head.User.Name</strong>
+                                                </a>
                                                 <br /><small class="text-muted">@head.User.Title &mdash; @head.User.Email</small>
                                             </td>
                                             <td class="text-end">
-                                                <form method="post" asp-page-handler="ToggleRole" asp-route-id="@Model.Committee.Id" class="d-inline">
+                                                <form method="post" asp-page-handler="ToggleRole" asp-route-id="@Model.Committee.Id" asp-route-returnTo="@Model.ReturnTo" class="d-inline">
                                                     <input type="hidden" name="membershipId" value="@head.Id" />
                                                     <input type="hidden" name="newRole" value="@ReportingSystem.Models.CommitteeRole.Member" />
                                                     <button class="btn btn-outline-secondary btn-sm" title="Demote to Member">
                                                         <i class="bi bi-arrow-down"></i>
                                                     </button>
                                                 </form>
-                                                <form method="post" asp-page-handler="RemoveMember" asp-route-id="@Model.Committee.Id" class="d-inline">
+                                                <form method="post" asp-page-handler="RemoveMember" asp-route-id="@Model.Committee.Id" asp-route-returnTo="@Model.ReturnTo" class="d-inline">
                                                     <input type="hidden" name="membershipId" value="@head.Id" />
                                                     <button class="btn btn-outline-danger btn-sm" title="Remove">
                                                         <i class="bi bi-x"></i>
@@ -130,18 +132,20 @@
                                     {
                                         <tr>
                                             <td>
-                                                @member.User.Name
+                                                <a asp-page="/Admin/Users/Details" asp-route-id="@member.UserId" asp-route-returnTo="committee" asp-route-committeeId="@Model.Committee.Id" class="text-decoration-none">
+                                                    @member.User.Name
+                                                </a>
                                                 <br /><small class="text-muted">@member.User.Title &mdash; @member.User.Email</small>
                                             </td>
                                             <td class="text-end">
-                                                <form method="post" asp-page-handler="ToggleRole" asp-route-id="@Model.Committee.Id" class="d-inline">
+                                                <form method="post" asp-page-handler="ToggleRole" asp-route-id="@Model.Committee.Id" asp-route-returnTo="@Model.ReturnTo" class="d-inline">
                                                     <input type="hidden" name="membershipId" value="@member.Id" />
                                                     <input type="hidden" name="newRole" value="@ReportingSystem.Models.CommitteeRole.Head" />
                                                     <button class="btn btn-outline-success btn-sm" title="Promote to Head">
                                                         <i class="bi bi-arrow-up"></i>
                                                     </button>
                                                 </form>
-                                                <form method="post" asp-page-handler="RemoveMember" asp-route-id="@Model.Committee.Id" class="d-inline">
+                                                <form method="post" asp-page-handler="RemoveMember" asp-route-id="@Model.Committee.Id" asp-route-returnTo="@Model.ReturnTo" class="d-inline">
                                                     <input type="hidden" name="membershipId" value="@member.Id" />
                                                     <button class="btn btn-outline-danger btn-sm" title="Remove">
                                                         <i class="bi bi-x"></i>
@@ -165,7 +169,7 @@
                     {
                         <hr />
                         <h6><i class="bi bi-person-plus"></i> Add Member</h6>
-                        <form method="post" asp-page-handler="AddMember" asp-route-id="@Model.Committee.Id" class="row g-2 align-items-end">
+                        <form method="post" asp-page-handler="AddMember" asp-route-id="@Model.Committee.Id" asp-route-returnTo="@Model.ReturnTo" class="row g-2 align-items-end">
                             <div class="col-md-6">
                                 <select asp-for="NewMemberUserId" class="form-select form-select-sm"
                                         asp-items="Model.AvailableUsers">
@@ -208,8 +212,8 @@
                                     @foreach (var shadow in Model.Shadows)
                                     {
                                         <tr>
-                                            <td>@shadow.PrincipalUser.Name</td>
-                                            <td>@shadow.ShadowUser.Name</td>
+                                            <td><a asp-page="/Admin/Users/Details" asp-route-id="@shadow.PrincipalUserId" asp-route-returnTo="committee" asp-route-committeeId="@Model.Committee.Id" class="text-decoration-none">@shadow.PrincipalUser.Name</a></td>
+                                            <td><a asp-page="/Admin/Users/Details" asp-route-id="@shadow.ShadowUserId" asp-route-returnTo="committee" asp-route-committeeId="@Model.Committee.Id" class="text-decoration-none">@shadow.ShadowUser.Name</a></td>
                                             <td><small>@shadow.EffectiveFrom.ToString("yyyy-MM-dd")</small></td>
                                         </tr>
                                     }
@@ -234,7 +238,7 @@
                             @foreach (var sub in Model.SubCommittees)
                             {
                                 var subHeads = sub.Memberships.Where(m => m.Role == ReportingSystem.Models.CommitteeRole.Head && m.EffectiveTo == null).ToList();
-                                <a asp-page="Details" asp-route-id="@sub.Id" class="list-group-item list-group-item-action">
+                                <a asp-page="Details" asp-route-id="@sub.Id" asp-route-returnTo="@Model.ReturnTo" class="list-group-item list-group-item-action">
                                     <div class="d-flex justify-content-between">
                                         <strong>@sub.Name</strong>
                                         <span class="badge bg-secondary">@sub.Memberships.Count(m => m.EffectiveTo == null)</span>
@@ -257,8 +261,8 @@
     </div>
 
     <div class="mt-2">
-        <a asp-page="Index" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Committees
+        <a href="@Model.BackUrl" class="btn btn-secondary">
+            <i class="bi @Model.BackIcon"></i> @Model.BackLabel
         </a>
     </div>
 </div>

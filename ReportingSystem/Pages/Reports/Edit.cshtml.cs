@@ -25,40 +25,21 @@ public class EditModel : PageModel
     [BindProperty]
     public List<IFormFile>? NewAttachments { get; set; }
 
-    [BindProperty(SupportsGet = true)]
-    public bool Revise { get; set; }
-
-    public bool IsRevision { get; set; }
-    public Report? OriginalReport { get; set; }
     public List<SelectListItem> CommitteeOptions { get; set; } = new();
 
-    public async Task<IActionResult> OnGetAsync(int id, bool revise = false)
+    public async Task<IActionResult> OnGetAsync(int id)
     {
         var userId = GetUserId();
         var report = await _reportService.GetReportByIdAsync(id);
         if (report == null) return NotFound();
 
-        Revise = revise;
-
-        if (revise && report.Status == ReportStatus.FeedbackRequested)
+        if (report.AuthorId != userId)
         {
-            // Creating a revision — pre-fill from original
-            IsRevision = true;
-            OriginalReport = report;
-            Report = new Report
-            {
-                Title = report.Title,
-                ReportType = report.ReportType,
-                CommitteeId = report.CommitteeId,
-                BodyContent = report.BodyContent,
-                SuggestedAction = report.SuggestedAction,
-                NeededResources = report.NeededResources,
-                NeededSupport = report.NeededSupport,
-                SpecialRemarks = report.SpecialRemarks,
-                IsConfidential = report.IsConfidential
-            };
+            TempData["ErrorMessage"] = "You are not the author of this report.";
+            return RedirectToPage("Details", new { id });
         }
-        else if (report.Status == ReportStatus.Draft && report.AuthorId == userId)
+
+        if (report.Status == ReportStatus.Draft || report.Status == ReportStatus.FeedbackRequested)
         {
             Report = report;
         }
@@ -87,50 +68,33 @@ public class EditModel : PageModel
             return Page();
         }
 
-        if (Revise)
+        // Update existing report (Draft or FeedbackRequested — in-place edit)
+        var existing = await _reportService.GetReportByIdAsync(id);
+        if (existing == null || existing.AuthorId != userId
+            || (existing.Status != ReportStatus.Draft && existing.Status != ReportStatus.FeedbackRequested))
         {
-            // Create a revision
-            var revised = await _reportService.ReviseReportAsync(id, Report, userId);
-            if (revised == null)
-            {
-                TempData["ErrorMessage"] = "Unable to create revision.";
-                return RedirectToPage("Details", new { id });
-            }
-
-            // Handle new attachments
-            await HandleAttachments(revised.Id, userId);
-
-            TempData["SuccessMessage"] = $"Revision v{revised.Version} created.";
-            return RedirectToPage("Details", new { id = revised.Id });
-        }
-        else
-        {
-            // Update existing draft
-            var existing = await _reportService.GetReportByIdAsync(id);
-            if (existing == null || existing.Status != ReportStatus.Draft || existing.AuthorId != userId)
-            {
-                TempData["ErrorMessage"] = "Cannot edit this report.";
-                return RedirectToPage("Details", new { id });
-            }
-
-            existing.Title = Report.Title;
-            existing.ReportType = Report.ReportType;
-            existing.CommitteeId = Report.CommitteeId;
-            existing.BodyContent = Report.BodyContent;
-            existing.SuggestedAction = Report.SuggestedAction;
-            existing.NeededResources = Report.NeededResources;
-            existing.NeededSupport = Report.NeededSupport;
-            existing.SpecialRemarks = Report.SpecialRemarks;
-            existing.IsConfidential = Report.IsConfidential;
-
-            await _reportService.UpdateReportAsync(existing, userId);
-
-            // Handle new attachments
-            await HandleAttachments(id, userId);
-
-            TempData["SuccessMessage"] = "Report updated.";
+            TempData["ErrorMessage"] = "Cannot edit this report.";
             return RedirectToPage("Details", new { id });
         }
+
+        existing.Title = Report.Title;
+        existing.ReportType = Report.ReportType;
+        existing.CommitteeId = Report.CommitteeId;
+        existing.BodyContent = Report.BodyContent;
+        existing.SuggestedAction = Report.SuggestedAction;
+        existing.NeededResources = Report.NeededResources;
+        existing.NeededSupport = Report.NeededSupport;
+        existing.SpecialRemarks = Report.SpecialRemarks;
+        existing.IsConfidential = Report.IsConfidential;
+        existing.SkipApprovals = Report.SkipApprovals;
+
+        await _reportService.UpdateReportAsync(existing, userId);
+
+        // Handle new attachments
+        await HandleAttachments(id, userId);
+
+        TempData["SuccessMessage"] = "Report updated.";
+        return RedirectToPage("Details", new { id });
     }
 
     private int GetUserId() =>

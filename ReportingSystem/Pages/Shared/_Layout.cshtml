@@ -13,7 +13,7 @@
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
             <div class="container-fluid">
-                <a class="navbar-brand fw-bold" asp-area="" asp-page="/Admin/Dashboard">
+                <a class="navbar-brand fw-bold" asp-area="" asp-page="/Dashboard/Index">
                     <i class="bi bi-diagram-3"></i> Reporting
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -23,7 +23,9 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Admin/Dashboard">Home</a>
+                            <a class="nav-link" asp-area="" asp-page="/Dashboard/Index">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="orgDropdown" role="button"
@@ -32,7 +34,8 @@
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="orgDropdown">
                                 <li><a class="dropdown-item" asp-page="/Admin/Organization/Index"><i class="bi bi-diagram-3-fill"></i> Org Tree</a></li>
-                                <li><a class="dropdown-item" asp-page="/Admin/Organization/Committees/Index"><i class="bi bi-people-fill"></i> Committees</a></li>
+                                @* <li><a class="dropdown-item" asp-page="/Admin/Organization/CommitteeTree"><i class="bi bi-diagram-2"></i> Committee Tree</a></li> *@
+                                @* <li><a class="dropdown-item" asp-page="/Admin/Organization/Committees/Index"><i class="bi bi-people-fill"></i> Committees</a></li> *@
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
@@ -48,6 +51,39 @@
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="directivesDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                Directives
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="directivesDropdown">
+                                <li><a class="dropdown-item" asp-page="/Directives/Index"><i class="bi bi-megaphone"></i> All Directives</a></li>
+                                <li><a class="dropdown-item" asp-page="/Directives/Create"><i class="bi bi-plus-circle"></i> Issue Directive</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-page="/Directives/Track"><i class="bi bi-exclamation-triangle"></i> Track Overdue</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="meetingsDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                Meetings
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="meetingsDropdown">
+                                <li><a class="dropdown-item" asp-page="/Meetings/Index"><i class="bi bi-calendar-event"></i> All Meetings</a></li>
+                                <li><a class="dropdown-item" asp-page="/Meetings/Create"><i class="bi bi-calendar-plus"></i> Schedule Meeting</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-page="/Meetings/ActionItems"><i class="bi bi-list-task"></i> Action Items</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-page="/Knowledge/Index"><i class="bi bi-book"></i> Knowledge</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-page="/Analytics/Index"><i class="bi bi-graph-up"></i> Analytics</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-page="/Search/Index"><i class="bi bi-search"></i> Search</a>
+                        </li>
+                        <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 Administration
@@ -55,6 +91,11 @@
                             <ul class="dropdown-menu" aria-labelledby="adminDropdown">
                                 <li><a class="dropdown-item" asp-page="/Admin/Users/Index"><i class="bi bi-people-fill"></i> Users</a></li>
                                 <li><a class="dropdown-item" asp-page="/Admin/Backup/Index"><i class="bi bi-database-fill-gear"></i> Database Backups</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/Templates/Index"><i class="bi bi-file-earmark-ruled"></i> Report Templates</a></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/Knowledge/Index"><i class="bi bi-book"></i> Knowledge Base</a></li>
+                                <li><a class="dropdown-item" asp-page="/Admin/AuditLog/Index"><i class="bi bi-journal-text"></i> Audit Log</a></li>
+                                <li><a class="dropdown-item" asp-page="/Archives/Index"><i class="bi bi-archive"></i> Archives</a></li>
                             </ul>
                         </li>
                     </ul>
@@ -68,6 +109,9 @@
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                     <li><h6 class="dropdown-header">@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</h6></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-page="/Dashboard/Index"><i class="bi bi-speedometer2"></i> My Dashboard</a></li>
+                                    <li><a class="dropdown-item" asp-page="/Notifications/Index"><i class="bi bi-bell"></i> Notifications</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="/Auth/Logout"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                                 </ul>
