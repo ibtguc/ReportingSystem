@@ -300,6 +300,184 @@
     </div>
 }
 
+<!-- ═══ My Committees Activities ═══ -->
+@if (Model.ActivitiesData.MyCommitteeActivities.Any())
+{
+    <div class="card border-success mb-4">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-people-fill"></i> My Committees Activities</h5>
+            <span class="badge bg-light text-dark">@Model.ActivitiesData.MyCommitteeActivities.Sum(g => g.TotalCount) pending</span>
+        </div>
+        <div class="card-body">
+            @foreach (var group in Model.ActivitiesData.MyCommitteeActivities)
+            {
+                var levelBadge = group.Committee.HierarchyLevel switch
+                {
+                    HierarchyLevel.TopLevel => "bg-danger",
+                    HierarchyLevel.Directors => "bg-warning text-dark",
+                    HierarchyLevel.Functions => "bg-info",
+                    _ => "bg-secondary"
+                };
+                <div class="mb-3 border rounded p-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge @levelBadge me-2">@group.Committee.HierarchyLevel</span>
+                        <h6 class="mb-0">
+                            <a asp-page="/Admin/Organization/Committees/Details" asp-route-id="@group.Committee.Id" class="text-decoration-none">@group.Committee.Name</a>
+                        </h6>
+                        <span class="badge bg-secondary ms-auto">@group.TotalCount item(s)</span>
+                    </div>
+                    <div class="row g-2">
+                        @if (group.PendingReports.Any())
+                        {
+                            <div class="col-md-3">
+                                <small class="text-muted d-block mb-1"><i class="bi bi-file-earmark-text"></i> Reports</small>
+                                @foreach (var r in group.PendingReports)
+                                {
+                                    var sBadge = r.Status == ReportStatus.Submitted ? "bg-primary" : "bg-warning text-dark";
+                                    <a href="/Reports/Details/@r.Id" class="d-block text-decoration-none mb-1">
+                                        <small class="fw-semibold">@r.Title</small>
+                                        <span class="badge @sBadge" style="font-size:.65em;">@r.Status</span>
+                                        <br /><small class="text-muted">@r.Author?.Name</small>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        @if (group.OpenDirectives.Any())
+                        {
+                            <div class="col-md-3">
+                                <small class="text-muted d-block mb-1"><i class="bi bi-megaphone"></i> Directives</small>
+                                @foreach (var d in group.OpenDirectives)
+                                {
+                                    <a href="/Directives/Details/@d.Id" class="d-block text-decoration-none mb-1">
+                                        <small class="fw-semibold">@d.Title</small>
+                                        <br /><small class="text-muted">@d.Status @(d.Deadline.HasValue ? $"— {d.Deadline.Value:dd MMM}" : "")</small>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        @if (group.UpcomingMeetings.Any())
+                        {
+                            <div class="col-md-3">
+                                <small class="text-muted d-block mb-1"><i class="bi bi-calendar-event"></i> Meetings</small>
+                                @foreach (var m in group.UpcomingMeetings)
+                                {
+                                    <a href="/Meetings/Details/@m.Id" class="d-block text-decoration-none mb-1">
+                                        <small class="fw-semibold">@m.Title</small>
+                                        <br /><small class="text-muted">@m.ScheduledAt.ToString("dd MMM HH:mm")</small>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        @if (group.PendingActionItems.Any())
+                        {
+                            <div class="col-md-3">
+                                <small class="text-muted d-block mb-1"><i class="bi bi-list-task"></i> Action Items</small>
+                                @foreach (var a in group.PendingActionItems)
+                                {
+                                    var overdue = a.Deadline.HasValue && a.Deadline.Value < DateTime.UtcNow;
+                                    <div class="mb-1 @(overdue ? "text-danger" : "")">
+                                        <small class="fw-semibold">@a.Title</small>
+                                        <br /><small class="text-muted">@a.AssignedTo?.Name @(a.Deadline.HasValue ? $"— {a.Deadline.Value:dd MMM}" : "")</small>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- ═══ Sub-Committee Activities ═══ -->
+@if (Model.ActivitiesData.SubCommitteeActivities.Any())
+{
+    <div class="card border-secondary mb-4">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Sub-Committee Activities</h5>
+            <span class="badge bg-light text-dark">@Model.ActivitiesData.SubCommitteeActivities.Sum(g => g.TotalCount) pending</span>
+        </div>
+        <div class="card-body">
+            @foreach (var group in Model.ActivitiesData.SubCommitteeActivities)
+            {
+                var levelBadge = group.Committee.HierarchyLevel switch
+                {
+                    HierarchyLevel.TopLevel => "bg-danger",
+                    HierarchyLevel.Directors => "bg-warning text-dark",
+                    HierarchyLevel.Functions => "bg-info",
+                    _ => "bg-secondary"
+                };
+                <div class="mb-3 border rounded p-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge @levelBadge me-2">@group.Committee.HierarchyLevel</span>
+                        <h6 class="mb-0">
+                            <a asp-page="/Admin/Organization/Committees/Details" asp-route-id="@group.Committee.Id" class="text-decoration-none">@group.Committee.Name</a>
+                        </h6>
+                        <span class="badge bg-secondary ms-auto">@group.TotalCount item(s)</span>
+                    </div>
+                    <div class="row g-2">
+                        @if (group.PendingReports.Any())
+                        {
+                            <div class="col-md-3">
+                                <small class="text-muted d-block mb-1"><i class="bi bi-file-earmark-text"></i> Reports</small>
+                                @foreach (var r in group.PendingReports)
+                                {
+                                    var sBadge = r.Status == ReportStatus.Submitted ? "bg-primary" : "bg-warning text-dark";
+                                    <a href="/Reports/Details/@r.Id" class="d-block text-decoration-none mb-1">
+                                        <small class="fw-semibold">@r.Title</small>
+                                        <span class="badge @sBadge" style="font-size:.65em;">@r.Status</span>
+                                        <br /><small class="text-muted">@r.Author?.Name</small>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        @if (group.OpenDirectives.Any())
+                        {
+                            <div class="col-md-3">
+                                <small class="text-muted d-block mb-1"><i class="bi bi-megaphone"></i> Directives</small>
+                                @foreach (var d in group.OpenDirectives)
+                                {
+                                    <a href="/Directives/Details/@d.Id" class="d-block text-decoration-none mb-1">
+                                        <small class="fw-semibold">@d.Title</small>
+                                        <br /><small class="text-muted">@d.Status @(d.Deadline.HasValue ? $"— {d.Deadline.Value:dd MMM}" : "")</small>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        @if (group.UpcomingMeetings.Any())
+                        {
+                            <div class="col-md-3">
+                                <small class="text-muted d-block mb-1"><i class="bi bi-calendar-event"></i> Meetings</small>
+                                @foreach (var m in group.UpcomingMeetings)
+                                {
+                                    <a href="/Meetings/Details/@m.Id" class="d-block text-decoration-none mb-1">
+                                        <small class="fw-semibold">@m.Title</small>
+                                        <br /><small class="text-muted">@m.ScheduledAt.ToString("dd MMM HH:mm")</small>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        @if (group.PendingActionItems.Any())
+                        {
+                            <div class="col-md-3">
+                                <small class="text-muted d-block mb-1"><i class="bi bi-list-task"></i> Action Items</small>
+                                @foreach (var a in group.PendingActionItems)
+                                {
+                                    var overdue = a.Deadline.HasValue && a.Deadline.Value < DateTime.UtcNow;
+                                    <div class="mb-1 @(overdue ? "text-danger" : "")">
+                                        <small class="fw-semibold">@a.Title</small>
+                                        <br /><small class="text-muted">@a.AssignedTo?.Name @(a.Deadline.HasValue ? $"— {a.Deadline.Value:dd MMM}" : "")</small>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
 <!-- ═══ Personal Dashboard ═══ -->
 <div class="card mb-4">
     <div class="card-header bg-primary text-white">

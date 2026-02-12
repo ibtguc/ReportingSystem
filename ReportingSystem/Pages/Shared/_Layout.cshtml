@@ -12,6 +12,24 @@
 </head>
 <body>
     <header>
+        @if (HostEnv.IsDevelopment() && User.FindFirst("OriginalUserId") != null)
+        {
+            var originalName = User.FindFirst("OriginalUserName")?.Value ?? "Admin";
+            var impersonatedName = User.Identity?.Name;
+            var impersonatedRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            <div class="bg-warning text-dark py-2 px-3 d-flex align-items-center justify-content-center">
+                <i class="bi bi-incognito me-2 fs-5"></i>
+                <strong class="me-1">Impersonating:</strong>
+                <span>@impersonatedName (@impersonatedRole)</span>
+                <span class="mx-2">|</span>
+                <small>Logged in as: @originalName</small>
+                <form asp-page="/Admin/StopImpersonation" method="post" class="d-inline ms-3">
+                    <button type="submit" class="btn btn-sm btn-dark">
+                        <i class="bi bi-box-arrow-left"></i> Switch Back to Admin
+                    </button>
+                </form>
+            </div>
+        }
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
             <div class="container-fluid">
                 <a class="navbar-brand fw-bold" asp-area="" asp-page="/Dashboard/Index">
@@ -129,24 +147,6 @@
             </div>
         </nav>
     </header>
-    @if (HostEnv.IsDevelopment() && User.FindFirst("OriginalUserId") != null)
-    {
-        var originalName = User.FindFirst("OriginalUserName")?.Value ?? "Admin";
-        var impersonatedName = User.Identity?.Name;
-        var impersonatedRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-        <div class="bg-warning text-dark py-2 px-3 d-flex align-items-center justify-content-center" style="position:sticky;top:0;z-index:1050;">
-            <i class="bi bi-incognito me-2 fs-5"></i>
-            <strong class="me-1">Impersonating:</strong>
-            <span>@impersonatedName (@impersonatedRole)</span>
-            <span class="mx-2">|</span>
-            <small>Logged in as: @originalName</small>
-            <form asp-page="/Admin/StopImpersonation" method="post" class="d-inline ms-3">
-                <button type="submit" class="btn btn-sm btn-dark">
-                    <i class="bi bi-box-arrow-left"></i> Switch Back to Admin
-                </button>
-            </form>
-        </div>
-    }
     <div class="container-fluid px-4">
         <main role="main" class="pb-3">
             @RenderBody()

@@ -183,6 +183,119 @@ public class DashboardService
         return data;
     }
 
+    // ── Committee Activities Dashboard ──
+
+    public async Task<CommitteeActivitiesData> GetCommitteeActivitiesAsync(int userId)
+    {
+        var data = new CommitteeActivitiesData();
+        var now = DateTime.UtcNow;
+
+        // 1. Get committees the user is a direct member of
+        var directCommitteeIds = await _context.CommitteeMemberships
+            .Where(m => m.UserId == userId && m.EffectiveTo == null)
+            .Select(m => m.CommitteeId)
+            .Distinct()
+            .ToListAsync();
+
+        if (!directCommitteeIds.Any())
+            return data;
+
+        // 2. Load all committees to compute hierarchy in memory
+        var allCommittees = await _context.Committees.ToListAsync();
+        var lookup = allCommittees.ToDictionary(c => c.Id);
+        var directSet = new HashSet<int>(directCommitteeIds);
+
+        // 3. Compute all descendant committee IDs (excluding direct memberships)
+        var descendantIds = new HashSet<int>();
+        foreach (var cid in directCommitteeIds)
+        {
+            CollectDescendants(cid, allCommittees, directSet, descendantIds);
+        }
+
+        // 4. Load activities for direct committees
+        var allTargetIds = directCommitteeIds.Union(descendantIds).ToList();
+
+        var reports = await _context.Reports
+            .Include(r => r.Author).Include(r => r.Committee).Include(r => r.Approvals)
+            .Where(r => allTargetIds.Contains(r.CommitteeId)
+                && (r.Status == ReportStatus.Submitted || r.Status == ReportStatus.FeedbackRequested))
+            .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)
+            .ToListAsync();
+
+        var directives = await _context.Directives
+            .Include(d => d.Issuer).Include(d => d.TargetCommittee)
+            .Where(d => allTargetIds.Contains(d.TargetCommitteeId)
+                && d.Status != DirectiveStatus.Closed && d.Status != DirectiveStatus.Verified)
+            .OrderByDescending(d => d.Priority).ThenBy(d => d.Deadline)
+            .ToListAsync();
+
+        var meetings = await _context.Meetings
+            .Include(m => m.Committee).Include(m => m.Moderator)
+            .Where(m => allTargetIds.Contains(m.CommitteeId)
+                && m.ScheduledAt >= now && m.Status != MeetingStatus.Cancelled)
+            .OrderBy(m => m.ScheduledAt)
+            .ToListAsync();
+
+        var actionItems = await _context.ActionItems
+            .Include(a => a.AssignedTo).Include(a => a.Meeting).ThenInclude(m => m.Committee)
+            .Where(a => allTargetIds.Contains(a.Meeting.CommitteeId)
+                && a.Status != ActionItemStatus.Completed && a.Status != ActionItemStatus.Verified)
+            .OrderBy(a => a.Deadline)
+            .ToListAsync();
+
+        // 5. Group into direct committees
+        data.MyCommitteeActivities = BuildActivityGroups(
+            directCommitteeIds, lookup, reports, directives, meetings, actionItems);
+
+        // 6. Group into descendant committees
+        if (descendantIds.Any())
+        {
+            data.SubCommitteeActivities = BuildActivityGroups(
+                descendantIds.ToList(), lookup, reports, directives, meetings, actionItems);
+        }
+
+        return data;
+    }
+
+    private static void CollectDescendants(int parentId, List<Committee> all, HashSet<int> exclude, HashSet<int> result)
+    {
+        var children = all.Where(c => c.ParentCommitteeId == parentId).ToList();
+        foreach (var child in children)
+        {
+            // Only add if not a direct membership (avoid duplication)
+            if (!exclude.Contains(child.Id))
+                result.Add(child.Id);
+            // Always recurse to get deeper descendants
+            CollectDescendants(child.Id, all, exclude, result);
+        }
+    }
+
+    private static List<CommitteeActivityGroup> BuildActivityGroups(
+        List<int> committeeIds, Dictionary<int, Committee> lookup,
+        List<Report> reports, List<Directive> directives,
+        List<Meeting> meetings, List<ActionItem> actionItems)
+    {
+        var groups = new List<CommitteeActivityGroup>();
+        foreach (var cid in committeeIds)
+        {
+            if (!lookup.TryGetValue(cid, out var committee))
+                continue;
+
+            var group = new CommitteeActivityGroup
+            {
+                Committee = committee,
+                PendingReports = reports.Where(r => r.CommitteeId == cid).Take(5).ToList(),
+                OpenDirectives = directives.Where(d => d.TargetCommitteeId == cid).Take(5).ToList(),
+                UpcomingMeetings = meetings.Where(m => m.CommitteeId == cid).Take(5).ToList(),
+                PendingActionItems = actionItems.Where(a => a.Meeting.CommitteeId == cid).Take(5).ToList()
+            };
+
+            if (group.TotalCount > 0)
+                groups.Add(group);
+        }
+        return groups.OrderBy(g => g.Committee.HierarchyLevel).ThenBy(g => g.Committee.Name).ToList();
+    }
+
     // ── Personal Dashboard (FR-4.7.2.3) ──
 
     public async Task<PersonalDashboardData> GetPersonalDashboardAsync(int userId)
@@ -313,4 +426,20 @@ public class PersonalDashboardData
     public List<ActionItem> MyActionItems { get; set; } = new();
     public List<Committee> MyCommittees { get; set; } = new();
     public List<Notification> RecentNotifications { get; set; } = new();
+}
+
+public class CommitteeActivitiesData
+{
+    public List<CommitteeActivityGroup> MyCommitteeActivities { get; set; } = new();
+    public List<CommitteeActivityGroup> SubCommitteeActivities { get; set; } = new();
+}
+
+public class CommitteeActivityGroup
+{
+    public Committee Committee { get; set; } = null!;
+    public List<Report> PendingReports { get; set; } = new();
+    public List<Directive> OpenDirectives { get; set; } = new();
+    public List<Meeting> UpcomingMeetings { get; set; } = new();
+    public List<ActionItem> PendingActionItems { get; set; } = new();
+    public int TotalCount => PendingReports.Count + OpenDirectives.Count + UpcomingMeetings.Count + PendingActionItems.Count;
 }

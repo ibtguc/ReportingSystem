@@ -20,6 +20,7 @@ public class IndexModel : PageModel
     public OfficeDashboardData? OfficeData { get; set; }
     public CommitteeHeadDashboardData? HeadData { get; set; }
     public PersonalDashboardData PersonalData { get; set; } = null!;
+    public CommitteeActivitiesData ActivitiesData { get; set; } = new();
 
     public async Task OnGetAsync()
     {
@@ -29,6 +30,9 @@ public class IndexModel : PageModel
 
         // Everyone gets the personal dashboard
         PersonalData = await _dashboardService.GetPersonalDashboardAsync(userId);
+
+        // Committee activities (my committees + sub-committees)
+        ActivitiesData = await _dashboardService.GetCommitteeActivitiesAsync(userId);
 
         // Role-specific dashboards
         if (role == "Chairman")
