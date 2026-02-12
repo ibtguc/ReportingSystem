@@ -63,6 +63,9 @@
             <a asp-page="Committees/Edit" asp-route-id="@committee.Id" class="btn btn-outline-primary btn-sm" title="Edit">
                 <i class="bi bi-pencil"></i>
             </a>
+            <a asp-page="/Reports/Index" asp-route-CommitteeId="@committee.Id" target="_blank" class="btn btn-outline-success btn-sm" title="View Reports">
+                <i class="bi bi-file-earmark-text"></i>
+            </a>
         </div>
     </div>
 
