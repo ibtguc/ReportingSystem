@@ -21,7 +21,7 @@
         @if (hasChildren)
         {
             <a href="javascript:void(0)" onclick="toggleChildren(@committee.Id)" class="text-decoration-none me-1">
-                <i id="icon-@committee.Id" class="bi bi-chevron-right"></i>
+                <i id="icon-@committee.Id" class="bi bi-chevron-down"></i>
             </a>
         }
         else
@@ -68,7 +68,7 @@
 
     @if (hasChildren)
     {
-        <div id="children-@committee.Id" class="d-none">
+        <div id="children-@committee.Id">
             @foreach (var child in children)
             {
                 @await Html.PartialAsync("_CommitteeTreeNode", (child, pageModel, depth + 1))
